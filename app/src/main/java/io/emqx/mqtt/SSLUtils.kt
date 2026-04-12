@@ -77,7 +77,7 @@ object SSLUtils {
             "private-cert",
             key.private,
             password.toCharArray(),
-            arrayOf<Certificate?>(cert)
+            arrayOf(cert)
         )
         val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
         kmf.init(ks, password.toCharArray())
