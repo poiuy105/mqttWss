@@ -1,7 +1,8 @@
 package io.emqx.mqtt
 
 import android.content.Context
-import org.eclipse.paho.android.service.MqttAndroidClient
+import org.eclipse.paho.client.mqttv3.IMqttClient
+import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 
 class Connection(
@@ -13,13 +14,13 @@ class Connection(
     var password: String,
     private val tls: Boolean
 ) {
-    fun getMqttAndroidClient(context: Context?): MqttAndroidClient {
+    fun getMqttClient(): IMqttClient {
         val uri: String = if (tls) {
             "ssl://$host:$port"
         } else {
             "tcp://$host:$port"
         }
-        return MqttAndroidClient(context, uri, clientId)
+        return MqttClient(uri, clientId, context)
     }
 
     val mqttConnectOptions: MqttConnectOptions

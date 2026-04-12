@@ -6,11 +6,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.*
+import org.eclipse.paho.client.mqttv3.IMqttClient
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallback
+import org.eclipse.paho.client.mqttv3.MqttMessage
 
 class MainActivity : AppCompatActivity(), MqttCallback {
-    private var mClient: MqttAndroidClient? = null
+    private var mClient: IMqttClient? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,12 +29,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         tabs.setupWithViewPager(viewPager)
     }
 
-    fun connect(connection: Connection, listener: IMqttActionListener?) {
-        mClient = connection.getMqttAndroidClient(this)
+    fun connect(connection: Connection, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
+        mClient = connection.getMqttClient()
         try {
-            mClient!!.connect(connection.mqttConnectOptions, null, listener)
-            mClient!!.setCallback(this)
-        } catch (e: MqttException) {
+            mClient?.connect(connection.mqttConnectOptions, null, listener)
+            mClient?.setCallback(this)
+        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to connect", Toast.LENGTH_SHORT).show()
         }
@@ -43,30 +45,30 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient!!.disconnect()
-        } catch (e: MqttException) {
+            mClient?.disconnect()
+        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
         }
     }
 
-    fun subscribe(subscription: Subscription, listener: IMqttActionListener?) {
+    fun subscribe(subscription: Subscription, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
         if (notConnected(true)) {
             return
         }
         try {
             mClient?.subscribe(subscription.topic, subscription.qos, null, listener)
-        } catch (e: MqttException) {
+        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun publish(publish: Publish, callback: IMqttActionListener?) {
+    fun publish(publish: Publish, callback: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
         if (notConnected(true)) {
             return
         }
         try {
-            mClient!!.publish(
+            mClient?.publish(
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
@@ -74,7 +76,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 null,
                 callback
             )
-        } catch (e: MqttException) {
+        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to publish", Toast.LENGTH_SHORT).show()
         }
