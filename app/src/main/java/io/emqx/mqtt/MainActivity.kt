@@ -6,13 +6,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
-import org.eclipse.paho.client.mqttv3.IMqttClient
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 class MainActivity : AppCompatActivity(), MqttCallback {
-    private var mClient: IMqttClient? = null
+    private var mClient: org.eclipse.paho.client.mqttv3.IMqttClient? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +32,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     fun connect(connection: Connection, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
         mClient = connection.getMqttClient()
         try {
-            mClient?.connect(connection.mqttConnectOptions, null, listener)
+            val token: IMqttToken = mClient?.connect(connection.mqttConnectOptions)!!
+            token.actionCallback = listener
             mClient?.setCallback(this)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
@@ -56,7 +57,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.subscribe(subscription.topic, subscription.qos, null, listener)
+            val token: IMqttToken = mClient?.subscribe(subscription.topic, subscription.qos)!!
+            token.actionCallback = listener
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
@@ -68,14 +70,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.publish(
+            val token: IMqttDeliveryToken = mClient?.publish(
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
-                publish.isRetained,
-                null,
-                callback
-            )
+                publish.isRetained
+            )!!
+            token.actionCallback = callback
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to publish", Toast.LENGTH_SHORT).show()

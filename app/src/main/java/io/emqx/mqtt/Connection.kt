@@ -20,7 +20,7 @@ class Connection(
         } else {
             "tcp://$host:$port"
         }
-        return MqttClient(uri, clientId, context)
+        return MqttClient(uri, clientId, null)
     }
 
     val mqttConnectOptions: MqttConnectOptions
