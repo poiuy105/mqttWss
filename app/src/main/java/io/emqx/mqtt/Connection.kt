@@ -2,7 +2,7 @@ package io.emqx.mqtt
 
 import android.content.Context
 import org.eclipse.paho.client.mqttv3.IMqttClient
-import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 
 class Connection(
@@ -20,13 +20,16 @@ class Connection(
         } else {
             "tcp://$host:$port"
         }
-        return MqttClient(uri, clientId, null)
+        return MqttAsyncClient(uri, clientId, context)
     }
 
     val mqttConnectOptions: MqttConnectOptions
         get() {
             val options = MqttConnectOptions()
             options.isCleanSession = false
+            options.isAutomaticReconnect = true
+            options.connectionTimeout = 30
+            options.keepAliveInterval = 60
             if (tls) {
                 try {
                     options.socketFactory =
