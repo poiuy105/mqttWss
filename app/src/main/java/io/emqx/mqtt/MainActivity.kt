@@ -1,7 +1,10 @@
 package io.emqx.mqtt
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -20,19 +23,65 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private var isConnecting = false
     private var logCallback: ((String) -> Unit)? = null
 
+    private lateinit var ttsManager: TTSManager
+    private lateinit var floatWindowManager: FloatWindowManager
+
+    var isTTSEnabled = true
+    var isFloatWindowEnabled = true
+    var isAutoCaptureVoiceEnabled = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        ttsManager = TTSManager.getInstance(this)
+        floatWindowManager = FloatWindowManager.getInstance(this)
+
         mFragmentList.add(ConnectionFragment.newInstance())
         mFragmentList.add(SubscriptionFragment.newInstance())
         mFragmentList.add(PublishFragment.newInstance())
         mFragmentList.add(MessageFragment.newInstance())
+
         val sectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager, this, mFragmentList)
         val viewPager = findViewById<ViewPager>(R.id.view_pager)
         viewPager.offscreenPageLimit = 3
         viewPager.adapter = sectionsPagerAdapter
+
         val tabs = findViewById<TabLayout>(R.id.tabs)
         tabs.setupWithViewPager(viewPager)
+
+        setupAccessibilityService()
+    }
+
+    private fun setupAccessibilityService() {
+        VoiceAccessibilityService.setOnTextCapturedListener { text ->
+            runOnUiThread {
+                Log.d("MainActivity", "Voice captured: $text")
+                if (isAutoCaptureVoiceEnabled) {
+                    showFloatMessage("Voice Captured", text)
+                    if (isTTSEnabled) {
+                        ttsManager.speak("已捕获语音：$text")
+                    }
+                }
+            }
+        }
+    }
+
+    fun isAccessibilityServiceEnabled(): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        )
+        return enabledServices?.contains(packageName) == true
+    }
+
+    fun requestAccessibilityService() {
+        Toast.makeText(
+            this,
+            "Please enable accessibility service for voice capture",
+            Toast.LENGTH_LONG
+        ).show()
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
     fun setLogCallback(callback: (String) -> Unit) {
@@ -44,32 +93,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             logCallback?.invoke(message)
             Log.d("MainActivity", message)
         }
-    }
-
-    private fun formatException(e: Throwable): String {
-        val sb = StringBuilder()
-        sb.append("Exception: ${e.javaClass.name}\n")
-        sb.append("Message: ${e.message}\n")
-
-        var cause = e.cause
-        var level = 1
-        while (cause != null && level <= 5) {
-            sb.append("Cause $level: ${cause.javaClass.name}\n")
-            sb.append("Cause $level Message: ${cause.message}\n")
-            cause = cause.cause
-            level++
-        }
-
-        val stackTrace = e.stackTraceToString()
-        if (stackTrace.isNotEmpty()) {
-            sb.append("\nStackTrace:\n")
-            val lines = stackTrace.split("\n").take(20)
-            for (line in lines) {
-                sb.append("$line\n")
-            }
-        }
-
-        return sb.toString()
     }
 
     fun connect(connection: Connection, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
@@ -88,10 +111,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mConnection = connection
         mClient = connection.getMqttClient()
 
-        appendLog("Creating MQTT client...")
-        appendLog("URI: ${connection.buildUri()}")
-        appendLog("TLS: ${connection.mqttConnectOptions.socketFactory != null}")
-
         try {
             mClient?.setCallback(this)
             appendLog("Calling connect()...")
@@ -106,13 +125,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     isConnecting = false
-                    val errorMsg = formatException(exception ?: Exception("Unknown error"))
                     appendLog("=== CONNECT FAILED ===")
-                    for (line in errorMsg.split("\n")) {
-                        if (line.isNotEmpty()) {
-                            appendLog(line)
-                        }
-                    }
+                    appendLog("Error: ${exception?.message}")
                     exception?.printStackTrace()
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
@@ -121,12 +135,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             })
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             isConnecting = false
-            appendLog("MqttException: ${formatException(e)}")
             e.printStackTrace()
             Toast.makeText(this, "MqttException: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             isConnecting = false
-            appendLog("Exception: ${formatException(e)}")
             e.printStackTrace()
             Toast.makeText(this, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -174,6 +186,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
     }
 
+    fun publishMessage(topic: String, payload: String, qos: Int = 1) {
+        if (notConnected(true)) {
+            return
+        }
+        try {
+            mClient?.publish(topic, payload.toByteArray(), qos, false)
+            Toast.makeText(this, "Published: $payload", Toast.LENGTH_SHORT).show()
+        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to publish", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun notConnected(showNotify: Boolean): Boolean {
         if (mClient == null || !mClient!!.isConnected) {
             if (showNotify) {
@@ -184,17 +209,42 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         return false
     }
 
+    fun showFloatMessage(title: String, message: String) {
+        if (isFloatWindowEnabled) {
+            floatWindowManager.showMessage(title, message)
+        }
+    }
+
+    fun speakText(text: String) {
+        if (isTTSEnabled) {
+            ttsManager.speak(text)
+        }
+    }
+
     override fun connectionLost(cause: Throwable?) {
         appendLog("Connection lost: $cause")
         isConnecting = false
         runOnUiThread {
-            (mFragmentList[0] as ConnectionFragment).updateButtonText()
+            (mFragmentList[0] as? ConnectionFragment)?.updateButtonText()
         }
     }
 
     @Throws(Exception::class)
     override fun messageArrived(topic: String, message: MqttMessage) {
-        (mFragmentList[3] as MessageFragment).updateMessage(Message(topic, message))
+        val payload = String(message.payload)
+        Log.d("MainActivity", "Message arrived: [$topic] $payload")
+
+        runOnUiThread {
+            (mFragmentList[3] as? MessageFragment)?.updateMessage(Message(topic, message))
+
+            if (isFloatWindowEnabled) {
+                showFloatMessage(topic, payload)
+            }
+
+            if (isTTSEnabled) {
+                ttsManager.speak(payload)
+            }
+        }
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken) {}

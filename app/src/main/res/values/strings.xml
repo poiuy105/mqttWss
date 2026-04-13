@@ -21,4 +21,10 @@
     <string name="subscribe">Subscribe</string>
     <string name="protocol">Protocol</string>
     <string name="path">Path</string>
+    <string name="accessibility_service_description">MQTT Assistant needs accessibility service to capture voice assistant text</string>
+    <string name="tts_enabled">TTS Enabled</string>
+    <string name="float_window_enabled">Float Window</string>
+    <string name="auto_capture_voice">Auto Capture Voice</string>
+    <string name="voice_captured">Voice Captured</string>
+    <string name="publish_voice">Publish Voice</string>
 </resources>

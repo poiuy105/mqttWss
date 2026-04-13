@@ -26,6 +26,9 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mButton: Button
     private lateinit var mLogText: TextView
     private lateinit var mAutoConnect: Switch
+    private lateinit var mTtsSwitch: Switch
+    private lateinit var mFloatSwitch: Switch
+    private lateinit var mVoiceSwitch: Switch
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -102,6 +105,9 @@ class ConnectionFragment : BaseFragment() {
         mButton = view.findViewById(R.id.btn_connect)
         mLogText = view.findViewById(R.id.log_text)
         mAutoConnect = view.findViewById(R.id.auto_connect_switch)
+        mTtsSwitch = view.findViewById(R.id.tts_switch)
+        mFloatSwitch = view.findViewById(R.id.float_switch)
+        mVoiceSwitch = view.findViewById(R.id.voice_switch)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -111,10 +117,23 @@ class ConnectionFragment : BaseFragment() {
             appendLog(message)
         }
 
-        appendLog("=== Connection Debug Log ===")
+        appendLog("=== MQTT Assistant ===")
         appendLog("Fragment initialized")
 
         loadSavedConfig()
+
+        mTtsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            (activity as? MainActivity)?.isTTSEnabled = isChecked
+        }
+        mFloatSwitch.setOnCheckedChangeListener { _, isChecked ->
+            (activity as? MainActivity)?.isFloatWindowEnabled = isChecked
+        }
+        mVoiceSwitch.setOnCheckedChangeListener { _, isChecked ->
+            (activity as? MainActivity)?.isAutoCaptureVoiceEnabled = isChecked
+            if (isChecked && !(activity as? MainActivity)?.isAccessibilityServiceEnabled()!!) {
+                (activity as? MainActivity)?.requestAccessibilityService()
+            }
+        }
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
@@ -163,8 +182,6 @@ class ConnectionFragment : BaseFragment() {
                     protocolName,
                     mPath.text.toString()
                 )
-                appendLog("Connection object created")
-                appendLog("URI: ${connection.buildUri()}")
                 appendLog("Calling connect()...")
 
                 (fragmentActivity as MainActivity).connect(
@@ -172,8 +189,6 @@ class ConnectionFragment : BaseFragment() {
                     object : IMqttActionListener {
                         override fun onSuccess(asyncActionToken: IMqttToken) {
                             appendLog("=== CONNECT SUCCESS ===")
-                            appendLog("Server URI: ${asyncActionToken.client.serverURI}")
-                            appendLog("Client ID: ${asyncActionToken.client.clientId}")
                             updateButtonText()
                             startNotificationService()
                         }
@@ -215,7 +230,7 @@ class ConnectionFragment : BaseFragment() {
     }
 
     fun updateButtonText() {
-        if ((fragmentActivity as MainActivity).notConnected(false)) {
+        if ((fragmentActivity as? MainActivity)?.notConnected(false) == true) {
             mButton.text = getText(R.string.connect)
         } else {
             mButton.text = getString(R.string.disconnect)

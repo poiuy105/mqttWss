@@ -9,14 +9,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:padding="16dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:text="@string/protocol"
-            android:textColor="@android:color/black" />
+            android:textColor="@android:color/black"
+            android:textSize="18sp" />
 
         <RadioGroup
             android:id="@+id/protocol"
@@ -29,38 +30,43 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="TCP" />
+                android:text="TCP"
+                android:textSize="16sp" />
 
             <RadioButton
                 android:id="@+id/protocol_ssl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SSL" />
+                android:text="SSL"
+                android:textSize="16sp" />
 
             <RadioButton
                 android:id="@+id/protocol_ws"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WS" />
+                android:text="WS"
+                android:textSize="16sp" />
 
             <RadioButton
                 android:id="@+id/protocol_wss"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WSS" />
+                android:text="WSS"
+                android:textSize="16sp" />
         </RadioGroup>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="12dp">
 
             <EditText
                 android:id="@+id/host"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/host"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -73,7 +79,8 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/port"
                 android:inputType="number"
-                android:text="1883" />
+                android:text="1883"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -87,7 +94,8 @@
                 android:hint="@string/path"
                 android:inputType="text"
                 android:text="/mqtt"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -99,9 +107,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/client_id"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
-
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
@@ -112,7 +120,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/username"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -125,8 +134,39 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/password"
                 android:imeOptions="actionDone"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Auto Connect"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <Switch
+                android:id="@+id/auto_connect_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Features"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -139,23 +179,66 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Auto Connect"
-                android:textColor="@android:color/black" />
+                android:text="TTS (Text-to-Speech)"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
 
             <Switch
-                android:id="@+id/auto_connect_switch"
+                android:id="@+id/tts_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Float Window"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <Switch
+                android:id="@+id/float_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Auto Capture Voice"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <Switch
+                android:id="@+id/voice_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
         <Button
             android:id="@+id/btn_connect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="20dp"
             android:text="@string/connect"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            android:textSize="18sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -163,6 +246,7 @@
             android:layout_marginTop="16dp"
             android:text="Debug Log:"
             android:textColor="@android:color/black"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -174,7 +258,7 @@
             android:fontFamily="monospace"
             android:padding="8dp"
             android:text=""
-            android:textSize="10sp" />
+            android:textSize="12sp" />
 
     </LinearLayout>
 </ScrollView>
