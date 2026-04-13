@@ -9,11 +9,12 @@ import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 class MainActivity : AppCompatActivity(), MqttCallback {
-    private var mClient: org.eclipse.paho.client.mqttv3.IMqttClient? = null
+    private var mClient: MqttAsyncClient? = null
     private var mConnection: Connection? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     private var isConnecting = false
@@ -47,8 +48,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         isConnecting = true
         mConnection = connection
-
         mClient = connection.getMqttClient()
+
         try {
             mClient?.setCallback(this)
             mClient?.connect(connection.mqttConnectOptions, null, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
