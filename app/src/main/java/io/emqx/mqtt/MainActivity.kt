@@ -33,7 +33,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mClient = connection.getMqttClient()
         try {
             mClient?.setCallback(this)
-            mClient?.connect(connection.mqttConnectOptions)?.actionCallback = listener
+            val token: IMqttToken? = mClient?.connect(connection.mqttConnectOptions)
+            token?.setActionCallback(listener)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to connect", Toast.LENGTH_SHORT).show()
@@ -56,7 +57,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.subscribe(subscription.topic, subscription.qos)?.actionCallback = listener
+            val token: IMqttToken? = mClient?.subscribe(subscription.topic, subscription.qos)
+            token?.setActionCallback(listener)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
@@ -68,12 +70,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.publish(
+            val token: IMqttDeliveryToken? = mClient?.publish(
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
                 publish.isRetained
-            )?.actionCallback = callback
+            )
+            token?.setActionCallback(callback)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to publish", Toast.LENGTH_SHORT).show()
