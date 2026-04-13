@@ -22,13 +22,17 @@ class ConnectionFragment : BaseFragment() {
 
     override fun setUpView(view: View) {
         mHost = view.findViewById(R.id.host)
-        mHost.setText("broker.emqx.io")
+        mHost.setText("ha.urright.cloud")
         mPort = view.findViewById(R.id.port)
+        mPort.setText("1443")
         mPath = view.findViewById(R.id.path)
+        mPath.setText("/mqtt/ws")
         mClientId = view.findViewById(R.id.clientid)
         mClientId.setText(MqttAsyncClient.generateClientId())
         mUsername = view.findViewById(R.id.username)
+        mUsername.setText("weipc")
         mPassword = view.findViewById(R.id.password)
+        mPassword.setText("weipc")
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
 
@@ -37,7 +41,7 @@ class ConnectionFragment : BaseFragment() {
                 R.id.protocol_tcp -> 1883
                 R.id.protocol_ssl -> 8883
                 R.id.protocol_ws -> 8083
-                R.id.protocol_wss -> 8084
+                R.id.protocol_wss -> 1443
                 else -> 1883
             }
             mPort.setText(port.toString())
@@ -84,7 +88,7 @@ class ConnectionFragment : BaseFragment() {
                             Toast.makeText(
                                 fragmentActivity,
                                 exception.toString(),
-                                Toast.LENGTH_SHORT
+                                Toast.LENGTH_LONG
                             ).show()
                             exception.printStackTrace()
                         }

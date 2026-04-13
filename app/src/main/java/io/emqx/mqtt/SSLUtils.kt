@@ -54,6 +54,22 @@ object SSLUtils {
     }
 
     @Throws(Exception::class)
+    fun getInsecureSocketFactory(): SSLSocketFactory {
+        Security.addProvider(BouncyCastleProvider())
+
+        val trustManager = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = arrayOf()
+        }
+
+        val sslContext = SSLContext.getInstance("TLSv1.2")
+        sslContext.init(null, arrayOf<TrustManager>(trustManager), java.security.SecureRandom())
+
+        return sslContext.socketFactory
+    }
+
+    @Throws(Exception::class)
     fun getSocketFactory(
         caCrtFile: InputStream?, crtFile: InputStream?, keyFile: InputStream?,
         password: String

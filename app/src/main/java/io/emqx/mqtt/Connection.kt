@@ -4,6 +4,7 @@ import android.content.Context
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import javax.net.ssl.SSLSocketFactory
 
 class Connection(
     private val context: Context,
@@ -41,10 +42,16 @@ class Connection(
             options.isAutomaticReconnect = true
             options.connectionTimeout = 30
             options.keepAliveInterval = 60
-            if (protocol == "SSL" || protocol == "WSS") {
+            if (protocol == "SSL") {
                 try {
                     options.socketFactory =
                         SSLUtils.getSingleSocketFactory(context.resources.openRawResource(R.raw.cacert))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else if (protocol == "WSS") {
+                try {
+                    options.socketFactory = createDefaultSSLSocketFactory()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -57,4 +64,14 @@ class Connection(
             }
             return options
         }
+
+    private fun createDefaultSSLSocketFactory(): SSLSocketFactory {
+        return try {
+            val sslContext = javax.net.ssl.SSLContext.getInstance("TLSv1.2")
+            sslContext.init(null, null, null)
+            sslContext.socketFactory
+        } catch (e: Exception) {
+            javax.net.ssl.SSLSocketFactory.getDefault() as SSLSocketFactory
+        }
+    }
 }
