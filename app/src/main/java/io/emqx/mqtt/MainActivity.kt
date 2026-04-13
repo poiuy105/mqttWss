@@ -7,7 +7,6 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
@@ -33,8 +32,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mClient = connection.getMqttClient()
         try {
             mClient?.setCallback(this)
-            val token: IMqttToken? = mClient?.connect(connection.mqttConnectOptions)
-            token?.setActionCallback(listener)
+            mClient?.connect(connection.mqttConnectOptions, null, listener)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to connect", Toast.LENGTH_SHORT).show()
@@ -57,8 +55,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            val token: IMqttToken? = mClient?.subscribe(subscription.topic, subscription.qos)
-            token?.setActionCallback(listener)
+            mClient?.subscribe(subscription.topic, subscription.qos, null, listener)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
@@ -70,13 +67,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            val token: IMqttDeliveryToken? = mClient?.publish(
+            mClient?.publish(
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
-                publish.isRetained
+                publish.isRetained,
+                null,
+                callback
             )
-            token?.setActionCallback(callback)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to publish", Toast.LENGTH_SHORT).show()
