@@ -4,6 +4,7 @@ import android.content.Context
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 class Connection(
     private val context: Context,
@@ -20,7 +21,7 @@ class Connection(
         } else {
             "tcp://$host:$port"
         }
-        return MqttAsyncClient(uri, clientId)
+        return MqttAsyncClient(uri, clientId, MemoryPersistence())
     }
 
     val mqttConnectOptions: MqttConnectOptions
