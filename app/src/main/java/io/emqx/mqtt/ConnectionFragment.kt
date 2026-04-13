@@ -1,8 +1,13 @@
 package io.emqx.mqtt
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
@@ -20,35 +25,19 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
     private lateinit var mLogText: TextView
+    private lateinit var mAutoConnect: Switch
+    private lateinit var mConfigManager: ConfigManager
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            MqttService.startService(requireContext())
+        }
+    }
 
     override val layoutResId: Int
         get() = R.layout.fragment_connection
-
-    private fun formatException(e: Throwable): String {
-        val sb = StringBuilder()
-        sb.append("Exception: ${e.javaClass.name}\n")
-        sb.append("Message: ${e.message}\n")
-
-        var cause = e.cause
-        var level = 1
-        while (cause != null && level <= 5) {
-            sb.append("Cause $level: ${cause.javaClass.name}\n")
-            sb.append("Cause $level Message: ${cause.message}\n")
-            cause = cause.cause
-            level++
-        }
-
-        val stackTrace = e.stackTraceToString()
-        if (stackTrace.isNotEmpty()) {
-            sb.append("\nStackTrace:\n")
-            val lines = stackTrace.split("\n").take(15)
-            for (line in lines) {
-                sb.append("$line\n")
-            }
-        }
-
-        return sb.toString()
-    }
 
     private fun appendLog(message: String) {
         activity?.runOnUiThread {
@@ -59,22 +48,64 @@ class ConnectionFragment : BaseFragment() {
         }
     }
 
+    private fun saveCurrentConfig() {
+        val protocolName = when (mProtocol.checkedRadioButtonId) {
+            R.id.protocol_tcp -> "TCP"
+            R.id.protocol_ssl -> "SSL"
+            R.id.protocol_ws -> "WS"
+            R.id.protocol_wss -> "WSS"
+            else -> "TCP"
+        }
+
+        mConfigManager.saveConnectionConfig(
+            host = mHost.text.toString(),
+            port = mPort.text.toString().toIntOrNull() ?: 1883,
+            path = mPath.text.toString(),
+            clientId = mClientId.text.toString(),
+            username = mUsername.text.toString(),
+            password = mPassword.text.toString(),
+            protocol = protocolName
+        )
+        mConfigManager.autoConnect = mAutoConnect.isChecked
+    }
+
+    private fun loadSavedConfig() {
+        if (mConfigManager.hasSavedConfig()) {
+            mHost.setText(mConfigManager.host)
+            mPort.setText(mConfigManager.port.toString())
+            mPath.setText(mConfigManager.path)
+            mClientId.setText(mConfigManager.clientId)
+            mUsername.setText(mConfigManager.username)
+            mPassword.setText(mConfigManager.password)
+            mAutoConnect.isChecked = mConfigManager.autoConnect
+
+            when (mConfigManager.protocol) {
+                "TCP" -> mProtocol.check(R.id.protocol_tcp)
+                "SSL" -> mProtocol.check(R.id.protocol_ssl)
+                "WS" -> mProtocol.check(R.id.protocol_ws)
+                "WSS" -> mProtocol.check(R.id.protocol_wss)
+            }
+            appendLog("Loaded saved configuration")
+        }
+    }
+
     override fun setUpView(view: View) {
+        mConfigManager = ConfigManager.getInstance(requireContext())
+
         mHost = view.findViewById(R.id.host)
-        mHost.setText("ha.urright.cloud")
         mPort = view.findViewById(R.id.port)
-        mPort.setText("1443")
         mPath = view.findViewById(R.id.path)
-        mPath.setText("/mqtt/ws")
         mClientId = view.findViewById(R.id.clientid)
-        mClientId.setText(MqttAsyncClient.generateClientId())
         mUsername = view.findViewById(R.id.username)
-        mUsername.setText("weipc")
         mPassword = view.findViewById(R.id.password)
-        mPassword.setText("weipc")
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
         mLogText = view.findViewById(R.id.log_text)
+        mAutoConnect = view.findViewById(R.id.auto_connect_switch)
+
+        if (mClientId.text.isNullOrEmpty()) {
+            mClientId.setText(MqttAsyncClient.generateClientId())
+        }
 
         (activity as? MainActivity)?.setLogCallback { message ->
             appendLog(message)
@@ -83,16 +114,17 @@ class ConnectionFragment : BaseFragment() {
         appendLog("=== Connection Debug Log ===")
         appendLog("Fragment initialized")
 
+        loadSavedConfig()
+
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
                 R.id.protocol_tcp -> 1883
                 R.id.protocol_ssl -> 8883
                 R.id.protocol_ws -> 8083
-                R.id.protocol_wss -> 1443
+                R.id.protocol_wss -> 443
                 else -> 1883
             }
             mPort.setText(port.toString())
-            appendLog("Protocol changed, port set to: $port")
 
             val pathVisibility = when (checkedId) {
                 R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
@@ -119,6 +151,8 @@ class ConnectionFragment : BaseFragment() {
                 appendLog("ClientId: ${mClientId.text}")
                 appendLog("Username: ${mUsername.text}")
 
+                saveCurrentConfig()
+
                 val connection = Connection(
                     fragmentActivity!!,
                     mHost.text.toString(),
@@ -141,23 +175,43 @@ class ConnectionFragment : BaseFragment() {
                             appendLog("Server URI: ${asyncActionToken.client.serverURI}")
                             appendLog("Client ID: ${asyncActionToken.client.clientId}")
                             updateButtonText()
+                            startNotificationService()
                         }
 
                         override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
                             appendLog("=== CONNECT FAILED ===")
-                            appendLog(formatException(exception))
+                            appendLog("Error: ${exception?.message}")
                             Toast.makeText(
                                 fragmentActivity,
-                                "Connect failed: ${exception.message}",
+                                "Connect failed: ${exception?.message}",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
                     })
             } else {
                 appendLog("Disconnect button clicked")
+                stopNotificationService()
                 (fragmentActivity as MainActivity).disconnect()
             }
         }
+    }
+
+    private fun startNotificationService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        MqttService.startService(requireContext())
+    }
+
+    private fun stopNotificationService() {
+        MqttService.stopService(requireContext())
     }
 
     fun updateButtonText() {

@@ -112,8 +112,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/username"
-                android:inputType="text"
-                android:text="emqx" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -126,9 +125,28 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/password"
                 android:imeOptions="actionDone"
-                android:inputType="text"
-                android:text="public" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Auto Connect"
+                android:textColor="@android:color/black" />
+
+            <Switch
+                android:id="@+id/auto_connect_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/btn_connect"
