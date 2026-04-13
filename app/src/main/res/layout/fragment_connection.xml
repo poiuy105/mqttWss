@@ -139,5 +139,24 @@
             android:text="@string/connect"
             android:textAllCaps="false" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Debug Log:"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/log_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="#F5F5F5"
+            android:fontFamily="monospace"
+            android:padding="8dp"
+            android:text=""
+            android:textSize="10sp" />
+
     </LinearLayout>
 </ScrollView>

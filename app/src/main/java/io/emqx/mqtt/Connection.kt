@@ -25,7 +25,7 @@ class Connection(
         return MqttAsyncClient(uri, clientId, MemoryPersistence())
     }
 
-    private fun buildUri(): String {
+    fun buildUri(): String {
         val actualPath = if (path.isNotEmpty() && !path.startsWith("/")) "/$path" else path
         return when (protocol) {
             "SSL" -> "ssl://$host:$port"

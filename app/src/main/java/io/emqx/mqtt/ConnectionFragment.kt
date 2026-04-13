@@ -16,9 +16,45 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mPassword: EditText
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
+    private lateinit var mLogText: TextView
 
     override val layoutResId: Int
         get() = R.layout.fragment_connection
+
+    private fun formatException(e: Throwable): String {
+        val sb = StringBuilder()
+        sb.append("Exception: ${e.javaClass.name}\n")
+        sb.append("Message: ${e.message}\n")
+
+        var cause = e.cause
+        var level = 1
+        while (cause != null && level <= 5) {
+            sb.append("Cause $level: ${cause.javaClass.name}\n")
+            sb.append("Cause $level Message: ${cause.message}\n")
+            cause = cause.cause
+            level++
+        }
+
+        val stackTrace = e.stackTraceToString()
+        if (stackTrace.isNotEmpty()) {
+            sb.append("\nStackTrace:\n")
+            val lines = stackTrace.split("\n").take(15)
+            for (line in lines) {
+                sb.append("$line\n")
+            }
+        }
+
+        return sb.toString()
+    }
+
+    private fun appendLog(message: String) {
+        activity?.runOnUiThread {
+            val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
+            val logMessage = "[$timestamp] $message\n"
+            mLogText.append(logMessage)
+            Log.d("ConnectionFragment", message)
+        }
+    }
 
     override fun setUpView(view: View) {
         mHost = view.findViewById(R.id.host)
@@ -35,6 +71,10 @@ class ConnectionFragment : BaseFragment() {
         mPassword.setText("weipc")
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
+        mLogText = view.findViewById(R.id.log_text)
+
+        appendLog("=== Connection Debug Log ===")
+        appendLog("Fragment initialized")
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
@@ -45,6 +85,7 @@ class ConnectionFragment : BaseFragment() {
                 else -> 1883
             }
             mPort.setText(port.toString())
+            appendLog("Protocol changed, port set to: $port")
 
             val pathVisibility = when (checkedId) {
                 R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
@@ -63,6 +104,14 @@ class ConnectionFragment : BaseFragment() {
                     else -> "TCP"
                 }
 
+                appendLog("=== Starting Connection ===")
+                appendLog("Protocol: $protocolName")
+                appendLog("Host: ${mHost.text}")
+                appendLog("Port: ${mPort.text}")
+                appendLog("Path: ${mPath.text}")
+                appendLog("ClientId: ${mClientId.text}")
+                appendLog("Username: ${mUsername.text}")
+
                 val connection = Connection(
                     fragmentActivity!!,
                     mHost.text.toString(),
@@ -73,27 +122,31 @@ class ConnectionFragment : BaseFragment() {
                     protocolName,
                     mPath.text.toString()
                 )
+                appendLog("Connection object created, URI: ${connection.buildUri()}")
+                appendLog("Calling connect()...")
+
                 (fragmentActivity as MainActivity).connect(
                     connection,
                     object : IMqttActionListener {
                         override fun onSuccess(asyncActionToken: IMqttToken) {
-                            Log.d(
-                                "ConnectionFragment",
-                                "Connected to: " + asyncActionToken.client.serverURI
-                            )
+                            appendLog("=== CONNECT SUCCESS ===")
+                            appendLog("Server URI: ${asyncActionToken.client.serverURI}")
+                            appendLog("Client ID: ${asyncActionToken.client.clientId}")
                             updateButtonText()
                         }
 
                         override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
+                            appendLog("=== CONNECT FAILED ===")
+                            appendLog(formatException(exception))
                             Toast.makeText(
                                 fragmentActivity,
-                                exception.toString(),
+                                "Connect failed: ${exception.message}",
                                 Toast.LENGTH_LONG
                             ).show()
-                            exception.printStackTrace()
                         }
                     })
             } else {
+                appendLog("Disconnect button clicked")
                 (fragmentActivity as MainActivity).disconnect()
             }
         }
