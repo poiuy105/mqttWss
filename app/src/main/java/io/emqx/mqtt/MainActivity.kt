@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -23,11 +22,21 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private var isConnecting = false
     private var logCallback: ((String) -> Unit)? = null
 
-    private lateinit var ttsManager: TTSManager
-    private lateinit var floatWindowManager: FloatWindowManager
+    var ttsManager: TTSManager? = null
+    var floatWindowManager: FloatWindowManager? = null
 
     var isTTSEnabled = true
+        set(value) {
+            field = value
+            Log.d("MainActivity", "isTTSEnabled changed to: $value")
+        }
+
     var isFloatWindowEnabled = true
+        set(value) {
+            field = value
+            Log.d("MainActivity", "isFloatWindowEnabled changed to: $value")
+        }
+
     var isAutoCaptureVoiceEnabled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +69,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 if (isAutoCaptureVoiceEnabled) {
                     showFloatMessage("Voice Captured", text)
                     if (isTTSEnabled) {
-                        ttsManager.speak("已捕获语音：$text")
+                        ttsManager?.speak("已捕获语音：$text")
                     }
                 }
             }
@@ -210,14 +219,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     fun showFloatMessage(title: String, message: String) {
+        Log.d("MainActivity", "showFloatMessage called: title=$title, isFloatWindowEnabled=$isFloatWindowEnabled")
         if (isFloatWindowEnabled) {
-            floatWindowManager.showMessage(title, message)
+            floatWindowManager?.showMessage(title, message)
+        } else {
+            Log.d("MainActivity", "Float window is disabled, skipping")
         }
     }
 
     fun speakText(text: String) {
+        Log.d("MainActivity", "speakText called: $text, isTTSEnabled=$isTTSEnabled")
         if (isTTSEnabled) {
-            ttsManager.speak(text)
+            ttsManager?.speak(text)
+        } else {
+            Log.d("MainActivity", "TTS is disabled, skipping")
         }
     }
 
@@ -233,16 +248,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     override fun messageArrived(topic: String, message: MqttMessage) {
         val payload = String(message.payload)
         Log.d("MainActivity", "Message arrived: [$topic] $payload")
+        Log.d("MainActivity", "isTTSEnabled=$isTTSEnabled, isFloatWindowEnabled=$isFloatWindowEnabled")
 
         runOnUiThread {
             (mFragmentList[3] as? MessageFragment)?.updateMessage(Message(topic, message))
 
             if (isFloatWindowEnabled) {
-                showFloatMessage(topic, payload)
+                Log.d("MainActivity", "Showing float window for message")
+                floatWindowManager?.showMessage(topic, payload)
             }
 
             if (isTTSEnabled) {
-                ttsManager.speak(payload)
+                Log.d("MainActivity", "Speaking message with TTS")
+                ttsManager?.speak(payload)
             }
         }
     }

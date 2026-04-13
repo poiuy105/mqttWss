@@ -122,16 +122,32 @@ class ConnectionFragment : BaseFragment() {
 
         loadSavedConfig()
 
+        val mainActivity = (activity as? MainActivity)
+        mainActivity?.let {
+            it.isTTSEnabled = mTtsSwitch.isChecked
+            it.isFloatWindowEnabled = mFloatSwitch.isChecked
+            it.isAutoCaptureVoiceEnabled = mVoiceSwitch.isChecked
+        }
+
         mTtsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            (activity as? MainActivity)?.isTTSEnabled = isChecked
+            (activity as? MainActivity)?.let { main ->
+                main.isTTSEnabled = isChecked
+                appendLog("TTS ${if (isChecked) "enabled" else "disabled"}")
+            }
         }
         mFloatSwitch.setOnCheckedChangeListener { _, isChecked ->
-            (activity as? MainActivity)?.isFloatWindowEnabled = isChecked
+            (activity as? MainActivity)?.let { main ->
+                main.isFloatWindowEnabled = isChecked
+                appendLog("Float Window ${if (isChecked) "enabled" else "disabled"}")
+            }
         }
         mVoiceSwitch.setOnCheckedChangeListener { _, isChecked ->
-            (activity as? MainActivity)?.isAutoCaptureVoiceEnabled = isChecked
-            if (isChecked && !(activity as? MainActivity)?.isAccessibilityServiceEnabled()!!) {
-                (activity as? MainActivity)?.requestAccessibilityService()
+            (activity as? MainActivity)?.let { main ->
+                main.isAutoCaptureVoiceEnabled = isChecked
+                appendLog("Auto Capture Voice ${if (isChecked) "enabled" else "disabled"}")
+                if (isChecked && !main.isAccessibilityServiceEnabled()) {
+                    main.requestAccessibilityService()
+                }
             }
         }
 
@@ -169,6 +185,7 @@ class ConnectionFragment : BaseFragment() {
                 appendLog("Path: ${mPath.text}")
                 appendLog("ClientId: ${mClientId.text}")
                 appendLog("Username: ${mUsername.text}")
+                appendLog("TTS: ${mTtsSwitch.isChecked}, Float: ${mFloatSwitch.isChecked}")
 
                 saveCurrentConfig()
 
