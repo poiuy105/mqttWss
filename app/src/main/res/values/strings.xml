@@ -19,4 +19,6 @@
     <string name="qos">QoS</string>
     <string name="retained">Retained</string>
     <string name="subscribe">Subscribe</string>
+    <string name="protocol">Protocol</string>
+    <string name="path">Path</string>
 </resources>

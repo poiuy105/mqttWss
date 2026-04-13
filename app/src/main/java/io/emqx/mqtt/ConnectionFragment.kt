@@ -2,10 +2,7 @@ package io.emqx.mqtt
 
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.RadioButton
-import android.widget.Toast
+import android.widget.*
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
@@ -13,11 +10,13 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 class ConnectionFragment : BaseFragment() {
     private lateinit var mHost: EditText
     private lateinit var mPort: EditText
+    private lateinit var mPath: EditText
     private lateinit var mClientId: EditText
     private lateinit var mUsername: EditText
     private lateinit var mPassword: EditText
-    private lateinit var mTlsButton: RadioButton
+    private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
+
     override val layoutResId: Int
         get() = R.layout.fragment_connection
 
@@ -25,14 +24,41 @@ class ConnectionFragment : BaseFragment() {
         mHost = view.findViewById(R.id.host)
         mHost.setText("broker.emqx.io")
         mPort = view.findViewById(R.id.port)
+        mPath = view.findViewById(R.id.path)
         mClientId = view.findViewById(R.id.clientid)
         mClientId.setText(MqttAsyncClient.generateClientId())
         mUsername = view.findViewById(R.id.username)
         mPassword = view.findViewById(R.id.password)
-        mTlsButton = view.findViewById(R.id.tls_true)
+        mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
+
+        mProtocol.setOnCheckedChangeListener { _, checkedId ->
+            val port = when (checkedId) {
+                R.id.protocol_tcp -> 1883
+                R.id.protocol_ssl -> 8883
+                R.id.protocol_ws -> 8083
+                R.id.protocol_wss -> 8084
+                else -> 1883
+            }
+            mPort.setText(port.toString())
+
+            val pathVisibility = when (checkedId) {
+                R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
+                else -> View.GONE
+            }
+            mPath.visibility = pathVisibility
+        }
+
         mButton.setOnClickListener {
             if (mButton.text.toString() == getString(R.string.connect)) {
+                val protocolName = when (mProtocol.checkedRadioButtonId) {
+                    R.id.protocol_tcp -> "TCP"
+                    R.id.protocol_ssl -> "SSL"
+                    R.id.protocol_ws -> "WS"
+                    R.id.protocol_wss -> "WSS"
+                    else -> "TCP"
+                }
+
                 val connection = Connection(
                     fragmentActivity!!,
                     mHost.text.toString(),
@@ -40,7 +66,8 @@ class ConnectionFragment : BaseFragment() {
                     mClientId.text.toString(),
                     mUsername.text.toString(),
                     mPassword.text.toString(),
-                    mTlsButton.isChecked
+                    protocolName,
+                    mPath.text.toString()
                 )
                 (fragmentActivity as MainActivity).connect(
                     connection,

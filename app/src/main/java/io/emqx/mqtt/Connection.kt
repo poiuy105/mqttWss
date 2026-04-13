@@ -2,7 +2,6 @@ package io.emqx.mqtt
 
 import android.content.Context
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
-import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
@@ -13,15 +12,26 @@ class Connection(
     var clientId: String,
     var username: String,
     var password: String,
-    private val tls: Boolean
+    private val protocol: String,
+    private val path: String
 ) {
+    enum class Protocol {
+        TCP, SSL, WS, WSS
+    }
+
     fun getMqttClient(): MqttAsyncClient {
-        val uri: String = if (tls) {
-            "ssl://$host:$port"
-        } else {
-            "tcp://$host:$port"
-        }
+        val uri = buildUri()
         return MqttAsyncClient(uri, clientId, MemoryPersistence())
+    }
+
+    private fun buildUri(): String {
+        val actualPath = if (path.isNotEmpty() && !path.startsWith("/")) "/$path" else path
+        return when (protocol) {
+            "SSL" -> "ssl://$host:$port"
+            "WS" -> "ws://$host:$port$actualPath"
+            "WSS" -> "wss://$host:$port$actualPath"
+            else -> "tcp://$host:$port"
+        }
     }
 
     val mqttConnectOptions: MqttConnectOptions
@@ -31,7 +41,7 @@ class Connection(
             options.isAutomaticReconnect = true
             options.connectionTimeout = 30
             options.keepAliveInterval = 60
-            if (tls) {
+            if (protocol == "SSL" || protocol == "WSS") {
                 try {
                     options.socketFactory =
                         SSLUtils.getSingleSocketFactory(context.resources.openRawResource(R.raw.cacert))
