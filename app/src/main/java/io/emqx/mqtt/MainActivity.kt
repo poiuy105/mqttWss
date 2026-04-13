@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mClient = connection.getMqttClient()
         try {
             mClient?.setCallback(this)
-            mClient?.connect(connection.mqttConnectOptions, null, listener)
+            mClient?.connect(connection.mqttConnectOptions)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to connect", Toast.LENGTH_SHORT).show()
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.subscribe(subscription.topic, subscription.qos, null, listener)
+            mClient?.subscribe(subscription.topic, subscription.qos)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
@@ -71,9 +71,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
-                publish.isRetained,
-                null,
-                callback
+                publish.isRetained
             )
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
