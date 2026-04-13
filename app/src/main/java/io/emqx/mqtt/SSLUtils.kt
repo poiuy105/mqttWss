@@ -16,25 +16,40 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 object SSLUtils {
     @Throws(Exception::class)
     fun getSingleSocketFactory(caCrtFileInputStream: InputStream?): SSLSocketFactory {
         Security.addProvider(BouncyCastleProvider())
-        var caCert: X509Certificate? = null
+
+        val certificateFactory = CertificateFactory.getInstance("X.509")
+        val caCerts = mutableListOf<X509Certificate>()
+
         val bis = BufferedInputStream(caCrtFileInputStream)
-        val cf = CertificateFactory.getInstance("X.509")
-        while (bis.available() > 0) {
-            caCert = cf.generateCertificate(bis) as X509Certificate
+        try {
+            while (bis.available() > 0) {
+                val cert = certificateFactory.generateCertificate(bis) as X509Certificate
+                caCerts.add(cert)
+            }
+        } finally {
+            bis.close()
         }
-        val caKs = KeyStore.getInstance(KeyStore.getDefaultType())
-        caKs.load(null, null)
-        caKs.setCertificateEntry("cert-certificate", caCert)
-        val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        tmf.init(caKs)
+
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+        keyStore.load(null, null)
+        for ((index, cert) in caCerts.withIndex()) {
+            keyStore.setCertificateEntry("ca-$index", cert)
+        }
+
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+        trustManagerFactory.init(keyStore)
+
         val sslContext = SSLContext.getInstance("TLSv1.2")
-        sslContext.init(null, tmf.trustManagers, null)
+        sslContext.init(null, trustManagerFactory.trustManagers, null)
+
         return sslContext.socketFactory
     }
 
@@ -45,29 +60,37 @@ object SSLUtils {
     ): SSLSocketFactory {
         Security.addProvider(BouncyCastleProvider())
 
-        // load CA certificate
+        val certificateFactory = CertificateFactory.getInstance("X.509")
         var caCert: X509Certificate? = null
+
         var bis = BufferedInputStream(caCrtFile)
-        val cf = CertificateFactory.getInstance("X.509")
-        while (bis.available() > 0) {
-            caCert = cf.generateCertificate(bis) as X509Certificate
+        try {
+            while (bis.available() > 0) {
+                caCert = certificateFactory.generateCertificate(bis) as X509Certificate
+            }
+        } finally {
+            bis.close()
         }
 
-        // load client certificate
         bis = BufferedInputStream(crtFile)
         var cert: X509Certificate? = null
-        while (bis.available() > 0) {
-            cert = cf.generateCertificate(bis) as X509Certificate
+        try {
+            while (bis.available() > 0) {
+                cert = certificateFactory.generateCertificate(bis) as X509Certificate
+            }
+        } finally {
+            bis.close()
         }
 
-        // load client private cert
         val pemParser = PEMParser(InputStreamReader(keyFile))
         val `object`: Any = pemParser.readObject()
         val converter: JcaPEMKeyConverter = JcaPEMKeyConverter().setProvider("BC")
         val key: KeyPair = converter.getKeyPair(`object` as PEMKeyPair)
+        pemParser.close()
+
         val caKs = KeyStore.getInstance(KeyStore.getDefaultType())
         caKs.load(null, null)
-        caKs.setCertificateEntry("cert-certificate", caCert)
+        caKs.setCertificateEntry("ca-certificate", caCert)
         val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
         tmf.init(caKs)
         val ks = KeyStore.getInstance(KeyStore.getDefaultType())
@@ -77,7 +100,7 @@ object SSLUtils {
             "private-cert",
             key.private,
             password.toCharArray(),
-            arrayOf(cert)
+            arrayOf<Certificate>(cert)
         )
         val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
         kmf.init(ks, password.toCharArray())
