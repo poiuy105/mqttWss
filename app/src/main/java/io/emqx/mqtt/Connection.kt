@@ -4,7 +4,11 @@ import android.content.Context
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import java.security.KeyManagementException
+import java.security.NoSuchAlgorithmException
+import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
 
 class Connection(
     private val context: Context,
@@ -50,11 +54,7 @@ class Connection(
                     e.printStackTrace()
                 }
             } else if (protocol == "WSS") {
-                try {
-                    options.socketFactory = createDefaultSSLSocketFactory()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                options.socketFactory = getSystemDefaultSSLSocketFactory()
             }
             if (username.isNotEmpty()) {
                 options.userName = username
@@ -65,13 +65,17 @@ class Connection(
             return options
         }
 
-    private fun createDefaultSSLSocketFactory(): SSLSocketFactory {
+    private fun getSystemDefaultSSLSocketFactory(): SSLSocketFactory {
         return try {
-            val sslContext = javax.net.ssl.SSLContext.getInstance("TLSv1.2")
-            sslContext.init(null, null, null)
-            sslContext.socketFactory
-        } catch (e: Exception) {
-            javax.net.ssl.SSLSocketFactory.getDefault() as SSLSocketFactory
+            val context = SSLContext.getInstance("TLSv1.2")
+            context.init(null, null, null)
+            context.socketFactory
+        } catch (e: NoSuchAlgorithmException) {
+            e.printStackTrace()
+            SSLSocketFactory.getDefault() as SSLSocketFactory
+        } catch (e: KeyManagementException) {
+            e.printStackTrace()
+            SSLSocketFactory.getDefault() as SSLSocketFactory
         }
     }
 }

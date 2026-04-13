@@ -6,6 +6,9 @@ import android.widget.*
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ConnectionFragment : BaseFragment() {
     private lateinit var mHost: EditText
@@ -49,7 +52,7 @@ class ConnectionFragment : BaseFragment() {
 
     private fun appendLog(message: String) {
         activity?.runOnUiThread {
-            val timestamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
+            val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
             val logMessage = "[$timestamp] $message\n"
             mLogText.append(logMessage)
             Log.d("ConnectionFragment", message)
@@ -72,6 +75,10 @@ class ConnectionFragment : BaseFragment() {
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
         mLogText = view.findViewById(R.id.log_text)
+
+        (activity as? MainActivity)?.setLogCallback { message ->
+            appendLog(message)
+        }
 
         appendLog("=== Connection Debug Log ===")
         appendLog("Fragment initialized")
@@ -122,7 +129,8 @@ class ConnectionFragment : BaseFragment() {
                     protocolName,
                     mPath.text.toString()
                 )
-                appendLog("Connection object created, URI: ${connection.buildUri()}")
+                appendLog("Connection object created")
+                appendLog("URI: ${connection.buildUri()}")
                 appendLog("Calling connect()...")
 
                 (fragmentActivity as MainActivity).connect(

@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private var mConnection: Connection? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     private var isConnecting = false
+    private var logCallback: ((String) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,14 +35,51 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         tabs.setupWithViewPager(viewPager)
     }
 
+    fun setLogCallback(callback: (String) -> Unit) {
+        logCallback = callback
+    }
+
+    private fun appendLog(message: String) {
+        runOnUiThread {
+            logCallback?.invoke(message)
+            Log.d("MainActivity", message)
+        }
+    }
+
+    private fun formatException(e: Throwable): String {
+        val sb = StringBuilder()
+        sb.append("Exception: ${e.javaClass.name}\n")
+        sb.append("Message: ${e.message}\n")
+
+        var cause = e.cause
+        var level = 1
+        while (cause != null && level <= 5) {
+            sb.append("Cause $level: ${cause.javaClass.name}\n")
+            sb.append("Cause $level Message: ${cause.message}\n")
+            cause = cause.cause
+            level++
+        }
+
+        val stackTrace = e.stackTraceToString()
+        if (stackTrace.isNotEmpty()) {
+            sb.append("\nStackTrace:\n")
+            val lines = stackTrace.split("\n").take(20)
+            for (line in lines) {
+                sb.append("$line\n")
+            }
+        }
+
+        return sb.toString()
+    }
+
     fun connect(connection: Connection, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
         if (isConnecting) {
-            Log.d("MainActivity", "Already connecting, ignore")
+            appendLog("Already connecting, ignore")
             return
         }
 
         if (mClient != null && mClient!!.isConnected) {
-            Log.d("MainActivity", "Already connected, ignore duplicate connect request")
+            appendLog("Already connected, ignore duplicate connect request")
             Toast.makeText(this, "Already connected", Toast.LENGTH_SHORT).show()
             return
         }
@@ -50,12 +88,17 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mConnection = connection
         mClient = connection.getMqttClient()
 
+        appendLog("Creating MQTT client...")
+        appendLog("URI: ${connection.buildUri()}")
+        appendLog("TLS: ${connection.mqttConnectOptions.socketFactory != null}")
+
         try {
             mClient?.setCallback(this)
+            appendLog("Calling connect()...")
             mClient?.connect(connection.mqttConnectOptions, null, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     isConnecting = false
-                    Log.d("MainActivity", "Connect success")
+                    appendLog("=== CONNECT SUCCESS ===")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
                     }
@@ -63,16 +106,29 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     isConnecting = false
-                    Log.e("MainActivity", "Connect failed: $exception")
+                    val errorMsg = formatException(exception ?: Exception("Unknown error"))
+                    appendLog("=== CONNECT FAILED ===")
+                    for (line in errorMsg.split("\n")) {
+                        if (line.isNotEmpty()) {
+                            appendLog(line)
+                        }
+                    }
+                    exception?.printStackTrace()
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Connect failed: $exception", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             })
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             isConnecting = false
+            appendLog("MqttException: ${formatException(e)}")
             e.printStackTrace()
-            Toast.makeText(this, "Failed to connect", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "MqttException: ${e.message}", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            isConnecting = false
+            appendLog("Exception: ${formatException(e)}")
+            e.printStackTrace()
+            Toast.makeText(this, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -129,7 +185,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     override fun connectionLost(cause: Throwable?) {
-        Log.d("MainActivity", "Connection lost: $cause")
+        appendLog("Connection lost: $cause")
         isConnecting = false
         runOnUiThread {
             (mFragmentList[0] as ConnectionFragment).updateButtonText()
