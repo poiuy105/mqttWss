@@ -56,7 +56,7 @@ class PublishFragment : BaseFragment() {
         val pubBtn = view.findViewById<Button>(R.id.publish)
         pubBtn.setOnClickListener {
             val publish = publish
-            appendTtsLog("发布消息: topic=${publish.topic}, payload=${publish.message}")
+            appendTtsLog("发布消息: topic=${publish.topic}, payload=${publish.payload}")
             (fragmentActivity as MainActivity).publish(publish, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     mPublishList.add(0, publish)
