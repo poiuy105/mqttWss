@@ -221,6 +221,11 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     fun showFloatMessage(title: String, message: String) {
         Log.d("MainActivity", "showFloatMessage called: title=$title, isFloatWindowEnabled=$isFloatWindowEnabled")
         if (isFloatWindowEnabled) {
+            if (floatWindowManager?.canDrawOverlays() == false) {
+                Toast.makeText(this, "Please grant overlay permission for float window", Toast.LENGTH_LONG).show()
+                floatWindowManager?.requestOverlayPermission()
+                return
+            }
             floatWindowManager?.showMessage(title, message)
         } else {
             Log.d("MainActivity", "Float window is disabled, skipping")

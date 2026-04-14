@@ -1,20 +1,21 @@
 package io.emqx.mqtt
 
-import android.animation.ObjectAnimator
-import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.TextView
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 
 class FloatWindowManager(private val context: Context) {
     private var windowManager: WindowManager? = null
@@ -35,43 +36,76 @@ class FloatWindowManager(private val context: Context) {
         }
     }
 
+    fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(context)
+        } else {
+            true
+        }
+    }
+
+    fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        }
+    }
+
     fun showMessage(title: String, message: String, onClick: (() -> Unit)? = null, onClose: (() -> Unit)? = null) {
-        if (floatView != null) {
-            hide()
+        Log.d("FloatWindow", "showMessage called: title=$title, message=$message")
+        Log.d("FloatWindow", "canDrawOverlays: ${canDrawOverlays()}")
+
+        if (!canDrawOverlays()) {
+            Log.e("FloatWindow", "No overlay permission!")
+            Toast.makeText(context, "Please grant overlay permission for float window", Toast.LENGTH_LONG).show()
+            requestOverlayPermission()
+            return
         }
 
-        windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
-        val layoutParams = WindowManager.LayoutParams().apply {
-            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE
+        try {
+            if (floatView != null) {
+                hide()
             }
-            format = PixelFormat.TRANSLUCENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            width = WindowManager.LayoutParams.WRAP_CONTENT
-            height = WindowManager.LayoutParams.WRAP_CONTENT
-            gravity = Gravity.TOP or Gravity.END
-            x = 20
-            y = 100
+
+            windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+            val layoutParams = WindowManager.LayoutParams().apply {
+                type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                } else {
+                    @Suppress("DEPRECATION")
+                    WindowManager.LayoutParams.TYPE_PHONE
+                }
+                format = PixelFormat.TRANSLUCENT
+                flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                width = WindowManager.LayoutParams.WRAP_CONTENT
+                height = WindowManager.LayoutParams.WRAP_CONTENT
+                gravity = Gravity.TOP or Gravity.END
+                x = 20
+                y = 100
+            }
+
+            floatView = createFloatView(title, message, onClick, onClose)
+            windowManager?.addView(floatView, layoutParams)
+            isShowing = true
+            Log.d("FloatWindow", "Float view added successfully")
+
+            floatView?.let { view ->
+                val touchListener = FloatTouchListener(layoutParams, view)
+                view.setOnTouchListener(touchListener)
+
+                view.alpha = 0f
+                view.animate().alpha(1f).setDuration(300).start()
+            }
+
+            scheduleAutoClose(onClose)
+        } catch (e: Exception) {
+            Log.e("FloatWindow", "Error showing float window: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(context, "Float window error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-
-        floatView = createFloatView(title, message, onClick, onClose)
-        windowManager?.addView(floatView, layoutParams)
-        isShowing = true
-
-        floatView?.let { view ->
-            val touchListener = FloatTouchListener(layoutParams, view)
-            view.setOnTouchListener(touchListener)
-
-            view.alpha = 0f
-            view.animate().alpha(1f).setDuration(300).start()
-        }
-
-        scheduleAutoClose(onClose)
     }
 
     private fun createFloatView(title: String, message: String, onClick: (() -> Unit)?, onClose: (() -> Unit)?): View {
@@ -136,7 +170,7 @@ class FloatWindowManager(private val context: Context) {
                 try {
                     windowManager?.removeView(view)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("FloatWindow", "Error removing view: ${e.message}")
                 }
                 floatView = null
                 isShowing = false
