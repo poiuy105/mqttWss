@@ -28,17 +28,57 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
 
     init {
         Log.d("TTSManager", "Initializing TTS...")
-        tts = TextToSpeech(context, this)
+        try {
+            tts = TextToSpeech(context, this)
+        } catch (e: Exception) {
+            Log.e("TTSManager", "Exception during TTS creation: ${e.message}")
+        }
     }
 
     override fun onInit(status: Int) {
         Log.d("TTSManager", "onInit called with status: $status")
         if (status == TextToSpeech.SUCCESS) {
-            val chineseResult = tts?.isLanguageAvailable(Locale.CHINESE)
+            setupTtsEngine()
+        } else {
+            Log.e("TTSManager", "TTS initialization failed with status: $status")
+            retryInitWithDefaultEngine()
+        }
+    }
+
+    private fun retryInitWithDefaultEngine() {
+        Log.d("TTSManager", "Retrying TTS init with default engine...")
+        tts?.shutdown()
+        tts = null
+        try {
+            tts = TextToSpeech(context) { status ->
+                Log.d("TTSManager", "Retry onInit called with status: $status")
+                if (status == TextToSpeech.SUCCESS) {
+                    setupTtsEngine()
+                } else {
+                    Log.e("TTSManager", "TTS retry also failed, giving up")
+                    isInitialized = false
+                    Toast.makeText(context, "TTS engine not available", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("TTSManager", "Exception during TTS retry: ${e.message}")
+            Toast.makeText(context, "TTS engine error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupTtsEngine() {
+        tts?.let { engine ->
+            val availableEngines = engine.getEngines()
+            Log.d("TTSManager", "Available TTS engines: ${availableEngines.size}")
+            availableEngines.forEach { info ->
+                Log.d("TTSManager", "  Engine: ${info.name}, package: ${info.packageName}")
+            }
+
+            val chineseResult = engine.isLanguageAvailable(Locale.CHINESE)
             Log.d("TTSManager", "Chinese language availability: $chineseResult")
 
             if (chineseResult != null && chineseResult > TextToSpeech.LANG_MISSING_DATA) {
-                val setLangResult = tts?.setLanguage(Locale.CHINESE)
+                val setLangResult = engine.setLanguage(Locale.CHINESE)
                 Log.d("TTSManager", "setLanguage(CHINESE) result: $setLangResult")
                 if (setLangResult == TextToSpeech.LANG_AVAILABLE || setLangResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
                     isChineseAvailable = true
@@ -47,15 +87,23 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
             }
 
             if (!isChineseAvailable) {
-                Log.d("TTSManager", "Chinese not available, trying default")
-                val defaultResult = tts?.setLanguage(Locale.getDefault())
+                Log.d("TTSManager", "Chinese not available, trying default locale: ${Locale.getDefault()}")
+                val defaultResult = engine.setLanguage(Locale.getDefault())
                 Log.d("TTSManager", "setLanguage(default) result: $defaultResult")
+                if (defaultResult == TextToSpeech.LANG_AVAILABLE || defaultResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+                    isChineseAvailable = false
+                    Log.d("TTSManager", "Using default locale for TTS")
+                } else {
+                    Log.d("TTSManager", "Default locale not available, trying US English")
+                    val usResult = engine.setLanguage(Locale.US)
+                    Log.d("TTSManager", "setLanguage(US) result: $usResult")
+                }
             }
 
             isInitialized = true
             Log.d("TTSManager", "TTS initialized successfully, isInitialized=true")
 
-            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     Log.d("TTSManager", "onStart: $utteranceId")
                 }
@@ -70,16 +118,13 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
                 }
             })
 
-            Toast.makeText(context, "TTS ready (Chinese: $isChineseAvailable)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "TTS ready", Toast.LENGTH_SHORT).show()
 
             pendingSpeak?.let { text ->
                 Log.d("TTSManager", "Speaking pending text: $text")
                 speakNow(text)
                 pendingSpeak = null
             }
-        } else {
-            Log.e("TTSManager", "TTS initialization failed with status: $status")
-            Toast.makeText(context, "TTS init failed", Toast.LENGTH_SHORT).show()
         }
     }
 
