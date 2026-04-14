@@ -71,7 +71,7 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
             val availableEngines = engine.getEngines()
             Log.d("TTSManager", "Available TTS engines: ${availableEngines.size}")
             availableEngines.forEach { info ->
-                Log.d("TTSManager", "  Engine: ${info.name}, package: ${info.packageName}")
+                Log.d("TTSManager", "  Engine: ${info.name}")
             }
 
             val chineseResult = engine.isLanguageAvailable(Locale.CHINESE)
