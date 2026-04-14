@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         logCallback = callback
     }
 
-    private fun appendLog(message: String) {
+    fun appendLog(message: String) {
         runOnUiThread {
             logCallback?.invoke(message)
             Log.d("MainActivity", message)
@@ -247,20 +247,33 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     @Throws(Exception::class)
     override fun messageArrived(topic: String, message: MqttMessage) {
         val payload = String(message.payload)
-        Log.d("MainActivity", "Message arrived: [$topic] $payload")
-        Log.d("MainActivity", "isTTSEnabled=$isTTSEnabled, isFloatWindowEnabled=$isFloatWindowEnabled")
+        Log.d("MainActivity", "===== MESSAGE ARRIVED =====")
+        Log.d("MainActivity", "Topic: $topic")
+        Log.d("MainActivity", "Payload: $payload")
+        Log.d("MainActivity", "isTTSEnabled: $isTTSEnabled")
+        Log.d("MainActivity", "isFloatWindowEnabled: $isFloatWindowEnabled")
 
         runOnUiThread {
+            appendLog("===== MESSAGE RECEIVED =====")
+            appendLog("Topic: $topic")
+            appendLog("Payload: $payload")
+
             (mFragmentList[3] as? MessageFragment)?.updateMessage(Message(topic, message))
 
             if (isFloatWindowEnabled) {
                 Log.d("MainActivity", "Showing float window for message")
+                appendLog("Showing float window...")
                 floatWindowManager?.showMessage(topic, payload)
+            } else {
+                appendLog("Float window is disabled, skipping")
             }
 
             if (isTTSEnabled) {
                 Log.d("MainActivity", "Speaking message with TTS")
+                appendLog("Speaking TTS...")
                 ttsManager?.speak(payload)
+            } else {
+                appendLog("TTS is disabled, skipping")
             }
         }
     }

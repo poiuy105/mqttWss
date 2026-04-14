@@ -1,5 +1,6 @@
 package io.emqx.mqtt
 
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -13,8 +14,15 @@ class SubscriptionFragment : BaseFragment() {
     private var mRadioGroup: RadioGroup? = null
     private var mAdapter: SubscriptionRecyclerViewAdapter? = null
     private val mSubscriptionList: ArrayList<Subscription> = ArrayList()
+
     override val layoutResId: Int
         get() = R.layout.fragment_subscription_list
+
+    private fun appendLog(message: String) {
+        (fragmentActivity as? MainActivity)?.let { main ->
+            main.appendLog("[Subscribe] $message")
+        }
+    }
 
     override fun setUpView(view: View) {
         val recyclerView = view.findViewById<RecyclerView>(R.id.subscription_list)
@@ -30,17 +38,26 @@ class SubscriptionFragment : BaseFragment() {
         mRadioGroup = view.findViewById(R.id.qos)
         val subBtn = view.findViewById<Button>(R.id.subscribe)
         subBtn.setOnClickListener {
+            val topic = mTopic?.text.toString() ?: ""
+            if (topic.isEmpty()) {
+                Toast.makeText(fragmentActivity, "Please enter topic", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val subscription = subscription
+            appendLog("Subscribing to: $topic with QoS ${subscription.qos}")
             (fragmentActivity as MainActivity).subscribe(
                 subscription,
                 object : IMqttActionListener {
                     override fun onSuccess(asyncActionToken: IMqttToken) {
+                        appendLog("Subscribe SUCCESS: $topic")
                         mSubscriptionList.add(0, subscription)
-                        mAdapter!!.notifyItemInserted(0)
+                        mAdapter?.notifyItemInserted(0)
+                        Toast.makeText(fragmentActivity, "Subscribed: $topic", Toast.LENGTH_SHORT).show()
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
-                        Toast.makeText(fragmentActivity, "Failed to subscribe", Toast.LENGTH_SHORT)
+                        appendLog("Subscribe FAILED: $exception")
+                        Toast.makeText(fragmentActivity, "Failed to subscribe: $exception", Toast.LENGTH_SHORT)
                             .show()
                     }
                 })
@@ -49,9 +66,9 @@ class SubscriptionFragment : BaseFragment() {
 
     private val subscription: Subscription
         get() {
-            val topic = mTopic!!.text.toString()
+            val topic = mTopic?.text.toString() ?: ""
             var qos = 0
-            when (mRadioGroup!!.checkedRadioButtonId) {
+            when (mRadioGroup?.checkedRadioButtonId) {
                 R.id.qos0 -> qos = 0
                 R.id.qos1 -> qos = 1
                 R.id.qos2 -> qos = 2
