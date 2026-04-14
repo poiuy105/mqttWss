@@ -57,12 +57,12 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
                 } else {
                     Log.e("TTSManager", "TTS retry also failed, giving up")
                     isInitialized = false
-                    Toast.makeText(context, "TTS engine not available", Toast.LENGTH_SHORT).show()
+                    Log.d("TTSManager", "TTS not available, continuing without TTS")
                 }
             }
         } catch (e: Exception) {
             Log.e("TTSManager", "Exception during TTS retry: ${e.message}")
-            Toast.makeText(context, "TTS engine error: ${e.message}", Toast.LENGTH_SHORT).show()
+            isInitialized = false
         }
     }
 
