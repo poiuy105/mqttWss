@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        ttsManager = TTSManager.getInstance(this)
+        ttsManager = TTSManager(this)
         floatWindowManager = FloatWindowManager.getInstance(this)
 
         mFragmentList.add(ConnectionFragment.newInstance())

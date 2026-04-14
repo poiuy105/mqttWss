@@ -3,163 +3,85 @@ package io.emqx.mqtt
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
-import android.widget.Toast
 import java.util.Locale
-import java.util.UUID
 
-class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
+class TTSManager(private val context: Context) {
+
     private var tts: TextToSpeech? = null
     private var isInitialized = false
-    private var isChineseAvailable = false
-    private var pendingSpeak: String? = null
-    private var onCompleteListener: (() -> Unit)? = null
 
-    companion object {
-        @Volatile
-        private var instance: TTSManager? = null
+    interface TTSListener {
+        fun onSpeakStart() {}
+        fun onSpeakDone() {}
+        fun onSpeakError() {}
+    }
 
-        fun getInstance(context: Context): TTSManager {
-            return instance ?: synchronized(this) {
-                instance ?: TTSManager(context.applicationContext).also { instance = it }
-            }
-        }
+    private var ttsListener: TTSListener? = null
+
+    fun setTTSListener(listener: TTSListener?) {
+        this.ttsListener = listener
     }
 
     init {
-        Log.d("TTSManager", "Initializing TTS...")
-        try {
-            tts = TextToSpeech(context, this)
-        } catch (e: Exception) {
-            Log.e("TTSManager", "Exception during TTS creation: ${e.message}")
-        }
+        initTTS()
     }
 
-    override fun onInit(status: Int) {
-        Log.d("TTSManager", "onInit called with status: $status")
-        if (status == TextToSpeech.SUCCESS) {
-            setupTtsEngine()
-        } else {
-            Log.e("TTSManager", "TTS initialization failed with status: $status")
-            retryInitWithDefaultEngine()
+    private fun initTTS() {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                isInitialized = true
+                val result = tts?.setLanguage(Locale.CHINA)
+                if (result == TextToSpeech.LANG_MISSING_DATA ||
+                    result == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    val fallbackResult = tts?.setLanguage(Locale.US)
+                    if (fallbackResult == TextToSpeech.LANG_MISSING_DATA ||
+                        fallbackResult == TextToSpeech.LANG_NOT_SUPPORTED
+                    ) {
+                        isInitialized = false
+                    }
+                }
+            }
         }
+
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                ttsListener?.onSpeakStart()
+            }
+
+            override fun onDone(utteranceId: String?) {
+                ttsListener?.onSpeakDone()
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                ttsListener?.onSpeakError()
+            }
+
+            override fun onError(utteranceId: String?, errorCode: Int) {
+                ttsListener?.onSpeakError()
+            }
+        })
     }
 
-    private fun retryInitWithDefaultEngine() {
-        Log.d("TTSManager", "Retrying TTS init with default engine...")
-        tts?.shutdown()
-        tts = null
-        try {
-            tts = TextToSpeech(context) { status ->
-                Log.d("TTSManager", "Retry onInit called with status: $status")
-                if (status == TextToSpeech.SUCCESS) {
-                    setupTtsEngine()
-                } else {
-                    Log.e("TTSManager", "TTS retry also failed, giving up")
-                    isInitialized = false
-                    Log.d("TTSManager", "TTS not available, continuing without TTS")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("TTSManager", "Exception during TTS retry: ${e.message}")
-            isInitialized = false
-        }
+    fun speak(text: String) {
+        if (!isInitialized) return
+        tts?.speak(
+            text,
+            TextToSpeech.QUEUE_FLUSH,
+            null,
+            "utteranceId"
+        )
     }
 
-    private fun setupTtsEngine() {
-        tts?.let { engine ->
-            val availableEngines = engine.getEngines()
-            Log.d("TTSManager", "Available TTS engines: ${availableEngines.size}")
-            availableEngines.forEach { info ->
-                Log.d("TTSManager", "  Engine: ${info.name}")
-            }
-
-            val chineseResult = engine.isLanguageAvailable(Locale.CHINESE)
-            Log.d("TTSManager", "Chinese language availability: $chineseResult")
-
-            if (chineseResult != null && chineseResult > TextToSpeech.LANG_MISSING_DATA) {
-                val setLangResult = engine.setLanguage(Locale.CHINESE)
-                Log.d("TTSManager", "setLanguage(CHINESE) result: $setLangResult")
-                if (setLangResult == TextToSpeech.LANG_AVAILABLE || setLangResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-                    isChineseAvailable = true
-                    Log.d("TTSManager", "Chinese TTS is available")
-                }
-            }
-
-            if (!isChineseAvailable) {
-                Log.d("TTSManager", "Chinese not available, trying default locale: ${Locale.getDefault()}")
-                val defaultResult = engine.setLanguage(Locale.getDefault())
-                Log.d("TTSManager", "setLanguage(default) result: $defaultResult")
-                if (defaultResult == TextToSpeech.LANG_AVAILABLE || defaultResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-                    isChineseAvailable = false
-                    Log.d("TTSManager", "Using default locale for TTS")
-                } else {
-                    Log.d("TTSManager", "Default locale not available, trying US English")
-                    val usResult = engine.setLanguage(Locale.US)
-                    Log.d("TTSManager", "setLanguage(US) result: $usResult")
-                }
-            }
-
-            isInitialized = true
-            Log.d("TTSManager", "TTS initialized successfully, isInitialized=true")
-
-            engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {
-                    Log.d("TTSManager", "onStart: $utteranceId")
-                }
-
-                override fun onDone(utteranceId: String?) {
-                    Log.d("TTSManager", "onDone: $utteranceId")
-                    onCompleteListener?.invoke()
-                }
-
-                override fun onError(utteranceId: String?) {
-                    Log.e("TTSManager", "onError: $utteranceId")
-                }
-            })
-
-            Toast.makeText(context, "TTS ready", Toast.LENGTH_SHORT).show()
-
-            pendingSpeak?.let { text ->
-                Log.d("TTSManager", "Speaking pending text: $text")
-                speakNow(text)
-                pendingSpeak = null
-            }
-        }
-    }
-
-    fun speak(text: String, onComplete: (() -> Unit)? = null) {
-        Log.d("TTSManager", "speak() called with text: $text")
-        Log.d("TTSManager", "isInitialized: $isInitialized")
-
-        if (!isInitialized) {
-            Log.d("TTSManager", "TTS not initialized yet, queuing text")
-            pendingSpeak = text
-            onCompleteListener = onComplete
-            return
-        }
-
-        onCompleteListener = onComplete
-        speakNow(text)
-    }
-
-    private fun speakNow(text: String) {
-        val utteranceId = UUID.randomUUID().toString()
-
-        if (isChineseAvailable) {
-            tts?.setLanguage(Locale.CHINESE)
-        } else {
-            tts?.setLanguage(Locale.getDefault())
-        }
-
-        Log.d("TTSManager", "Calling tts.speak() with utteranceId: $utteranceId")
-        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-        Log.d("TTSManager", "speak() returned: $result")
-
-        if (result == TextToSpeech.ERROR) {
-            Log.e("TTSManager", "speak() returned ERROR")
-            Toast.makeText(context, "TTS speak failed", Toast.LENGTH_SHORT).show()
-        }
+    fun speakAdd(text: String) {
+        if (!isInitialized) return
+        tts?.speak(
+            text,
+            TextToSpeech.QUEUE_ADD,
+            null,
+            "utteranceId"
+        )
     }
 
     fun stop() {
@@ -167,20 +89,23 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
     }
 
     fun setSpeechRate(rate: Float) {
-        tts?.setSpeechRate(rate.coerceIn(0.5f, 2.0f))
+        tts?.setSpeechRate(rate)
     }
 
     fun setPitch(pitch: Float) {
-        tts?.setPitch(pitch.coerceIn(0.5f, 2.0f))
+        tts?.setPitch(pitch)
     }
 
-    fun isReady(): Boolean = isInitialized
+    fun isSpeaking(): Boolean {
+        return tts?.isSpeaking == true
+    }
 
-    fun shutdown() {
+    fun release() {
         tts?.stop()
         tts?.shutdown()
         tts = null
         isInitialized = false
-        pendingSpeak = null
     }
+
+    fun isReady(): Boolean = isInitialized
 }
