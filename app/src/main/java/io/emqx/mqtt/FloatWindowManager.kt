@@ -12,7 +12,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -27,7 +26,7 @@ class FloatWindowManager(private val context: Context) {
     companion object {
         @Volatile
         private var instance: FloatWindowManager? = null
-        private const val AUTO_CLOSE_DELAY = 8000L
+        private const val AUTO_CLOSE_DELAY = 5000L
 
         fun getInstance(context: Context): FloatWindowManager {
             return instance ?: synchronized(this) {
@@ -90,7 +89,7 @@ class FloatWindowManager(private val context: Context) {
                 y = 100
             }
 
-            floatView = createFloatView(topic, payload, onClick, onClose)
+            floatView = createFloatView(topic, payload, onClick)
             windowManager?.addView(floatView, layoutParams)
             isShowing = true
             Log.d("FloatWindow", "Float view added successfully, width=$windowWidth")
@@ -111,7 +110,7 @@ class FloatWindowManager(private val context: Context) {
         }
     }
 
-    private fun createFloatView(topic: String, payload: String, onClick: (() -> Unit)?, onClose: (() -> Unit)?): View {
+    private fun createFloatView(topic: String, payload: String, onClick: (() -> Unit)?): View {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(0xDD2D2D3D.toInt())
@@ -133,27 +132,8 @@ class FloatWindowManager(private val context: Context) {
             maxLines = 10
         }
 
-        val closeBtn = Button(context).apply {
-            text = "X"
-            textSize = 12f
-            setBackgroundColor(0x66FF4444.toInt())
-            setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = android.view.Gravity.END
-                topMargin = 8
-            }
-            setOnClickListener {
-                onClose?.invoke()
-                hide()
-            }
-        }
-
         container.addView(topicView)
         container.addView(payloadView)
-        container.addView(closeBtn)
 
         if (onClick != null) {
             container.setOnClickListener {

@@ -12,6 +12,7 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
     private var isInitialized = false
     private var isChineseAvailable = false
+    private var pendingSpeak: String? = null
     private var onCompleteListener: (() -> Unit)? = null
 
     companion object {
@@ -69,9 +70,16 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
                 }
             })
 
-            Toast.makeText(context, "TTS initialized, Chinese available: $isChineseAvailable", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "TTS ready (Chinese: $isChineseAvailable)", Toast.LENGTH_SHORT).show()
+
+            pendingSpeak?.let { text ->
+                Log.d("TTSManager", "Speaking pending text: $text")
+                speakNow(text)
+                pendingSpeak = null
+            }
         } else {
             Log.e("TTSManager", "TTS initialization failed with status: $status")
+            Toast.makeText(context, "TTS init failed", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -80,13 +88,17 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
         Log.d("TTSManager", "isInitialized: $isInitialized")
 
         if (!isInitialized) {
-            Log.e("TTSManager", "TTS not initialized, skipping speak")
-            Toast.makeText(context, "TTS not ready yet", Toast.LENGTH_SHORT).show()
-            onComplete?.invoke()
+            Log.d("TTSManager", "TTS not initialized yet, queuing text")
+            pendingSpeak = text
+            onCompleteListener = onComplete
             return
         }
 
         onCompleteListener = onComplete
+        speakNow(text)
+    }
+
+    private fun speakNow(text: String) {
         val utteranceId = UUID.randomUUID().toString()
 
         if (isChineseAvailable) {
@@ -124,5 +136,6 @@ class TTSManager(private val context: Context) : TextToSpeech.OnInitListener {
         tts?.shutdown()
         tts = null
         isInitialized = false
+        pendingSpeak = null
     }
 }
