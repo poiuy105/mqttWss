@@ -53,6 +53,7 @@ class SubscriptionFragment : BaseFragment() {
                         mSubscriptionList.add(0, subscription)
                         mAdapter?.notifyItemInserted(0)
                         Toast.makeText(fragmentActivity, "Subscribed: $topic", Toast.LENGTH_SHORT).show()
+                        (fragmentActivity as? MainActivity)?.speakText("已订阅: $topic")
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
