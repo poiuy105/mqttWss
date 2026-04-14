@@ -27,7 +27,7 @@ class FloatWindowManager(private val context: Context) {
     companion object {
         @Volatile
         private var instance: FloatWindowManager? = null
-        private const val AUTO_CLOSE_DELAY = 5000L
+        private const val AUTO_CLOSE_DELAY = 8000L
 
         fun getInstance(context: Context): FloatWindowManager {
             return instance ?: synchronized(this) {
@@ -52,8 +52,8 @@ class FloatWindowManager(private val context: Context) {
         }
     }
 
-    fun showMessage(title: String, message: String, onClick: (() -> Unit)? = null, onClose: (() -> Unit)? = null) {
-        Log.d("FloatWindow", "showMessage called: title=$title, message=$message")
+    fun showMessage(topic: String, payload: String, onClick: (() -> Unit)? = null, onClose: (() -> Unit)? = null) {
+        Log.d("FloatWindow", "showMessage called: topic=$topic, payload=$payload")
         Log.d("FloatWindow", "canDrawOverlays: ${canDrawOverlays()}")
 
         if (!canDrawOverlays()) {
@@ -70,6 +70,10 @@ class FloatWindowManager(private val context: Context) {
 
             windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val windowWidth = screenWidth / 3
+
             val layoutParams = WindowManager.LayoutParams().apply {
                 type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -78,19 +82,18 @@ class FloatWindowManager(private val context: Context) {
                     WindowManager.LayoutParams.TYPE_PHONE
                 }
                 format = PixelFormat.TRANSLUCENT
-                flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                width = WindowManager.LayoutParams.WRAP_CONTENT
+                flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                width = windowWidth
                 height = WindowManager.LayoutParams.WRAP_CONTENT
                 gravity = Gravity.TOP or Gravity.END
                 x = 20
                 y = 100
             }
 
-            floatView = createFloatView(title, message, onClick, onClose)
+            floatView = createFloatView(topic, payload, onClick, onClose)
             windowManager?.addView(floatView, layoutParams)
             isShowing = true
-            Log.d("FloatWindow", "Float view added successfully")
+            Log.d("FloatWindow", "Float view added successfully, width=$windowWidth")
 
             floatView?.let { view ->
                 val touchListener = FloatTouchListener(layoutParams, view)
@@ -108,39 +111,48 @@ class FloatWindowManager(private val context: Context) {
         }
     }
 
-    private fun createFloatView(title: String, message: String, onClick: (() -> Unit)?, onClose: (() -> Unit)?): View {
+    private fun createFloatView(topic: String, payload: String, onClick: (() -> Unit)?, onClose: (() -> Unit)?): View {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xDD1A1A2E.toInt())
-            setPadding(30, 20, 30, 20)
+            setBackgroundColor(0xDD2D2D3D.toInt())
+            setPadding(16, 12, 16, 12)
             elevation = 8f
         }
 
-        val titleView = TextView(context).apply {
-            text = title
-            setTextColor(0xFFFFFFFF.toInt())
-            textSize = 18f
+        val topicView = TextView(context).apply {
+            text = topic
+            setTextColor(0xFF00BCD4.toInt())
+            textSize = 14f
+            maxLines = 1
         }
 
-        val messageView = TextView(context).apply {
-            text = message
-            setTextColor(0xCCCCCC.toInt())
-            textSize = 14f
-            maxLines = 3
+        val payloadView = TextView(context).apply {
+            text = payload
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 16f
+            maxLines = 10
         }
 
         val closeBtn = Button(context).apply {
             text = "X"
+            textSize = 12f
             setBackgroundColor(0x66FF4444.toInt())
             setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = android.view.Gravity.END
+                topMargin = 8
+            }
             setOnClickListener {
                 onClose?.invoke()
                 hide()
             }
         }
 
-        container.addView(titleView)
-        container.addView(messageView)
+        container.addView(topicView)
+        container.addView(payloadView)
         container.addView(closeBtn)
 
         if (onClick != null) {
