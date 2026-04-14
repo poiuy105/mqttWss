@@ -107,6 +107,26 @@
         android:text="@string/publish"
         android:textAllCaps="false" />
 
+    <Button
+        android:id="@+id/test_tts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:text="测试TTS"
+        android:textAllCaps="false" />
+
+    <TextView
+        android:id="@+id/tts_log"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="#EEEEEE"
+        android:padding="8dp"
+        android:text="TTS日志:"
+        android:textColor="#333333"
+        android:textSize="12sp" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
