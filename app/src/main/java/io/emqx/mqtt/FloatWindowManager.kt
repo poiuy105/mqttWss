@@ -9,24 +9,22 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 
 class FloatWindowManager(private val context: Context) {
     private var windowManager: WindowManager? = null
     private var floatView: View? = null
-    private var isShowing = false
-    private val handler = Handler(Looper.getMainLooper())
+    private var payloadTextView: TextView? = null
     private var autoCloseRunnable: Runnable? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     companion object {
         @Volatile
         private var instance: FloatWindowManager? = null
-        private const val AUTO_CLOSE_DELAY = 5000L
+        private const val AUTO_DISMISS_DELAY = 3000L
 
         fun getInstance(context: Context): FloatWindowManager {
             return instance ?: synchronized(this) {
@@ -51,66 +49,53 @@ class FloatWindowManager(private val context: Context) {
         }
     }
 
-    fun showMessage(topic: String, payload: String, onClick: (() -> Unit)? = null, onClose: (() -> Unit)? = null) {
-        Log.d("FloatWindow", "showMessage called: topic=$topic, payload=$payload")
-        Log.d("FloatWindow", "canDrawOverlays: ${canDrawOverlays()}")
-
+    fun showMessage(topic: String, payload: String) {
         if (!canDrawOverlays()) {
-            Log.e("FloatWindow", "No overlay permission!")
-            Toast.makeText(context, "Please grant overlay permission for float window", Toast.LENGTH_LONG).show()
-            requestOverlayPermission()
             return
         }
 
         try {
-            if (floatView != null) {
-                hide()
+            if (floatView == null) {
+                createFloatWindow(topic, payload)
+            } else {
+                updatePayload(payload)
             }
-
-            windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
-            val displayMetrics = context.resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val windowWidth = screenWidth / 3
-
-            val layoutParams = WindowManager.LayoutParams().apply {
-                type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                } else {
-                    @Suppress("DEPRECATION")
-                    WindowManager.LayoutParams.TYPE_PHONE
-                }
-                format = PixelFormat.TRANSLUCENT
-                flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                width = windowWidth
-                height = WindowManager.LayoutParams.WRAP_CONTENT
-                gravity = Gravity.TOP or Gravity.END
-                x = 20
-                y = 100
-            }
-
-            floatView = createFloatView(topic, payload, onClick)
-            windowManager?.addView(floatView, layoutParams)
-            isShowing = true
-            Log.d("FloatWindow", "Float view added successfully, width=$windowWidth")
-
-            floatView?.let { view ->
-                val touchListener = FloatTouchListener(layoutParams, view)
-                view.setOnTouchListener(touchListener)
-
-                view.alpha = 0f
-                view.animate().alpha(1f).setDuration(300).start()
-            }
-
-            scheduleAutoClose(onClose)
+            resetAutoDismiss()
         } catch (e: Exception) {
-            Log.e("FloatWindow", "Error showing float window: ${e.message}")
-            e.printStackTrace()
-            Toast.makeText(context, "Float window error: ${e.message}", Toast.LENGTH_SHORT).show()
+            Log.e("FloatWindow", "Error: ${e.message}")
         }
     }
 
-    private fun createFloatView(topic: String, payload: String, onClick: (() -> Unit)?): View {
+    private fun createFloatWindow(topic: String, payload: String) {
+        windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val windowWidth = screenWidth / 3
+
+        val layoutParams = WindowManager.LayoutParams().apply {
+            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+            format = PixelFormat.TRANSLUCENT
+            flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            width = windowWidth
+            height = WindowManager.LayoutParams.WRAP_CONTENT
+            gravity = Gravity.TOP or Gravity.END
+            x = 20
+            y = 100
+        }
+
+        floatView = createFloatView(topic, payload)
+        windowManager?.addView(floatView, layoutParams)
+        Log.d("FloatWindow", "Float window created")
+    }
+
+    private fun createFloatView(topic: String, payload: String): View {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(0xDD2D2D3D.toInt())
@@ -125,79 +110,41 @@ class FloatWindowManager(private val context: Context) {
             maxLines = 1
         }
 
-        val payloadView = TextView(context).apply {
+        payloadTextView = TextView(context).apply {
             text = payload
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 16f
-            maxLines = 10
+            maxLines = 3
         }
 
         container.addView(topicView)
-        container.addView(payloadView)
-
-        if (onClick != null) {
-            container.setOnClickListener {
-                onClick()
-                hide()
-            }
-        }
+        container.addView(payloadTextView)
 
         return container
     }
 
-    private fun scheduleAutoClose(onClose: (() -> Unit)?) {
+    private fun updatePayload(payload: String) {
+        payloadTextView?.text = payload
+    }
+
+    private fun resetAutoDismiss() {
         autoCloseRunnable?.let { handler.removeCallbacks(it) }
-        autoCloseRunnable = Runnable {
-            onClose?.invoke()
-            hide()
-        }
-        handler.postDelayed(autoCloseRunnable!!, AUTO_CLOSE_DELAY)
+        autoCloseRunnable = Runnable { hide() }
+        handler.postDelayed(autoCloseRunnable!!, AUTO_DISMISS_DELAY)
     }
 
     fun hide() {
         autoCloseRunnable?.let { handler.removeCallbacks(it) }
-
         floatView?.let { view ->
-            view.animate().alpha(0f).setDuration(200).withEndAction {
-                try {
-                    windowManager?.removeView(view)
-                } catch (e: Exception) {
-                    Log.e("FloatWindow", "Error removing view: ${e.message}")
-                }
-                floatView = null
-                isShowing = false
-            }.start()
-        }
-    }
-
-    fun isShowing(): Boolean = isShowing
-
-    private inner class FloatTouchListener(
-        private val layoutParams: WindowManager.LayoutParams,
-        private val view: View
-    ) : View.OnTouchListener {
-        private var initialX = 0
-        private var initialY = 0
-        private var initialTouchX = 0f
-        private var initialTouchY = 0f
-
-        override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-            when (event?.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = layoutParams.x
-                    initialY = layoutParams.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
-                    layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager?.updateViewLayout(view, layoutParams)
-                    return true
-                }
+            try {
+                windowManager?.removeView(view)
+            } catch (e: Exception) {
+                Log.e("FloatWindow", "Error removing: ${e.message}")
             }
-            return false
+            floatView = null
+            payloadTextView = null
         }
     }
+
+    fun isShowing(): Boolean = floatView != null
 }

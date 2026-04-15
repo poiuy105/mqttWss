@@ -121,11 +121,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private fun setupAccessibilityService() {
         CapturedTextManager.addListener { text, packageName ->
             Log.d("MainActivity", "Text captured from $packageName: $text")
-            if (isAutoCaptureVoiceEnabled) {
-                runOnUiThread {
-                    showFloatMessage("Text Captured from $packageName", text)
-                }
-            }
         }
     }
 

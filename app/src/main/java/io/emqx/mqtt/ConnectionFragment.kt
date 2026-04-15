@@ -148,6 +148,7 @@ class ConnectionFragment : BaseFragment() {
             }
         }
         mVoiceSwitch.setOnCheckedChangeListener { _, isChecked ->
+            CapturedTextManager.isEnabled = isChecked
             (activity as? MainActivity)?.let { main ->
                 main.isAutoCaptureVoiceEnabled = isChecked
                 appendLog("Auto Capture Voice ${if (isChecked) "enabled" else "disabled"}")

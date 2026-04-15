@@ -5,6 +5,7 @@ import android.util.Log
 object CapturedTextManager {
     private val listeners = mutableListOf<(String, String) -> Unit>()
     private val capturedTexts = ArrayList<CapturedText>()
+    var isEnabled = false
 
     fun addListener(listener: (String, String) -> Unit) {
         listeners.add(listener)
@@ -16,6 +17,7 @@ object CapturedTextManager {
     }
 
     fun onTextCaptured(text: String, packageName: String) {
+        if (!isEnabled) return
         Log.d("CapturedTextManager", "Text captured: $packageName -> $text")
         val captured = CapturedText(text, packageName, System.currentTimeMillis())
         capturedTexts.add(0, captured)
