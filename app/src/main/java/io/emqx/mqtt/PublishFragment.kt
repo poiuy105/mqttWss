@@ -48,23 +48,23 @@ class PublishFragment : BaseFragment() {
         mTtsLog = view.findViewById(R.id.tts_log)
 
         view.findViewById<Button>(R.id.test_tts).setOnClickListener {
-            appendTtsLog("=== 测试TTS(默认) ===")
+            appendTtsLog("=== 测试TTS ===")
             testTtsBasic()
         }
 
         view.findViewById<Button>(R.id.test_tts_china).setOnClickListener {
             appendTtsLog("=== 测试中文TTS ===")
-            testTtsChina()
+            testTtsChinese()
         }
 
         view.findViewById<Button>(R.id.test_tts_us).setOnClickListener {
             appendTtsLog("=== 测试英文TTS ===")
-            testTtsUS()
+            testTtsEnglish()
         }
 
         view.findViewById<Button>(R.id.test_tts_uk).setOnClickListener {
-            appendTtsLog("=== 测试UK英文TTS ===")
-            testTtsUK()
+            appendTtsLog("=== 测试英文UK TTS ===")
+            testTtsEnglishUK()
         }
 
         view.findViewById<Button>(R.id.test_tts_slow).setOnClickListener {
@@ -101,91 +101,93 @@ class PublishFragment : BaseFragment() {
         }
     }
 
-    private fun getTtsInfo(): Pair<MainActivity?, TTSManager?> {
-        val mainActivity = fragmentActivity as? MainActivity
-        return Pair(mainActivity, mainActivity?.ttsManager)
+    private fun getTtsManager(): TTSManager? {
+        return (fragmentActivity as? MainActivity)?.ttsManager
     }
 
     private fun testTtsBasic() {
-        val (main, tts) = getTtsInfo()
-        appendTtsLog("MainActivity: ${if (main != null) "OK" else "NULL"}")
+        val tts = getTtsManager()
         appendTtsLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
         appendTtsLog("initStatus: ${tts?.getInitStatus()}")
         appendTtsLog("isReady: ${tts?.isReady()}")
-        appendTtsLog("isSpeaking: ${tts?.isSpeaking()}")
-        appendTtsLog("engine: ${tts?.getEngineInfo()}")
 
         if (tts?.isReady() == true) {
             appendTtsLog("调用speak(TTS准备就绪)")
             tts.speak("TTS准备就绪")
+            appendTtsLog("speak()调用完成")
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
-    private fun testTtsChina() {
-        val (_, tts) = getTtsInfo()
+    private fun testTtsChinese() {
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakWithChinaLocale(中文测试)")
-            tts.speakWithChinaLocale("中文测试")
+            appendTtsLog("调用speakChinese(中文测试)")
+            tts.speakChinese("中文测试")
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
-    private fun testTtsUS() {
-        val (_, tts) = getTtsInfo()
+    private fun testTtsEnglish() {
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakWithUSLocale(Hello world)")
-            tts.speakWithUSLocale("Hello world")
+            appendTtsLog("调用speakEnglish(Hello world)")
+            tts.speakEnglish("Hello world")
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
-    private fun testTtsUK() {
-        val (_, tts) = getTtsInfo()
+    private fun testTtsEnglishUK() {
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakWithUKLocale(Hello from UK)")
-            tts.speakWithUKLocale("Hello from UK")
+            appendTtsLog("调用setLanguage(UK) + speak(Hello from UK)")
+            tts.setLanguage(java.util.Locale.UK)
+            tts.speak("Hello from UK")
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
     private fun testTtsSlow() {
-        val (_, tts) = getTtsInfo()
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakWithSlowRate(慢速朗读)")
-            tts.speakWithSlowRate("慢速朗读")
+            appendTtsLog("设置语速0.5 + speak(慢速朗读)")
+            tts.setSpeechRate(0.5f)
+            tts.speak("慢速朗读")
+            tts.setSpeechRate(1.0f)
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
     private fun testTtsFast() {
-        val (_, tts) = getTtsInfo()
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakWithFastRate(快速朗读)")
-            tts.speakWithFastRate("快速朗读")
+            appendTtsLog("设置语速2.0 + speak(快速朗读)")
+            tts.setSpeechRate(2.0f)
+            tts.speak("快速朗读")
+            tts.setSpeechRate(1.0f)
         } else {
             appendTtsLog("TTS未就绪!")
         }
     }
 
     private fun testTtsAdd() {
-        val (_, tts) = getTtsInfo()
+        val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("调用speakAdd(排队第一句)")
-            tts.speakAdd("排队第一句")
-            appendTtsLog("调用speakAdd(排队第二句)")
-            tts.speakAdd("排队第二句")
+            appendTtsLog("调用speakAdd(第一句)")
+            tts.speakAdd("第一句")
+            appendTtsLog("调用speakAdd(第二句)")
+            tts.speakAdd("第二句")
         } else {
             appendTtsLog("TTS未就绪!")
         }
