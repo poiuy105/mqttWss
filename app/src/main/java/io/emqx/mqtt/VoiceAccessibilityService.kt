@@ -7,14 +7,14 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 class VoiceAccessibilityService : AccessibilityService() {
-    private var onTextCapturedListener: ((String) -> Unit)? = null
+    private var onTextCapturedListener: ((String, String) -> Unit)? = null
 
     companion object {
         private var instance: VoiceAccessibilityService? = null
 
         fun getInstance(): VoiceAccessibilityService? = instance
 
-        fun setOnTextCapturedListener(listener: ((String) -> Unit)?) {
+        fun setOnTextCapturedListener(listener: ((String, String) -> Unit)?) {
             instance?.onTextCapturedListener = listener
         }
     }
@@ -47,9 +47,10 @@ class VoiceAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
 
+        val packageName = event.packageName?.toString() ?: return
         val text = extractVoiceText(event)
         if (text.isNotEmpty() && text.length > 2) {
-            onTextCapturedListener?.invoke(text)
+            onTextCapturedListener?.invoke(text, packageName)
         }
     }
 
@@ -107,9 +108,10 @@ class VoiceAccessibilityService : AccessibilityService() {
     fun captureCurrentScreen() {
         val rootNode = rootInActiveWindow
         if (rootNode != null) {
+            val packageName = rootNode.packageName?.toString() ?: "unknown"
             val text = extractTextFromNode(rootNode)
             if (text.isNotEmpty()) {
-                onTextCapturedListener?.invoke(text)
+                onTextCapturedListener?.invoke(text, packageName)
             }
             rootNode.recycle()
         }
