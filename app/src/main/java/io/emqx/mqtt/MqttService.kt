@@ -18,8 +18,10 @@ class MqttService : Service() {
         const val ACTION_START = "io.emqx.mqtt.START_SERVICE"
         const val ACTION_STOP = "io.emqx.mqtt.STOP_SERVICE"
         const val ACTION_UPDATE_STATUS = "io.emqx.mqtt.UPDATE_STATUS"
+        const val ACTION_UPDATE_CONNECTION = "io.emqx.mqtt.UPDATE_CONNECTION"
 
         private var instance: MqttService? = null
+        private var isConnected = false
 
         fun startService(context: Context) {
             val intent = Intent(context, MqttService::class.java).apply {
@@ -51,6 +53,15 @@ class MqttService : Service() {
         fun isPersistentNotificationEnabled(context: Context): Boolean {
             return ConfigManager.getInstance(context).persistentNotification
         }
+
+        fun updateConnectionStatus(context: Context, connected: Boolean) {
+            isConnected = connected
+            val intent = Intent(context, MqttService::class.java).apply {
+                action = ACTION_UPDATE_CONNECTION
+                putExtra("connected", connected)
+            }
+            context.startService(intent)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -67,12 +78,24 @@ class MqttService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 instance = null
+                isConnected = false
             }
             ACTION_UPDATE_STATUS -> {
                 if (isPersistentNotificationEnabled(this)) {
                     val title = intent.getStringExtra("title") ?: "MQTT"
                     val message = intent.getStringExtra("message") ?: ""
                     updateNotification(title, message)
+                }
+            }
+            ACTION_UPDATE_CONNECTION -> {
+                val connected = intent.getBooleanExtra("connected", false)
+                isConnected = connected
+                if (isPersistentNotificationEnabled(this)) {
+                    if (connected) {
+                        updateNotification("MQTT 已连接", "MQTT client is running")
+                    } else {
+                        updateNotification("MQTT 未连接", "MQTT client disconnected")
+                    }
                 }
             }
             else -> {

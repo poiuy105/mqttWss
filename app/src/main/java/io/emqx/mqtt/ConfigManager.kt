@@ -23,6 +23,11 @@ class ConfigManager(context: Context) {
         private const val KEY_AUTO_RECONNECT = "auto_reconnect"
         private const val KEY_AUTO_START = "auto_start"
         private const val KEY_PERSISTENT_NOTIFICATION = "persistent_notification"
+        private const val KEY_SUBSCRIPTIONS = "subscriptions"
+        private const val KEY_PUBLISH_TOPIC = "publish_topic"
+        private const val KEY_PUBLISH_PAYLOAD = "publish_payload"
+        private const val KEY_PUBLISH_QOS = "publish_qos"
+        private const val KEY_PUBLISH_RETAINED = "publish_retained"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -81,6 +86,26 @@ class ConfigManager(context: Context) {
     var persistentNotification: Boolean
         get() = prefs.getBoolean(KEY_PERSISTENT_NOTIFICATION, true)
         set(value) = prefs.edit().putBoolean(KEY_PERSISTENT_NOTIFICATION, value).apply()
+
+    var subscriptions: String
+        get() = prefs.getString(KEY_SUBSCRIPTIONS, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_SUBSCRIPTIONS, value).apply()
+
+    var publishTopic: String
+        get() = prefs.getString(KEY_PUBLISH_TOPIC, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_PUBLISH_TOPIC, value).apply()
+
+    var publishPayload: String
+        get() = prefs.getString(KEY_PUBLISH_PAYLOAD, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_PUBLISH_PAYLOAD, value).apply()
+
+    var publishQos: Int
+        get() = prefs.getInt(KEY_PUBLISH_QOS, 0)
+        set(value) = prefs.edit().putInt(KEY_PUBLISH_QOS, value).apply()
+
+    var publishRetained: Boolean
+        get() = prefs.getBoolean(KEY_PUBLISH_RETAINED, false)
+        set(value) = prefs.edit().putBoolean(KEY_PUBLISH_RETAINED, value).apply()
 
     var keepAlive: Int
         get() = prefs.getInt(KEY_KEEP_ALIVE, 60)

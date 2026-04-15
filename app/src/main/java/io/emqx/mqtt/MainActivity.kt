@@ -173,10 +173,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         try {
             mClient?.setCallback(this)
             appendLog("Calling connect()...")
+            MqttService.updateConnectionStatus(this, false)
             mClient?.connect(connection.mqttConnectOptions, null, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     isConnecting = false
                     appendLog("=== CONNECT SUCCESS ===")
+                    MqttService.updateConnectionStatus(this@MainActivity, true)
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
                     }
@@ -186,6 +188,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     isConnecting = false
                     appendLog("=== CONNECT FAILED ===")
                     appendLog("Error: ${exception?.message}")
+                    MqttService.updateConnectionStatus(this@MainActivity, false)
                     exception?.printStackTrace()
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
@@ -194,10 +197,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             })
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             isConnecting = false
+            MqttService.updateConnectionStatus(this, false)
             e.printStackTrace()
             Toast.makeText(this, "MqttException: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             isConnecting = false
+            MqttService.updateConnectionStatus(this, false)
             e.printStackTrace()
             Toast.makeText(this, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -211,7 +216,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             mClient?.disconnect()
             mClient = null
             mConnection = null
+            MqttService.updateConnectionStatus(this, false)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
+            MqttService.updateConnectionStatus(this, false)
             e.printStackTrace()
         }
     }
@@ -298,6 +305,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     override fun connectionLost(cause: Throwable?) {
         appendLog("Connection lost: $cause")
         isConnecting = false
+        MqttService.updateConnectionStatus(this, false)
         runOnUiThread {
             (mFragmentList[0] as? ConnectionFragment)?.updateButtonText()
         }

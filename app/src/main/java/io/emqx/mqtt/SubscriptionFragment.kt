@@ -14,6 +14,7 @@ class SubscriptionFragment : BaseFragment() {
     private var mRadioGroup: RadioGroup? = null
     private var mAdapter: SubscriptionRecyclerViewAdapter? = null
     private val mSubscriptionList: ArrayList<Subscription> = ArrayList()
+    private lateinit var mConfigManager: ConfigManager
 
     override val layoutResId: Int
         get() = R.layout.fragment_subscription_list
@@ -25,6 +26,8 @@ class SubscriptionFragment : BaseFragment() {
     }
 
     override fun setUpView(view: View) {
+        mConfigManager = ConfigManager.getInstance(fragmentActivity)
+
         val recyclerView = view.findViewById<RecyclerView>(R.id.subscription_list)
         mAdapter = SubscriptionRecyclerViewAdapter(mSubscriptionList)
         recyclerView.adapter = mAdapter
@@ -52,6 +55,7 @@ class SubscriptionFragment : BaseFragment() {
                         appendLog("Subscribe SUCCESS: $topic")
                         mSubscriptionList.add(0, subscription)
                         mAdapter?.notifyItemInserted(0)
+                        saveSubscriptions()
                         Toast.makeText(fragmentActivity, "Subscribed: $topic", Toast.LENGTH_SHORT).show()
                         (fragmentActivity as? MainActivity)?.speakText("已订阅: $topic")
                     }
@@ -62,6 +66,29 @@ class SubscriptionFragment : BaseFragment() {
                             .show()
                     }
                 })
+        }
+
+        loadSubscriptions()
+    }
+
+    private fun saveSubscriptions() {
+        val subs = mSubscriptionList.joinToString(";") { "${it.topic},${it.qos}" }
+        mConfigManager.subscriptions = subs
+    }
+
+    private fun loadSubscriptions() {
+        val saved = mConfigManager.subscriptions
+        if (saved.isNotEmpty()) {
+            mSubscriptionList.clear()
+            saved.split(";").forEach { item ->
+                val parts = item.split(",")
+                if (parts.size == 2) {
+                    val topic = parts[0]
+                    val qos = parts[1].toIntOrNull() ?: 0
+                    mSubscriptionList.add(Subscription(topic, qos))
+                }
+            }
+            mAdapter?.notifyDataSetChanged()
         }
     }
 

@@ -20,6 +20,7 @@ class PublishFragment : BaseFragment() {
     var mPublishList: ArrayList<Publish> = ArrayList()
     private var mLogView: TextView? = null
     private val logBuilder = StringBuilder()
+    private lateinit var mConfigManager: ConfigManager
 
     override val layoutResId: Int
         get() = R.layout.fragment_publish_list
@@ -35,6 +36,8 @@ class PublishFragment : BaseFragment() {
     }
 
     override fun setUpView(view: View) {
+        mConfigManager = ConfigManager.getInstance(fragmentActivity)
+
         val recyclerView = view.findViewById<RecyclerView>(R.id.publication_list)
         mAdapter = PublishRecyclerViewAdapter(mPublishList)
         recyclerView.adapter = mAdapter
@@ -49,6 +52,8 @@ class PublishFragment : BaseFragment() {
         mQosRadioGroup = view.findViewById(R.id.qos)
         mRetainedRadioGroup = view.findViewById(R.id.retained)
         mLogView = view.findViewById(R.id.tts_log)
+
+        loadPublishSettings()
 
         view.findViewById<Button>(R.id.test_tts).setOnClickListener {
             appendLog("=== TTS测试 ===")
@@ -68,6 +73,7 @@ class PublishFragment : BaseFragment() {
         val pubBtn = view.findViewById<Button>(R.id.publish)
         pubBtn.setOnClickListener {
             val publish = publish
+            savePublishSettings()
             appendLog("发布消息: topic=${publish.topic}")
             (fragmentActivity as MainActivity).publish(publish, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
@@ -81,6 +87,42 @@ class PublishFragment : BaseFragment() {
                     appendLog("发布失败: ${exception?.message}")
                 }
             })
+        }
+    }
+
+    private fun savePublishSettings() {
+        mConfigManager.publishTopic = mTopic?.text.toString() ?: ""
+        mConfigManager.publishPayload = mPayload?.text.toString() ?: ""
+        mConfigManager.publishQos = when (mQosRadioGroup?.checkedRadioButtonId) {
+            R.id.qos0 -> 0
+            R.id.qos1 -> 1
+            R.id.qos2 -> 2
+            else -> 0
+        }
+        mConfigManager.publishRetained = when (mRetainedRadioGroup?.checkedRadioButtonId) {
+            R.id.retained_true -> true
+            else -> false
+        }
+    }
+
+    private fun loadPublishSettings() {
+        val savedTopic = mConfigManager.publishTopic
+        val savedPayload = mConfigManager.publishPayload
+        val savedQos = mConfigManager.publishQos
+        val savedRetained = mConfigManager.publishRetained
+
+        mTopic?.setText(savedTopic)
+        mPayload?.setText(savedPayload)
+
+        when (savedQos) {
+            0 -> mQosRadioGroup?.check(R.id.qos0)
+            1 -> mQosRadioGroup?.check(R.id.qos1)
+            2 -> mQosRadioGroup?.check(R.id.qos2)
+        }
+        if (savedRetained) {
+            mRetainedRadioGroup?.check(R.id.retained_true)
+        } else {
+            mRetainedRadioGroup?.check(R.id.retained_false)
         }
     }
 
