@@ -108,8 +108,13 @@ class PublishFragment : BaseFragment() {
     private fun testTtsBasic() {
         val tts = getTtsManager()
         appendTtsLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
+        appendTtsLog("initStarted: ${tts?.isInitStarted()}")
         appendTtsLog("initStatus: ${tts?.getInitStatus()}")
         appendTtsLog("isReady: ${tts?.isReady()}")
+
+        tts?.getAvailableEngines()?.let { engines ->
+            appendTtsLog("可用引擎: ${engines.joinToString(", ")}")
+        }
 
         if (tts?.isReady() == true) {
             appendTtsLog("调用speak(TTS准备就绪)")
@@ -117,6 +122,8 @@ class PublishFragment : BaseFragment() {
             appendTtsLog("speak()调用完成")
         } else {
             appendTtsLog("TTS未就绪!")
+            appendTtsLog("提示: 请检查手机是否安装了TTS引擎")
+            appendTtsLog("可尝试安装'谷歌文字转语音'或'讯飞语音'")
         }
     }
 
