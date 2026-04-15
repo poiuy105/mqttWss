@@ -2,7 +2,7 @@ package io.emqx.mqtt
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.util.Log
+import android.graphics.Rect
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -41,7 +41,7 @@ class VoiceAccessibilityService : AccessibilityService() {
         event ?: return
 
         val packageName = event.packageName?.toString() ?: return
-        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, String>>>()
+        val capturedList = mutableListOf<Triple<String, Rect, Pair<Int, String>>>()
 
         event.source?.let { rootNode ->
             extractTextWithPosition(rootNode, packageName, 0, capturedList)
@@ -49,17 +49,13 @@ class VoiceAccessibilityService : AccessibilityService() {
         }
 
         capturedList.forEach { (text, bounds, viewInfo) ->
-            val boundsLeft = bounds[0]
-            val boundsTop = bounds[1]
-            val boundsRight = bounds[2]
-            val boundsBottom = bounds[3]
             CapturedTextManager.onTextCaptured(
                 text = text,
                 packageName = packageName,
-                boundsLeft = boundsLeft,
-                boundsTop = boundsTop,
-                boundsRight = boundsRight,
-                boundsBottom = boundsBottom,
+                boundsLeft = bounds.left,
+                boundsTop = bounds.top,
+                boundsRight = bounds.right,
+                boundsBottom = bounds.bottom,
                 viewDepth = viewInfo.first,
                 viewClass = viewInfo.second
             )
@@ -70,18 +66,18 @@ class VoiceAccessibilityService : AccessibilityService() {
         node: AccessibilityNodeInfo?,
         packageName: String,
         depth: Int,
-        result: MutableList<Triple<String, IntArray, Pair<Int, String>>>
+        result: MutableList<Triple<String, Rect, Pair<Int, String>>>
     ) {
         node ?: return
 
-        val bounds = IntArray(4)
+        val bounds = Rect()
         node.getBoundsInScreen(bounds)
 
         val text = node.text?.toString() ?: node.contentDescription?.toString() ?: ""
         val viewClass = node.className?.toString() ?: ""
 
         if (text.isNotEmpty() && text.length > 1) {
-            result.add(Triple(text, bounds.copyOf(), Pair(depth, viewClass)))
+            result.add(Triple(text, Rect(bounds), Pair(depth, viewClass)))
         }
 
         for (i in 0 until node.childCount) {
@@ -97,7 +93,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     fun captureCurrentScreen() {
         val rootNode = rootInActiveWindow ?: return
         val packageName = rootNode.packageName?.toString() ?: "unknown"
-        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, Int>>>()
+        val capturedList = mutableListOf<Triple<String, Rect, Pair<Int, String>>>()
 
         extractTextWithPosition(rootNode, packageName, 0, capturedList)
         rootNode.recycle()
@@ -106,10 +102,10 @@ class VoiceAccessibilityService : AccessibilityService() {
             CapturedTextManager.onTextCaptured(
                 text = text,
                 packageName = packageName,
-                boundsLeft = bounds[0],
-                boundsTop = bounds[1],
-                boundsRight = bounds[2],
-                boundsBottom = bounds[3],
+                boundsLeft = bounds.left,
+                boundsTop = bounds.top,
+                boundsRight = bounds.right,
+                boundsBottom = bounds.bottom,
                 viewDepth = viewInfo.first,
                 viewClass = viewInfo.second
             )
