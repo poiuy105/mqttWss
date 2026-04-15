@@ -2,21 +2,14 @@ package io.emqx.mqtt
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 class VoiceAccessibilityService : AccessibilityService() {
-    private var onTextCapturedListener: ((String, String) -> Unit)? = null
-
     companion object {
         private var instance: VoiceAccessibilityService? = null
 
         fun getInstance(): VoiceAccessibilityService? = instance
-
-        fun setOnTextCapturedListener(listener: ((String, String) -> Unit)?) {
-            instance?.onTextCapturedListener = listener
-        }
     }
 
     override fun onCreate() {
@@ -27,7 +20,6 @@ class VoiceAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         instance = null
-        onTextCapturedListener = null
     }
 
     override fun onServiceConnected() {
@@ -50,7 +42,7 @@ class VoiceAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val text = extractVoiceText(event)
         if (text.isNotEmpty() && text.length > 2) {
-            onTextCapturedListener?.invoke(text, packageName)
+            CapturedTextManager.onTextCaptured(text, packageName)
         }
     }
 
@@ -111,7 +103,7 @@ class VoiceAccessibilityService : AccessibilityService() {
             val packageName = rootNode.packageName?.toString() ?: "unknown"
             val text = extractTextFromNode(rootNode)
             if (text.isNotEmpty()) {
-                onTextCapturedListener?.invoke(text, packageName)
+                CapturedTextManager.onTextCaptured(text, packageName)
             }
             rootNode.recycle()
         }

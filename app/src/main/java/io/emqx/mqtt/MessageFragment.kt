@@ -12,12 +12,17 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MessageFragment : BaseFragment() {
     private var mAdapter: CapturedTextAdapter? = null
-    private val mCapturedList: ArrayList<CapturedText> = ArrayList()
     private val mAllCapturedList: ArrayList<CapturedText> = ArrayList()
     private val mAppPackages: LinkedHashSet<String> = LinkedHashSet()
     private val mExcludedApps: HashSet<String> = HashSet()
     private var mFilterContainer: LinearLayout? = null
     private var mExcludedCountText: TextView? = null
+
+    private val captureListener: (String, String) -> Unit = { text, packageName ->
+        activity?.runOnUiThread {
+            addCapturedText(text, packageName)
+        }
+    }
 
     override val layoutResId: Int
         get() = R.layout.fragment_message_list
@@ -30,29 +35,32 @@ class MessageFragment : BaseFragment() {
                 DividerItemDecoration.VERTICAL
             )
         )
-        mAdapter = CapturedTextAdapter(mCapturedList)
+        mAdapter = CapturedTextAdapter(mAllCapturedList)
         recyclerView.adapter = mAdapter
 
         mFilterContainer = view.findViewById(R.id.app_filter_container)
         mExcludedCountText = view.findViewById(R.id.excluded_count)
-        val clearBtn = view.findViewById<Button>(R.id.btn_clear_log)
+        val clearBtn = view.findViewById(R.id.btn_clear_log)
+
+        CapturedTextManager.addListener(captureListener)
 
         clearBtn.setOnClickListener {
-            mCapturedList.clear()
-            mAllCapturedList.clear()
-            mAppPackages.clear()
-            mExcludedApps.clear()
-            mFilterContainer?.removeAllViews()
-            updateExcludedCount()
-            mAdapter?.notifyDataSetChanged()
+            clearAll()
             Toast.makeText(fragmentActivity, "Log cleared", Toast.LENGTH_SHORT).show()
         }
 
-        VoiceAccessibilityService.setOnTextCapturedListener { text, packageName ->
-            activity?.runOnUiThread {
-                addCapturedText(text, packageName)
-            }
+        val savedList = CapturedTextManager.getAllCaptured()
+        savedList.forEach { captured ->
+            mAllCapturedList.add(captured)
+            mAppPackages.add(captured.packageName)
         }
+        rebuildFilterChips()
+        filterList()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        CapturedTextManager.removeListener(captureListener)
     }
 
     private fun addCapturedText(text: String, packageName: String) {
@@ -60,7 +68,7 @@ class MessageFragment : BaseFragment() {
         mAllCapturedList.add(0, captured)
         mAppPackages.add(packageName)
 
-        if (mFilterContainer?.childCount != mAppPackages.size) {
+        if ((mFilterContainer?.childCount ?: 0) != mAppPackages.size) {
             rebuildFilterChips()
         }
 
@@ -127,12 +135,23 @@ class MessageFragment : BaseFragment() {
     }
 
     private fun filterList() {
-        mCapturedList.clear()
         if (mExcludedApps.isEmpty()) {
-            mCapturedList.addAll(mAllCapturedList)
+            mAdapter?.notifyDataSetChanged()
         } else {
-            mAllCapturedList.filterTo(mCapturedList) { !mExcludedApps.contains(it.packageName) }
+            val filtered = mAllCapturedList.filter { !mExcludedApps.contains(it.packageName) }
+            mAllCapturedList.clear()
+            mAllCapturedList.addAll(filtered)
+            mAdapter?.notifyDataSetChanged()
         }
+    }
+
+    private fun clearAll() {
+        mAllCapturedList.clear()
+        mAppPackages.clear()
+        mExcludedApps.clear()
+        mFilterContainer?.removeAllViews()
+        CapturedTextManager.clearAll()
+        updateExcludedCount()
         mAdapter?.notifyDataSetChanged()
     }
 
