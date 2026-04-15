@@ -17,6 +17,9 @@ class MqttService : Service() {
         const val NOTIFICATION_ID = 1
         const val ACTION_START = "io.emqx.mqtt.START_SERVICE"
         const val ACTION_STOP = "io.emqx.mqtt.STOP_SERVICE"
+        const val ACTION_UPDATE_STATUS = "io.emqx.mqtt.UPDATE_STATUS"
+
+        private var instance: MqttService? = null
 
         fun startService(context: Context) {
             val intent = Intent(context, MqttService::class.java).apply {
@@ -35,12 +38,22 @@ class MqttService : Service() {
             }
             context.startService(intent)
         }
+
+        fun updateStatus(context: Context, title: String, message: String) {
+            val intent = Intent(context, MqttService::class.java).apply {
+                action = ACTION_UPDATE_STATUS
+                putExtra("title", title)
+                putExtra("message", message)
+            }
+            context.startService(intent)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotificationChannel()
     }
 
@@ -49,6 +62,12 @@ class MqttService : Service() {
             ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                instance = null
+            }
+            ACTION_UPDATE_STATUS -> {
+                val title = intent.getStringExtra("title") ?: "MQTT"
+                val message = intent.getStringExtra("message") ?: ""
+                updateNotification(title, message)
             }
             else -> {
                 startForeground(NOTIFICATION_ID, createNotification())

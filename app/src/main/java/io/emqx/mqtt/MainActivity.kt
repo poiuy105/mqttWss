@@ -76,6 +76,45 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         tabs.setupWithViewPager(viewPager)
 
         setupAccessibilityService()
+
+        if (intent.getBooleanExtra("auto_connect", false)) {
+            Log.d("MainActivity", "Auto-connect requested")
+            window.decorView.postDelayed({
+                autoConnectIfConfigured()
+            }, 1000)
+        }
+    }
+
+    private fun autoConnectIfConfigured() {
+        val configManager = ConfigManager.getInstance(this)
+        if (configManager.autoConnect && configManager.hasSavedConfig()) {
+            Log.d("MainActivity", "Auto-connecting with saved config...")
+            val connection = Connection(
+                this,
+                configManager.host,
+                configManager.port,
+                configManager.clientId,
+                configManager.username,
+                configManager.password,
+                configManager.protocol,
+                configManager.path
+            )
+            connect(connection, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken) {
+                    Log.d("MainActivity", "Auto-connect success")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Auto-connected", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
+                    Log.e("MainActivity", "Auto-connect failed: ${exception?.message}")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Auto-connect failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            })
+        }
     }
 
     private fun setupAccessibilityService() {

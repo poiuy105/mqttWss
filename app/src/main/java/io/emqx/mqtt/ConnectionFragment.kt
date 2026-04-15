@@ -24,11 +24,13 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mPassword: EditText
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
+    private lateinit var mDisconnectButton: Button
     private lateinit var mLogText: TextView
     private lateinit var mAutoConnect: Switch
     private lateinit var mTtsSwitch: Switch
     private lateinit var mFloatSwitch: Switch
     private lateinit var mVoiceSwitch: Switch
+    private lateinit var mAutoStartSwitch: Switch
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -70,6 +72,7 @@ class ConnectionFragment : BaseFragment() {
             protocol = protocolName
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
+        mConfigManager.autoStart = mAutoStartSwitch.isChecked
     }
 
     private fun loadSavedConfig() {
@@ -81,6 +84,7 @@ class ConnectionFragment : BaseFragment() {
             mUsername.setText(mConfigManager.username)
             mPassword.setText(mConfigManager.password)
             mAutoConnect.isChecked = mConfigManager.autoConnect
+            mAutoStartSwitch.isChecked = mConfigManager.autoStart
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -103,11 +107,13 @@ class ConnectionFragment : BaseFragment() {
         mPassword = view.findViewById(R.id.password)
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
+        mDisconnectButton = view.findViewById(R.id.btn_disconnect)
         mLogText = view.findViewById(R.id.log_text)
         mAutoConnect = view.findViewById(R.id.auto_connect_switch)
         mTtsSwitch = view.findViewById(R.id.tts_switch)
         mFloatSwitch = view.findViewById(R.id.float_switch)
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
+        mAutoStartSwitch = view.findViewById(R.id.auto_start_switch)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -149,6 +155,11 @@ class ConnectionFragment : BaseFragment() {
                     main.requestAccessibilityService()
                 }
             }
+        }
+
+        mAutoStartSwitch.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.autoStart = isChecked
+            appendLog("Auto Start ${if (isChecked) "enabled" else "disabled"}")
         }
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
@@ -206,7 +217,7 @@ class ConnectionFragment : BaseFragment() {
                     object : IMqttActionListener {
                         override fun onSuccess(asyncActionToken: IMqttToken) {
                             appendLog("=== CONNECT SUCCESS ===")
-                            updateButtonText()
+                            updateConnectionStatus(true)
                             startNotificationService()
                         }
 
@@ -218,14 +229,36 @@ class ConnectionFragment : BaseFragment() {
                                 "Connect failed: ${exception?.message}",
                                 Toast.LENGTH_LONG
                             ).show()
+                            updateConnectionStatus(false)
                         }
                     })
-            } else {
-                appendLog("Disconnect button clicked")
-                stopNotificationService()
-                (fragmentActivity as MainActivity).disconnect()
             }
         }
+
+        mDisconnectButton.setOnClickListener {
+            appendLog("Disconnect button clicked")
+            (fragmentActivity as MainActivity).disconnect()
+            stopNotificationService()
+            updateConnectionStatus(false)
+        }
+    }
+
+    private fun updateConnectionStatus(connected: Boolean) {
+        if (connected) {
+            mButton.text = "Connected"
+            mButton.isEnabled = false
+            mDisconnectButton.isEnabled = true
+            updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
+        } else {
+            mButton.text = getString(R.string.connect)
+            mButton.isEnabled = true
+            mDisconnectButton.isEnabled = false
+            updateNotificationStatus("MQTT Disconnected", "Not connected")
+        }
+    }
+
+    private fun updateNotificationStatus(title: String, message: String) {
+        MqttService.updateStatus(requireContext(), title, message)
     }
 
     private fun startNotificationService() {
@@ -240,6 +273,7 @@ class ConnectionFragment : BaseFragment() {
             }
         }
         MqttService.startService(requireContext())
+        updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
     }
 
     private fun stopNotificationService() {
@@ -249,8 +283,12 @@ class ConnectionFragment : BaseFragment() {
     fun updateButtonText() {
         if ((fragmentActivity as? MainActivity)?.notConnected(false) == true) {
             mButton.text = getText(R.string.connect)
+            mButton.isEnabled = true
+            mDisconnectButton.isEnabled = false
         } else {
             mButton.text = getString(R.string.disconnect)
+            mButton.isEnabled = false
+            mDisconnectButton.isEnabled = true
         }
     }
 

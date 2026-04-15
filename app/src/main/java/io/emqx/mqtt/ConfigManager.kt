@@ -21,6 +21,7 @@ class ConfigManager(context: Context) {
         private const val KEY_CONNECTION_TIMEOUT = "connection_timeout"
         private const val KEY_LAST_CONNECTED = "last_connected"
         private const val KEY_AUTO_RECONNECT = "auto_reconnect"
+        private const val KEY_AUTO_START = "auto_start"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -71,6 +72,10 @@ class ConfigManager(context: Context) {
     var autoReconnect: Boolean
         get() = prefs.getBoolean(KEY_AUTO_RECONNECT, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_RECONNECT, value).apply()
+
+    var autoStart: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_START, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_START, value).apply()
 
     var keepAlive: Int
         get() = prefs.getInt(KEY_KEEP_ALIVE, 60)
