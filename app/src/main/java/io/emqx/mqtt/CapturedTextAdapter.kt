@@ -11,7 +11,10 @@ class CapturedTextAdapter(private val list: ArrayList<CapturedText>) :
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val timeText: TextView = view.findViewById(R.id.captured_time)
+        val depthText: TextView = view.findViewById(R.id.captured_depth)
+        val boundsText: TextView = view.findViewById(R.id.captured_bounds)
         val appText: TextView = view.findViewById(R.id.captured_app)
+        val classText: TextView = view.findViewById(R.id.captured_class)
         val textContent: TextView = view.findViewById(R.id.captured_text)
     }
 
@@ -24,7 +27,10 @@ class CapturedTextAdapter(private val list: ArrayList<CapturedText>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = list[position]
         holder.timeText.text = item.getFormattedTime()
+        holder.depthText.text = item.getDepthString()
+        holder.boundsText.text = item.getBoundsString()
         holder.appText.text = item.packageName
+        holder.classText.text = item.viewClass
         holder.textContent.text = item.text
     }
 

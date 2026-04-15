@@ -2,6 +2,7 @@ package io.emqx.mqtt
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -40,72 +41,78 @@ class VoiceAccessibilityService : AccessibilityService() {
         event ?: return
 
         val packageName = event.packageName?.toString() ?: return
-        val text = extractVoiceText(event)
-        if (text.isNotEmpty() && text.length > 2) {
-            CapturedTextManager.onTextCaptured(text, packageName)
+        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, Int>>>()
+
+        event.source?.let { rootNode ->
+            extractTextWithPosition(rootNode, packageName, 0, capturedList)
+            rootNode.recycle()
+        }
+
+        capturedList.forEach { (text, bounds, viewInfo) ->
+            val boundsLeft = bounds[0]
+            val boundsTop = bounds[1]
+            val boundsRight = bounds[2]
+            val boundsBottom = bounds[3]
+            CapturedTextManager.onTextCaptured(
+                text = text,
+                packageName = packageName,
+                boundsLeft = boundsLeft,
+                boundsTop = boundsTop,
+                boundsRight = boundsRight,
+                boundsBottom = boundsBottom,
+                viewDepth = viewInfo.first,
+                viewClass = viewInfo.second
+            )
         }
     }
 
-    private fun extractVoiceText(event: AccessibilityEvent): String {
-        val text = StringBuilder()
+    private fun extractTextWithPosition(
+        node: AccessibilityNodeInfo?,
+        packageName: String,
+        depth: Int,
+        result: MutableList<Triple<String, IntArray, Pair<Int, Int>>>
+    ) {
+        node ?: return
 
-        event.text?.let { list ->
-            for (item in list) {
-                if (item.isNotEmpty()) {
-                    text.append(item).append(" ")
-                }
-            }
-        }
+        val bounds = IntArray(4)
+        node.getBoundsInScreen(bounds)
 
-        event.contentDescription?.let { desc ->
-            if (desc.isNotEmpty()) {
-                text.append(desc).append(" ")
-            }
-        }
+        val text = node.text?.toString() ?: node.contentDescription?.toString() ?: ""
+        val viewClass = node.className?.toString() ?: ""
 
-        event.source?.let { node ->
-            text.append(extractTextFromNode(node))
-            node.recycle()
-        }
-
-        return text.toString().trim()
-    }
-
-    private fun extractTextFromNode(node: AccessibilityNodeInfo?): String {
-        node ?: return ""
-        val sb = StringBuilder()
-
-        val text = node.text
-        if (!text.isNullOrEmpty()) {
-            sb.append(text).append(" ")
-        }
-
-        val contentDesc = node.contentDescription
-        if (!contentDesc.isNullOrEmpty()) {
-            sb.append(contentDesc).append(" ")
+        if (text.isNotEmpty() && text.length > 1) {
+            result.add(Triple(text, bounds.copyOf(), Pair(depth, viewClass)))
         }
 
         for (i in 0 until node.childCount) {
             node.getChild(i)?.let { child ->
-                sb.append(extractTextFromNode(child))
+                extractTextWithPosition(child, packageName, depth + 1, result)
                 child.recycle()
             }
         }
-
-        return sb.toString()
     }
 
     override fun onInterrupt() {}
 
     fun captureCurrentScreen() {
-        val rootNode = rootInActiveWindow
-        if (rootNode != null) {
-            val packageName = rootNode.packageName?.toString() ?: "unknown"
-            val text = extractTextFromNode(rootNode)
-            if (text.isNotEmpty()) {
-                CapturedTextManager.onTextCaptured(text, packageName)
-            }
-            rootNode.recycle()
+        val rootNode = rootInActiveWindow ?: return
+        val packageName = rootNode.packageName?.toString() ?: "unknown"
+        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, Int>>>()
+
+        extractTextWithPosition(rootNode, packageName, 0, capturedList)
+        rootNode.recycle()
+
+        capturedList.forEach { (text, bounds, viewInfo) ->
+            CapturedTextManager.onTextCaptured(
+                text = text,
+                packageName = packageName,
+                boundsLeft = bounds[0],
+                boundsTop = bounds[1],
+                boundsRight = bounds[2],
+                boundsBottom = bounds[3],
+                viewDepth = viewInfo.first,
+                viewClass = viewInfo.second
+            )
         }
     }
 }

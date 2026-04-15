@@ -26,7 +26,16 @@ object CapturedTextManager {
         listeners.remove(listener)
     }
 
-    fun onTextCaptured(text: String, packageName: String) {
+    fun onTextCaptured(
+        text: String,
+        packageName: String,
+        boundsLeft: Int = -1,
+        boundsTop: Int = -1,
+        boundsRight: Int = -1,
+        boundsBottom: Int = -1,
+        viewDepth: Int = -1,
+        viewClass: String = ""
+    ) {
         if (!isEnabled) return
 
         if (whitelistApp != null) {
@@ -35,7 +44,17 @@ object CapturedTextManager {
             return
         }
 
-        val captured = CapturedText(text, packageName, System.currentTimeMillis())
+        val captured = CapturedText(
+            text = text,
+            packageName = packageName,
+            timestamp = System.currentTimeMillis(),
+            boundsLeft = boundsLeft,
+            boundsTop = boundsTop,
+            boundsRight = boundsRight,
+            boundsBottom = boundsBottom,
+            viewDepth = viewDepth,
+            viewClass = viewClass
+        )
         capturedTexts.add(0, captured)
         listeners.forEach { it(text, packageName) }
     }
