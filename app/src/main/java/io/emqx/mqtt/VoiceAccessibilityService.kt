@@ -41,7 +41,7 @@ class VoiceAccessibilityService : AccessibilityService() {
         event ?: return
 
         val packageName = event.packageName?.toString() ?: return
-        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, Int>>>()
+        val capturedList = mutableListOf<Triple<String, IntArray, Pair<Int, String>>>()
 
         event.source?.let { rootNode ->
             extractTextWithPosition(rootNode, packageName, 0, capturedList)
@@ -70,7 +70,7 @@ class VoiceAccessibilityService : AccessibilityService() {
         node: AccessibilityNodeInfo?,
         packageName: String,
         depth: Int,
-        result: MutableList<Triple<String, IntArray, Pair<Int, Int>>>
+        result: MutableList<Triple<String, IntArray, Pair<Int, String>>>
     ) {
         node ?: return
 
