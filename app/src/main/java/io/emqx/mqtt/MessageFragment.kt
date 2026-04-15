@@ -39,12 +39,11 @@ class MessageFragment : BaseFragment() {
 
         mFilterContainer = view.findViewById(R.id.app_filter_container)
         mExcludedCountText = view.findViewById(R.id.excluded_count)
-        val clearBtn = view.findViewById(R.id.btn_clear_log)
 
         CapturedTextManager.init(requireContext())
         CapturedTextManager.addListener(captureListener)
 
-        clearBtn.setOnClickListener {
+        view.findViewById<Button>(R.id.btn_clear_log)?.setOnClickListener {
             CapturedTextManager.clearCaptured()
             mAllCapturedList.clear()
             mAdapter?.notifyDataSetChanged()
