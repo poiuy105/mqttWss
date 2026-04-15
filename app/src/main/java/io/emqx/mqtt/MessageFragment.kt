@@ -1,12 +1,11 @@
 package io.emqx.mqtt
 
 import android.content.pm.PackageManager
-import android.os.Bundle
+import android.graphics.Color
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.Spinner
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
@@ -16,9 +15,9 @@ class MessageFragment : BaseFragment() {
     private val mCapturedList: ArrayList<CapturedText> = ArrayList()
     private val mAllCapturedList: ArrayList<CapturedText> = ArrayList()
     private val mAppPackages: LinkedHashSet<String> = LinkedHashSet()
-    private val mAppList: ArrayList<String> = ArrayList()
-    private var mSpinner: Spinner? = null
-    private var mSelectedApp: String? = null
+    private val mExcludedApps: HashSet<String> = HashSet()
+    private var mFilterContainer: LinearLayout? = null
+    private var mExcludedCountText: TextView? = null
 
     override val layoutResId: Int
         get() = R.layout.fragment_message_list
@@ -34,33 +33,17 @@ class MessageFragment : BaseFragment() {
         mAdapter = CapturedTextAdapter(mCapturedList)
         recyclerView.adapter = mAdapter
 
-        mSpinner = view.findViewById(R.id.app_filter_spinner)
+        mFilterContainer = view.findViewById(R.id.app_filter_container)
+        mExcludedCountText = view.findViewById(R.id.excluded_count)
         val clearBtn = view.findViewById<Button>(R.id.btn_clear_log)
-
-        mAppList.add("All Apps")
-        val spinnerAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            mAppList
-        )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        mSpinner?.adapter = spinnerAdapter
-
-        mSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                mSelectedApp = if (position == 0) null else mAppList[position]
-                filterList()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
 
         clearBtn.setOnClickListener {
             mCapturedList.clear()
             mAllCapturedList.clear()
             mAppPackages.clear()
-            mAppList.clear()
-            mAppList.add("All Apps")
-            spinnerAdapter.notifyDataSetChanged()
+            mExcludedApps.clear()
+            mFilterContainer?.removeAllViews()
+            updateExcludedCount()
             mAdapter?.notifyDataSetChanged()
             Toast.makeText(fragmentActivity, "Log cleared", Toast.LENGTH_SHORT).show()
         }
@@ -77,25 +60,83 @@ class MessageFragment : BaseFragment() {
         mAllCapturedList.add(0, captured)
         mAppPackages.add(packageName)
 
-        mAppList.clear()
-        mAppList.add("All Apps")
-        mAppPackages.forEach { mAppList.add(it) }
-        (mSpinner?.adapter as? ArrayAdapter<String>)?.notifyDataSetChanged()
+        if (mFilterContainer?.childCount != mAppPackages.size) {
+            rebuildFilterChips()
+        }
 
         filterList()
     }
 
+    private fun rebuildFilterChips() {
+        mFilterContainer?.removeAllViews()
+        mAppPackages.forEach { packageName ->
+            val chip = createChip(packageName)
+            mFilterContainer?.addView(chip)
+        }
+    }
+
+    private fun createChip(packageName: String): Button {
+        val chip = Button(requireContext()).apply {
+            text = getAppName(packageName)
+            tag = packageName
+            textSize = 12f
+
+            val isExcluded = mExcludedApps.contains(packageName)
+            updateChipStyle(this, isExcluded)
+
+            setOnClickListener {
+                toggleExclude(packageName)
+            }
+        }
+        return chip
+    }
+
+    private fun toggleExclude(packageName: String) {
+        if (mExcludedApps.contains(packageName)) {
+            mExcludedApps.remove(packageName)
+        } else {
+            mExcludedApps.add(packageName)
+        }
+
+        for (i in 0 until (mFilterContainer?.childCount ?: 0)) {
+            val chip = mFilterContainer?.getChildAt(i) as? Button
+            if (chip?.tag == packageName) {
+                updateChipStyle(chip, mExcludedApps.contains(packageName))
+                break
+            }
+        }
+
+        updateExcludedCount()
+        filterList()
+    }
+
+    private fun updateChipStyle(chip: Button, isExcluded: Boolean) {
+        if (isExcluded) {
+            chip.setBackgroundColor(Color.parseColor("#FFCCCC"))
+            chip.setTextColor(Color.parseColor("#999999"))
+            chip.paintFlags = chip.paintFlags or android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
+        } else {
+            chip.setBackgroundColor(Color.parseColor("#CCEECC"))
+            chip.setTextColor(Color.parseColor("#333333"))
+            chip.paintFlags = chip.paintFlags and android.graphics.Paint.STRIKE_THRU_TEXT_FLAG.inv()
+        }
+    }
+
+    private fun updateExcludedCount() {
+        mExcludedCountText?.text = "Excluded: ${mExcludedApps.size} / ${mAppPackages.size}"
+    }
+
     private fun filterList() {
         mCapturedList.clear()
-        if (mSelectedApp == null) {
+        if (mExcludedApps.isEmpty()) {
             mCapturedList.addAll(mAllCapturedList)
         } else {
-            mAllCapturedList.filterTo(mCapturedList) { it.packageName == mSelectedApp }
+            mAllCapturedList.filterTo(mCapturedList) { !mExcludedApps.contains(it.packageName) }
         }
         mAdapter?.notifyDataSetChanged()
     }
 
-    fun getAppName(packageName: String): String {
+    private fun getAppName(packageName: String): String {
         return try {
             val pm = fragmentActivity?.packageManager
             val appInfo = pm?.getApplicationInfo(packageName, 0)
