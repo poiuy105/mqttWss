@@ -248,6 +248,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
     }
 
+    fun hideFloatMessage() {
+        floatWindowManager?.hide()
+    }
+
     fun speakText(text: String) {
         Log.d("MainActivity", "speakText called: $text, isTTSEnabled=$isTTSEnabled")
         if (isTTSEnabled) {
