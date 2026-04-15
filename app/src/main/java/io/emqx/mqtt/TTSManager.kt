@@ -2,6 +2,7 @@ package io.emqx.mqtt
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -21,7 +22,7 @@ class TTSManager(private val context: Context) {
 
     interface OnInitListener {
         fun onInitSuccess()
-        fun onInitFailed()
+        fun onInitFailed(status: Int)
     }
 
     private var ttsListener: TTSListener? = null
@@ -40,78 +41,72 @@ class TTSManager(private val context: Context) {
     }
 
     private fun initTTS() {
-        Log.d("TTSManager", "initTTS: Starting initialization...")
+        Log.d("TTSManager", "initTTS: 开始初始化（小米适配）")
         tts = TextToSpeech(context) { status ->
             initStatus = status
-            Log.d("TTSManager", "initTTS: onInit callback with status: $status")
+            Log.d("TTSManager", "initTTS: 回调状态 status=$status")
+
             if (status == TextToSpeech.SUCCESS) {
-                isInitialized = true
-                Log.d("TTSManager", "initTTS: SUCCESS")
-                setupTTSListener()
-                initListener?.onInitSuccess()
+                val langResult = tts?.setLanguage(Locale.SIMPLIFIED_CHINESE)
+                Log.d("TTSManager", "setLanguage 结果=$langResult")
+
+                when (langResult) {
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                    TextToSpeech.LANG_AVAILABLE -> {
+                        isInitialized = true
+                        setupTTSListener()
+                        Log.d("TTSManager", "✅ 初始化成功 isReady=true")
+                        initListener?.onInitSuccess()
+                    }
+                    TextToSpeech.LANG_MISSING_DATA,
+                    TextToSpeech.LANG_NOT_SUPPORTED -> {
+                        Log.e("TTSManager", "❌ 中文语言包缺失/不支持")
+                        isInitialized = false
+                        initListener?.onInitFailed(status)
+                    }
+                    else -> {
+                        isInitialized = true
+                        setupTTSListener()
+                        initListener?.onInitSuccess()
+                    }
+                }
             } else {
-                Log.e("TTSManager", "initTTS: FAILED with status: $status")
+                Log.e("TTSManager", "❌ TTS 引擎初始化失败 status=$status")
                 isInitialized = false
-                initListener?.onInitFailed()
+                initListener?.onInitFailed(status)
             }
         }
+
+        Handler().postDelayed({
+            if (!isInitialized && initStatus == -1) {
+                Log.e("TTSManager", "❌ 初始化超时（小米引擎卡住）")
+                initListener?.onInitFailed(-2)
+            }
+        }, 10000)
     }
 
     private fun setupTTSListener() {
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
-                Log.d("TTSManager", "onStart: $utteranceId")
                 ttsListener?.onSpeakStart()
             }
-
             override fun onDone(utteranceId: String?) {
-                Log.d("TTSManager", "onDone: $utteranceId")
                 ttsListener?.onSpeakDone()
             }
-
             override fun onError(utteranceId: String?) {
-                Log.e("TTSManager", "onError: $utteranceId")
                 ttsListener?.onSpeakError()
             }
         })
     }
 
-    fun getInitStatus(): Int = initStatus
-    fun isReady(): Boolean = isInitialized
-
     fun speak(text: String) {
-        speakWithParams(text, 1.0f, 0.0f)
-    }
-
-    fun speakWithParams(text: String, volume: Float = 1.0f, pan: Float = 0.0f, queueMode: Int = TextToSpeech.QUEUE_FLUSH) {
-        Log.d("TTSManager", "speakWithParams: text='$text', isInitialized=$isInitialized")
         if (!isInitialized) {
-            Log.w("TTSManager", "TTS not initialized, cannot speak")
+            Log.w("TTSManager", "⚠️ 未初始化，不能朗读")
             return
         }
-
         val params = Bundle()
-        params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
-        params.putFloat(TextToSpeech.Engine.KEY_PARAM_PAN, pan)
-
-        val utteranceId = "tts_${System.currentTimeMillis()}"
-        tts?.speak(text, queueMode, params, utteranceId)
-    }
-
-    fun speakChinese(text: String) {
-        if (!isInitialized) return
-        tts?.setLanguage(Locale.CHINA)
-        speak(text)
-    }
-
-    fun speakEnglish(text: String) {
-        if (!isInitialized) return
-        tts?.setLanguage(Locale.US)
-        speak(text)
-    }
-
-    fun speakAdd(text: String) {
-        speakWithParams(text, queueMode = TextToSpeech.QUEUE_ADD)
+        params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "tts_${System.currentTimeMillis()}")
     }
 
     fun stop() {
@@ -119,20 +114,15 @@ class TTSManager(private val context: Context) {
     }
 
     fun setSpeechRate(rate: Float) {
-        tts?.setSpeechRate(rate)
+        tts?.setSpeechRate(rate.coerceIn(0.5f, 2.0f))
     }
 
     fun setPitch(pitch: Float) {
-        tts?.setPitch(pitch)
+        tts?.setPitch(pitch.coerceIn(0.5f, 2.0f))
     }
 
-    fun setLanguage(locale: Locale): Int {
-        return tts?.setLanguage(locale) ?: TextToSpeech.LANG_NOT_SUPPORTED
-    }
-
-    fun isSpeaking(): Boolean {
-        return tts?.isSpeaking == true
-    }
+    fun isReady(): Boolean = isInitialized
+    fun getInitStatus(): Int = initStatus
 
     fun release() {
         tts?.stop()

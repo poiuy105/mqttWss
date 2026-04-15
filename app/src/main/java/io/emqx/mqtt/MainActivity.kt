@@ -51,10 +51,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show()
                 }
             }
-            override fun onInitFailed() {
-                Log.e("MainActivity", "TTS initialization failed!")
+            override fun onInitFailed(status: Int) {
+                Log.e("MainActivity", "TTS initialization failed! status=$status")
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "TTS init failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show()
                 }
             }
         })
