@@ -99,7 +99,11 @@ class MessageFragment : BaseFragment() {
         return try {
             val pm = fragmentActivity?.packageManager
             val appInfo = pm?.getApplicationInfo(packageName, 0)
-            pm?.getApplicationLabel(appInfo)?.toString() ?: packageName
+            if (appInfo != null) {
+                pm?.getApplicationLabel(appInfo)?.toString() ?: packageName
+            } else {
+                packageName
+            }
         } catch (e: PackageManager.NameNotFoundException) {
             packageName
         }
