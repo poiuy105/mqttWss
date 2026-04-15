@@ -3,6 +3,8 @@ package io.emqx.mqtt
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -54,7 +56,7 @@ class TTSManager(private val context: Context) {
             }
         }
 
-        android.os.Handler().postDelayed({
+        Handler(Looper.getMainLooper()).postDelayed({
             if (initStatus == -1) initListener?.onInitFailed(-2)
         }, 8000)
     }
