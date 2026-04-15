@@ -124,10 +124,8 @@ class PublishFragment : BaseFragment() {
         val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("设置语速0.5 + speak(慢速朗读)")
-            tts.setSpeechRate(0.5f)
+            appendTtsLog("调用speak(慢速朗读)")
             tts.speak("慢速朗读")
-            tts.setSpeechRate(1.0f)
         } else {
             appendTtsLog("TTS未就绪!")
         }
@@ -137,10 +135,8 @@ class PublishFragment : BaseFragment() {
         val tts = getTtsManager()
         appendTtsLog("isReady: ${tts?.isReady()}")
         if (tts?.isReady() == true) {
-            appendTtsLog("设置语速2.0 + speak(快速朗读)")
-            tts.setSpeechRate(2.0f)
+            appendTtsLog("调用speak(快速朗读)")
             tts.speak("快速朗读")
-            tts.setSpeechRate(1.0f)
         } else {
             appendTtsLog("TTS未就绪!")
         }

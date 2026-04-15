@@ -61,9 +61,9 @@ class TTSManager(private val context: Context) {
 
     private fun setupListener() {
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(id: String?) = ttsListener?.onSpeakStart()
-            override fun onDone(id: String?) = ttsListener?.onSpeakDone()
-            override fun onError(id: String?) = ttsListener?.onSpeakError()
+            override fun onStart(id: String?) { ttsListener?.onSpeakStart() }
+            override fun onDone(id: String?) { ttsListener?.onSpeakDone() }
+            override fun onError(id: String?) { ttsListener?.onSpeakError() }
         })
     }
 
@@ -74,6 +74,10 @@ class TTSManager(private val context: Context) {
             params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f)
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "tts_${System.currentTimeMillis()}")
         }
+    }
+
+    fun setSpeechRate(rate: Float) {
+        executor.execute { tts?.setSpeechRate(rate) }
     }
 
     fun release() {
