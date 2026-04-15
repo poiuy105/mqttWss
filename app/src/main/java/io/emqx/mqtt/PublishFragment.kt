@@ -1,6 +1,5 @@
 package io.emqx.mqtt
 
-import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -54,17 +53,17 @@ class PublishFragment : BaseFragment() {
 
         view.findViewById<Button>(R.id.test_tts_china).setOnClickListener {
             appendTtsLog("=== 测试中文TTS ===")
-            testTtsChinese()
+            testTtsBasic()
         }
 
         view.findViewById<Button>(R.id.test_tts_us).setOnClickListener {
             appendTtsLog("=== 测试英文TTS ===")
-            testTtsEnglish()
+            testTtsBasic()
         }
 
         view.findViewById<Button>(R.id.test_tts_uk).setOnClickListener {
             appendTtsLog("=== 测试英文UK TTS ===")
-            testTtsEnglishUK()
+            testTtsBasic()
         }
 
         view.findViewById<Button>(R.id.test_tts_slow).setOnClickListener {
@@ -78,8 +77,8 @@ class PublishFragment : BaseFragment() {
         }
 
         view.findViewById<Button>(R.id.test_tts_add).setOnClickListener {
-            appendTtsLog("=== 测试追加TTS ===")
-            testTtsAdd()
+            appendTtsLog("=== 测试TTS ===")
+            testTtsBasic()
         }
 
         val pubBtn = view.findViewById<Button>(R.id.publish)
@@ -117,42 +116,7 @@ class PublishFragment : BaseFragment() {
             appendTtsLog("speak()调用完成")
         } else {
             appendTtsLog("TTS未就绪!")
-            appendTtsLog("提示: 请检查手机是否安装了TTS引擎")
-            appendTtsLog("可尝试安装'谷歌文字转语音'或'讯飞语音'")
-        }
-    }
-
-    private fun testTtsChinese() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speakChinese(中文测试)")
-            tts.speakChinese("中文测试")
-        } else {
-            appendTtsLog("TTS未就绪!")
-        }
-    }
-
-    private fun testTtsEnglish() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speakEnglish(Hello world)")
-            tts.speakEnglish("Hello world")
-        } else {
-            appendTtsLog("TTS未就绪!")
-        }
-    }
-
-    private fun testTtsEnglishUK() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用setLanguage(UK) + speak(Hello from UK)")
-            tts.setLanguage(java.util.Locale.UK)
-            tts.speak("Hello from UK")
-        } else {
-            appendTtsLog("TTS未就绪!")
+            appendTtsLog("提示: 请检查手机TTS设置")
         }
     }
 
@@ -177,19 +141,6 @@ class PublishFragment : BaseFragment() {
             tts.setSpeechRate(2.0f)
             tts.speak("快速朗读")
             tts.setSpeechRate(1.0f)
-        } else {
-            appendTtsLog("TTS未就绪!")
-        }
-    }
-
-    private fun testTtsAdd() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speakAdd(第一句)")
-            tts.speakAdd("第一句")
-            appendTtsLog("调用speakAdd(第二句)")
-            tts.speakAdd("第二句")
         } else {
             appendTtsLog("TTS未就绪!")
         }
