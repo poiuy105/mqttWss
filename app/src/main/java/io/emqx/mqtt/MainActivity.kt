@@ -44,6 +44,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         setContentView(R.layout.activity_main)
 
         ttsManager = TTSManager(this)
+        ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
+            override fun onInitSuccess() {
+                Log.d("MainActivity", "TTS initialized successfully!")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show()
+                }
+            }
+            override fun onInitFailed() {
+                Log.e("MainActivity", "TTS initialization failed!")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "TTS init failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
         floatWindowManager = FloatWindowManager.getInstance(this)
 
         mFragmentList.add(ConnectionFragment.newInstance())
