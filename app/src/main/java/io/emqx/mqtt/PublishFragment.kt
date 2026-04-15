@@ -108,13 +108,8 @@ class PublishFragment : BaseFragment() {
     private fun testTtsBasic() {
         val tts = getTtsManager()
         appendTtsLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
-        appendTtsLog("initStarted: ${tts?.isInitStarted()}")
         appendTtsLog("initStatus: ${tts?.getInitStatus()}")
         appendTtsLog("isReady: ${tts?.isReady()}")
-
-        tts?.getAvailableEngines()?.let { engines ->
-            appendTtsLog("可用引擎: ${engines.joinToString(", ")}")
-        }
 
         if (tts?.isReady() == true) {
             appendTtsLog("调用speak(TTS准备就绪)")
