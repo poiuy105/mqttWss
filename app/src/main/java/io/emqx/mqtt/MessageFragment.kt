@@ -14,7 +14,6 @@ class MessageFragment : BaseFragment() {
     private var mAdapter: CapturedTextAdapter? = null
     private val mAllCapturedList: ArrayList<CapturedText> = ArrayList()
     private val mAppPackages: LinkedHashSet<String> = LinkedHashSet()
-    private val mExcludedApps: HashSet<String> = HashSet()
     private var mFilterContainer: LinearLayout? = null
     private var mExcludedCountText: TextView? = null
 
@@ -40,19 +39,19 @@ class MessageFragment : BaseFragment() {
 
         mFilterContainer = view.findViewById(R.id.app_filter_container)
         mExcludedCountText = view.findViewById(R.id.excluded_count)
+        val clearBtn = view.findViewById(R.id.btn_clear_log)
 
+        CapturedTextManager.init(requireContext())
         CapturedTextManager.addListener(captureListener)
 
-        view.findViewById<Button>(R.id.btn_clear_log).setOnClickListener {
-            clearAll()
+        clearBtn.setOnClickListener {
+            CapturedTextManager.clearCaptured()
+            mAllCapturedList.clear()
+            mAdapter?.notifyDataSetChanged()
             Toast.makeText(fragmentActivity, "Log cleared", Toast.LENGTH_SHORT).show()
         }
 
-        val savedList = CapturedTextManager.getAllCaptured()
-        savedList.forEach { captured ->
-            mAllCapturedList.add(captured)
-            mAppPackages.add(captured.packageName)
-        }
+        restoreSettings()
         rebuildFilterChips()
         filterList()
     }
@@ -62,12 +61,22 @@ class MessageFragment : BaseFragment() {
         CapturedTextManager.removeListener(captureListener)
     }
 
+    private fun restoreSettings() {
+        val whitelist = CapturedTextManager.getWhitelistApp()
+        val excluded = CapturedTextManager.getExcludedApps()
+        mAppPackages.addAll(excluded)
+        if (whitelist != null) {
+            mAppPackages.add(whitelist)
+        }
+        updateExcludedCount()
+    }
+
     private fun addCapturedText(text: String, packageName: String) {
         val captured = CapturedText(text, packageName, System.currentTimeMillis())
         mAllCapturedList.add(0, captured)
-        mAppPackages.add(packageName)
 
-        if ((mFilterContainer?.childCount ?: 0) != mAppPackages.size) {
+        val isNew = mAppPackages.add(packageName)
+        if (isNew) {
             rebuildFilterChips()
         }
 
@@ -83,74 +92,104 @@ class MessageFragment : BaseFragment() {
     }
 
     private fun createChip(packageName: String): Button {
+        val isWhitelist = CapturedTextManager.getWhitelistApp() == packageName
+        val isExcluded = CapturedTextManager.getExcludedApps().contains(packageName)
+
         val chip = Button(requireContext()).apply {
-            text = getAppName(packageName)
+            text = if (isWhitelist) "V ${getAppName(packageName)}" else getAppName(packageName)
             tag = packageName
             textSize = 12f
 
-            val isExcluded = mExcludedApps.contains(packageName)
-            updateChipStyle(this, isExcluded)
+            updateChipStyle(this, isWhitelist, isExcluded)
 
             setOnClickListener {
                 toggleExclude(packageName)
+            }
+
+            setOnLongClickListener {
+                toggleWhitelist(packageName)
+                true
             }
         }
         return chip
     }
 
     private fun toggleExclude(packageName: String) {
-        if (mExcludedApps.contains(packageName)) {
-            mExcludedApps.remove(packageName)
+        val excluded = CapturedTextManager.getExcludedApps().toMutableSet()
+        val whitelist = CapturedTextManager.getWhitelistApp()
+
+        if (whitelist == packageName) {
+            CapturedTextManager.setWhitelistApp(null)
+        } else if (excluded.contains(packageName)) {
+            excluded.remove(packageName)
+            CapturedTextManager.setExcludedApps(excluded)
         } else {
-            mExcludedApps.add(packageName)
+            excluded.add(packageName)
+            CapturedTextManager.setExcludedApps(excluded)
         }
 
-        for (i in 0 until (mFilterContainer?.childCount ?: 0)) {
-            val chip = mFilterContainer?.getChildAt(i) as? Button
-            if (chip?.tag == packageName) {
-                updateChipStyle(chip, mExcludedApps.contains(packageName))
-                break
-            }
-        }
-
+        rebuildFilterChips()
         updateExcludedCount()
         filterList()
     }
 
-    private fun updateChipStyle(chip: Button, isExcluded: Boolean) {
-        if (isExcluded) {
-            chip.setBackgroundColor(Color.parseColor("#FFCCCC"))
-            chip.setTextColor(Color.parseColor("#999999"))
-            chip.paintFlags = chip.paintFlags or android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
+    private fun toggleWhitelist(packageName: String) {
+        val currentWhitelist = CapturedTextManager.getWhitelistApp()
+        if (currentWhitelist == packageName) {
+            CapturedTextManager.setWhitelistApp(null)
+            Toast.makeText(fragmentActivity, "Whitelist cleared - all apps available", Toast.LENGTH_SHORT).show()
         } else {
-            chip.setBackgroundColor(Color.parseColor("#CCEECC"))
-            chip.setTextColor(Color.parseColor("#333333"))
-            chip.paintFlags = chip.paintFlags and android.graphics.Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            CapturedTextManager.setWhitelistApp(packageName)
+            Toast.makeText(fragmentActivity, "V ${getAppName(packageName)} - only this app", Toast.LENGTH_LONG).show()
+        }
+        rebuildFilterChips()
+        updateExcludedCount()
+    }
+
+    private fun updateChipStyle(chip: Button, isWhitelist: Boolean, isExcluded: Boolean) {
+        when {
+            isWhitelist -> {
+                chip.setBackgroundColor(Color.parseColor("#4CAF50"))
+                chip.setTextColor(Color.WHITE)
+                chip.paintFlags = chip.paintFlags and android.graphics.Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
+            isExcluded -> {
+                chip.setBackgroundColor(Color.parseColor("#FFCCCC"))
+                chip.setTextColor(Color.parseColor("#999999"))
+                chip.paintFlags = chip.paintFlags or android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
+            }
+            else -> {
+                chip.setBackgroundColor(Color.parseColor("#CCEECC"))
+                chip.setTextColor(Color.parseColor("#333333"))
+                chip.paintFlags = chip.paintFlags and android.graphics.Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
         }
     }
 
     private fun updateExcludedCount() {
-        mExcludedCountText?.text = "Excluded: ${mExcludedApps.size} / ${mAppPackages.size}"
-    }
-
-    private fun filterList() {
-        if (mExcludedApps.isEmpty()) {
-            mAdapter?.notifyDataSetChanged()
-        } else {
-            val filtered = mAllCapturedList.filter { !mExcludedApps.contains(it.packageName) }
-            mAllCapturedList.clear()
-            mAllCapturedList.addAll(filtered)
-            mAdapter?.notifyDataSetChanged()
+        val whitelist = CapturedTextManager.getWhitelistApp()
+        val excluded = CapturedTextManager.getExcludedApps().size
+        when {
+            whitelist != null -> mExcludedCountText?.text = "Mode: Only V app"
+            excluded > 0 -> mExcludedCountText?.text = "Excluded: $excluded apps"
+            else -> mExcludedCountText?.text = "All apps available"
         }
     }
 
-    private fun clearAll() {
+    private fun filterList() {
+        val whitelist = CapturedTextManager.getWhitelistApp()
+        val excluded = CapturedTextManager.getExcludedApps()
+
+        val filtered = mAllCapturedList.filter { item ->
+            when {
+                whitelist != null -> item.packageName == whitelist
+                excluded.isNotEmpty() -> !excluded.contains(item.packageName)
+                else -> true
+            }
+        }
+
         mAllCapturedList.clear()
-        mAppPackages.clear()
-        mExcludedApps.clear()
-        mFilterContainer?.removeAllViews()
-        CapturedTextManager.clearAll()
-        updateExcludedCount()
+        mAllCapturedList.addAll(filtered)
         mAdapter?.notifyDataSetChanged()
     }
 

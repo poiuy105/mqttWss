@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        CapturedTextManager.init(this)
+
         window.decorView.post {
             ttsManager = TTSManager(this)
             ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
