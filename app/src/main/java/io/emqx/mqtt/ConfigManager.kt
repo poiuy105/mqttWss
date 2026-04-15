@@ -22,6 +22,7 @@ class ConfigManager(context: Context) {
         private const val KEY_LAST_CONNECTED = "last_connected"
         private const val KEY_AUTO_RECONNECT = "auto_reconnect"
         private const val KEY_AUTO_START = "auto_start"
+        private const val KEY_PERSISTENT_NOTIFICATION = "persistent_notification"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -76,6 +77,10 @@ class ConfigManager(context: Context) {
     var autoStart: Boolean
         get() = prefs.getBoolean(KEY_AUTO_START, false)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_START, value).apply()
+
+    var persistentNotification: Boolean
+        get() = prefs.getBoolean(KEY_PERSISTENT_NOTIFICATION, true)
+        set(value) = prefs.edit().putBoolean(KEY_PERSISTENT_NOTIFICATION, value).apply()
 
     var keepAlive: Int
         get() = prefs.getInt(KEY_KEEP_ALIVE, 60)

@@ -47,6 +47,10 @@ class MqttService : Service() {
             }
             context.startService(intent)
         }
+
+        fun isPersistentNotificationEnabled(context: Context): Boolean {
+            return ConfigManager.getInstance(context).persistentNotification
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -65,12 +69,19 @@ class MqttService : Service() {
                 instance = null
             }
             ACTION_UPDATE_STATUS -> {
-                val title = intent.getStringExtra("title") ?: "MQTT"
-                val message = intent.getStringExtra("message") ?: ""
-                updateNotification(title, message)
+                if (isPersistentNotificationEnabled(this)) {
+                    val title = intent.getStringExtra("title") ?: "MQTT"
+                    val message = intent.getStringExtra("message") ?: ""
+                    updateNotification(title, message)
+                }
             }
             else -> {
-                startForeground(NOTIFICATION_ID, createNotification())
+                if (isPersistentNotificationEnabled(this)) {
+                    startForeground(NOTIFICATION_ID, createNotification())
+                } else {
+                    stopSelf()
+                    instance = null
+                }
             }
         }
         return START_STICKY

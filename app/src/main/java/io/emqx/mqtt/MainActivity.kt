@@ -121,8 +121,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     private fun setupAccessibilityService() {
-        CapturedTextManager.addListener { text, packageName ->
-            Log.d("MainActivity", "Text captured from $packageName: $text")
+        CapturedTextManager.addListener { captured ->
+            Log.d("MainActivity", "Text captured from ${captured.packageName}: ${captured.text}")
         }
     }
 

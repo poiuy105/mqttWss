@@ -31,6 +31,7 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mFloatSwitch: Switch
     private lateinit var mVoiceSwitch: Switch
     private lateinit var mAutoStartSwitch: Switch
+    private lateinit var mNotificationSwitch: Switch
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -73,6 +74,7 @@ class ConnectionFragment : BaseFragment() {
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
+        mConfigManager.persistentNotification = mNotificationSwitch.isChecked
     }
 
     private fun loadSavedConfig() {
@@ -85,6 +87,7 @@ class ConnectionFragment : BaseFragment() {
             mPassword.setText(mConfigManager.password)
             mAutoConnect.isChecked = mConfigManager.autoConnect
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
+            mNotificationSwitch.isChecked = mConfigManager.persistentNotification
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -114,6 +117,7 @@ class ConnectionFragment : BaseFragment() {
         mFloatSwitch = view.findViewById(R.id.float_switch)
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
         mAutoStartSwitch = view.findViewById(R.id.auto_start_switch)
+        mNotificationSwitch = view.findViewById(R.id.notification_switch)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -161,6 +165,11 @@ class ConnectionFragment : BaseFragment() {
         mAutoStartSwitch.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.autoStart = isChecked
             appendLog("Auto Start ${if (isChecked) "enabled" else "disabled"}")
+        }
+
+        mNotificationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.persistentNotification = isChecked
+            appendLog("Persistent Notification ${if (isChecked) "enabled" else "disabled"}")
         }
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->

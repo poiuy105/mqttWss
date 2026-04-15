@@ -17,9 +17,9 @@ class MessageFragment : BaseFragment() {
     private var mFilterContainer: LinearLayout? = null
     private var mExcludedCountText: TextView? = null
 
-    private val captureListener: (String, String) -> Unit = { text, packageName ->
+    private val captureListener: (CapturedText) -> Unit = { captured ->
         activity?.runOnUiThread {
-            addCapturedText(text, packageName)
+            addCapturedText(captured)
         }
     }
 
@@ -70,11 +70,10 @@ class MessageFragment : BaseFragment() {
         updateExcludedCount()
     }
 
-    private fun addCapturedText(text: String, packageName: String) {
-        val captured = CapturedText(text, packageName, System.currentTimeMillis())
+    private fun addCapturedText(captured: CapturedText) {
         mAllCapturedList.add(0, captured)
 
-        val isNew = mAppPackages.add(packageName)
+        val isNew = mAppPackages.add(captured.packageName)
         if (isNew) {
             rebuildFilterChips()
         }

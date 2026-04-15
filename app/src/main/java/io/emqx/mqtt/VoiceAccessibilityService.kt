@@ -11,8 +11,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 class VoiceAccessibilityService : AccessibilityService() {
     companion object {
         private var instance: VoiceAccessibilityService? = null
-        private const val THROTTLE_DELAY_MS = 300L
-        private const val MAX_DEPTH = 8
+        private const val THROTTLE_DELAY_MS = 500L
+        private const val MAX_DEPTH = 6
         private const val MIN_TEXT_LENGTH = 2
 
         fun getInstance(): VoiceAccessibilityService? = instance
@@ -37,8 +37,7 @@ class VoiceAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         val info = AccessibilityServiceInfo().apply {
-            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
-                    AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                     AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
@@ -54,6 +53,9 @@ class VoiceAccessibilityService : AccessibilityService() {
 
         if (!CapturedTextManager.isEnabled) return
         if (CapturedTextManager.shouldIgnorePackage(packageName)) return
+
+        val eventType = event.eventType
+        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastProcessedTime < THROTTLE_DELAY_MS) {
@@ -116,10 +118,12 @@ class VoiceAccessibilityService : AccessibilityService() {
             val bounds = Rect()
             node.getBoundsInScreen(bounds)
             val viewClass = node.className?.toString() ?: ""
-            result.add(Triple(text.trim(), Rect(bounds), Pair(depth, viewClass)))
+            if (bounds.left >= 0 && bounds.top >= 0) {
+                result.add(Triple(text.trim(), Rect(bounds), Pair(depth, viewClass)))
+            }
         }
 
-        if (node.isScrollable || depth < 3) {
+        if (depth < 3 && node.childCount > 0) {
             for (i in 0 until node.childCount) {
                 val child = node.getChild(i) ?: continue
                 try {

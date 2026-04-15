@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 
 object CapturedTextManager {
-    private val listeners = mutableListOf<(String, String) -> Unit>()
+    private val listeners = mutableListOf<(CapturedText) -> Unit>()
     private val capturedTexts = ArrayList<CapturedText>()
     var isEnabled = false
 
@@ -18,11 +18,11 @@ object CapturedTextManager {
         loadSettings()
     }
 
-    fun addListener(listener: (String, String) -> Unit) {
+    fun addListener(listener: (CapturedText) -> Unit) {
         listeners.add(listener)
     }
 
-    fun removeListener(listener: (String, String) -> Unit) {
+    fun removeListener(listener: (CapturedText) -> Unit) {
         listeners.remove(listener)
     }
 
@@ -56,7 +56,7 @@ object CapturedTextManager {
             viewClass = viewClass
         )
         capturedTexts.add(0, captured)
-        listeners.forEach { it(text, packageName) }
+        listeners.forEach { it(captured) }
     }
 
     fun getAllCaptured(): List<CapturedText> = capturedTexts.toList()
