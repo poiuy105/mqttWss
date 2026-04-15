@@ -36,7 +36,7 @@ class PublishFragment : BaseFragment() {
     }
 
     override fun setUpView(view: View) {
-        mConfigManager = ConfigManager.getInstance(fragmentActivity)
+        mConfigManager = ConfigManager.getInstance(fragmentActivity!!)
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.publication_list)
         mAdapter = PublishRecyclerViewAdapter(mPublishList)

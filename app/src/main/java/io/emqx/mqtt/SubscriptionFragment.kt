@@ -26,7 +26,7 @@ class SubscriptionFragment : BaseFragment() {
     }
 
     override fun setUpView(view: View) {
-        mConfigManager = ConfigManager.getInstance(fragmentActivity)
+        mConfigManager = ConfigManager.getInstance(fragmentActivity!!)
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.subscription_list)
         mAdapter = SubscriptionRecyclerViewAdapter(mSubscriptionList)
