@@ -320,8 +320,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             appendLog("Topic: $topic")
             appendLog("Payload: $payload")
 
-            (mFragmentList[3] as? MessageFragment)?.updateMessage(Message(topic, message))
-
             if (isFloatWindowEnabled) {
                 Log.d("MainActivity", "Showing float window for message")
                 appendLog("Showing float window...")
