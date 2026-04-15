@@ -177,8 +177,6 @@ class TTSManager(private val context: Context) {
     }
 
     fun getEngineInfo(): String {
-        val engine = tts?.currentEngine
-        Log.d("TTSManager", "Current engine: $engine")
-        return engine ?: "unknown"
+        return tts?.let { "TTS Engine Available" } ?: "TTS Not Available"
     }
 }
