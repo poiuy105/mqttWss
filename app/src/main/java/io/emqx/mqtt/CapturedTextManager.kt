@@ -84,6 +84,14 @@ object CapturedTextManager {
 
     fun getWhitelistApp(): String? = whitelistApp
 
+    fun shouldIgnorePackage(packageName: String): Boolean {
+        return if (whitelistApp != null) {
+            packageName != whitelistApp
+        } else {
+            excludedApps.contains(packageName)
+        }
+    }
+
     fun saveSettings() {
         prefs?.edit()?.apply {
             putStringSet("excluded", excludedApps)
