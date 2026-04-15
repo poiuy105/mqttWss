@@ -1,5 +1,9 @@
 package io.emqx.mqtt
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.view.View
 import android.widget.*
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -14,19 +18,19 @@ class PublishFragment : BaseFragment() {
     private var mRetainedRadioGroup: RadioGroup? = null
     var mAdapter: PublishRecyclerViewAdapter? = null
     var mPublishList: ArrayList<Publish> = ArrayList()
-    private var mTtsLog: TextView? = null
-    private val ttsLogs = StringBuilder()
+    private var mLogView: TextView? = null
+    private val logBuilder = StringBuilder()
 
     override val layoutResId: Int
         get() = R.layout.fragment_publish_list
 
-    private fun appendTtsLog(message: String) {
-        ttsLogs.insert(0, "${message}\n")
-        if (ttsLogs.length > 1000) {
-            ttsLogs.setLength(1000)
+    private fun appendLog(message: String) {
+        logBuilder.insert(0, "${message}\n")
+        if (logBuilder.length > 2000) {
+            logBuilder.setLength(2000)
         }
         activity?.runOnUiThread {
-            mTtsLog?.text = "TTS日志:\n${ttsLogs.toString()}"
+            mLogView?.text = "日志:\n${logBuilder.toString()}"
         }
     }
 
@@ -44,102 +48,106 @@ class PublishFragment : BaseFragment() {
         mPayload = view.findViewById(R.id.payload)
         mQosRadioGroup = view.findViewById(R.id.qos)
         mRetainedRadioGroup = view.findViewById(R.id.retained)
-        mTtsLog = view.findViewById(R.id.tts_log)
+        mLogView = view.findViewById(R.id.tts_log)
 
         view.findViewById<Button>(R.id.test_tts).setOnClickListener {
-            appendTtsLog("=== 测试TTS ===")
-            testTtsBasic()
+            appendLog("=== TTS测试 ===")
+            testTts()
         }
 
-        view.findViewById<Button>(R.id.test_tts_china).setOnClickListener {
-            appendTtsLog("=== 测试中文TTS ===")
-            testTtsBasic()
+        view.findViewById<Button>(R.id.test_popup).setOnClickListener {
+            appendLog("=== 弹窗测试 ===")
+            testPopup()
         }
 
-        view.findViewById<Button>(R.id.test_tts_us).setOnClickListener {
-            appendTtsLog("=== 测试英文TTS ===")
-            testTtsBasic()
-        }
-
-        view.findViewById<Button>(R.id.test_tts_uk).setOnClickListener {
-            appendTtsLog("=== 测试英文UK TTS ===")
-            testTtsBasic()
-        }
-
-        view.findViewById<Button>(R.id.test_tts_slow).setOnClickListener {
-            appendTtsLog("=== 测试慢速TTS ===")
-            testTtsSlow()
-        }
-
-        view.findViewById<Button>(R.id.test_tts_fast).setOnClickListener {
-            appendTtsLog("=== 测试快速TTS ===")
-            testTtsFast()
-        }
-
-        view.findViewById<Button>(R.id.test_tts_add).setOnClickListener {
-            appendTtsLog("=== 测试TTS ===")
-            testTtsBasic()
+        view.findViewById<Button>(R.id.test_overlay_permission).setOnClickListener {
+            appendLog("=== 申请悬浮窗权限 ===")
+            requestOverlayPermission()
         }
 
         val pubBtn = view.findViewById<Button>(R.id.publish)
         pubBtn.setOnClickListener {
             val publish = publish
-            appendTtsLog("发布消息: topic=${publish.topic}, payload=${publish.payload}")
+            appendLog("发布消息: topic=${publish.topic}")
             (fragmentActivity as MainActivity).publish(publish, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     mPublishList.add(0, publish)
                     mAdapter!!.notifyItemInserted(0)
-                    appendTtsLog("发布成功")
+                    appendLog("发布成功")
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
                     Toast.makeText(fragmentActivity, "Failed to publish", Toast.LENGTH_SHORT).show()
-                    appendTtsLog("发布失败: ${exception?.message}")
+                    appendLog("发布失败: ${exception?.message}")
                 }
             })
         }
     }
 
+    private fun testTts() {
+        val tts = getTtsManager()
+        appendLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
+        appendLog("isReady: ${tts?.isReady()}")
+
+        if (tts?.isReady() == true) {
+            appendLog("调用speak(TTS准备就绪)")
+            tts.speak("TTS准备就绪")
+            appendLog("speak()调用完成")
+        } else {
+            appendLog("TTS未就绪!")
+        }
+    }
+
+    private fun testPopup() {
+        appendLog("1. 检查悬浮窗权限...")
+        val hasOverlay = Settings.canDrawOverlays(activity)
+        appendLog("悬浮窗权限: ${if (hasOverlay) "已授权" else "未授权"}")
+
+        if (!hasOverlay) {
+            appendLog("请先授予悬浮窗权限")
+            requestOverlayPermission()
+            return
+        }
+
+        appendLog("2. 创建弹窗...")
+        (fragmentActivity as? MainActivity)?.let { main ->
+            main.showFloatMessage("测试弹窗", "这是一条测试消息\n${System.currentTimeMillis()}")
+            appendLog("3. 弹窗已显示")
+            appendLog("4. 5秒后自动消失")
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                main.hideFloatMessage()
+                appendLog("5. 弹窗已隐藏")
+            }, 5000)
+        } ?: run {
+            appendLog("MainActivity无效，无法显示弹窗")
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        appendLog("正在打开悬浮窗权限设置...")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            intent.data = Uri.parse("package:${activity?.packageName}")
+            try {
+                startActivity(intent)
+                appendLog("已打开权限设置页面")
+            } catch (e: Exception) {
+                appendLog("打开失败: ${e.message}")
+                val fallbackIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                try {
+                    startActivity(fallbackIntent)
+                } catch (e2: Exception) {
+                    appendLog("备用方式也失败: ${e2.message}")
+                }
+            }
+        } else {
+            appendLog("Android版本低于6.0，无需申请")
+        }
+    }
+
     private fun getTtsManager(): TTSManager? {
         return (fragmentActivity as? MainActivity)?.ttsManager
-    }
-
-    private fun testTtsBasic() {
-        val tts = getTtsManager()
-        appendTtsLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
-        appendTtsLog("initStatus: ${tts?.getInitStatus()}")
-        appendTtsLog("isReady: ${tts?.isReady()}")
-
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speak(TTS准备就绪)")
-            tts.speak("TTS准备就绪")
-            appendTtsLog("speak()调用完成")
-        } else {
-            appendTtsLog("TTS未就绪!")
-            appendTtsLog("提示: 请检查手机TTS设置")
-        }
-    }
-
-    private fun testTtsSlow() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speak(慢速朗读)")
-            tts.speak("慢速朗读")
-        } else {
-            appendTtsLog("TTS未就绪!")
-        }
-    }
-
-    private fun testTtsFast() {
-        val tts = getTtsManager()
-        appendTtsLog("isReady: ${tts?.isReady()}")
-        if (tts?.isReady() == true) {
-            appendTtsLog("调用speak(快速朗读)")
-            tts.speak("快速朗读")
-        } else {
-            appendTtsLog("TTS未就绪!")
-        }
     }
 
     private val publish: Publish

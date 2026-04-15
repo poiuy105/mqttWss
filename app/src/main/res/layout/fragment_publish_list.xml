@@ -94,8 +94,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/false_str" />
-
-
     </RadioGroup>
 
     <Button
@@ -107,91 +105,47 @@
         android:text="@string/publish"
         android:textAllCaps="false" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/test_tts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="测试TTS"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/test_popup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="测试弹窗"
+            android:textAllCaps="false" />
+    </LinearLayout>
+
     <Button
-        android:id="@+id/test_tts"
+        android:id="@+id/test_overlay_permission"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
-        android:text="测试TTS"
+        android:text="申请悬浮窗权限"
         android:textAllCaps="false" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/test_tts_china"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="中文"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-
-        <Button
-            android:id="@+id/test_tts_us"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="English"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-
-        <Button
-            android:id="@+id/test_tts_uk"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="UK"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/test_tts_slow"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="慢速"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-
-        <Button
-            android:id="@+id/test_tts_fast"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="快速"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-
-        <Button
-            android:id="@+id/test_tts_add"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="追加"
-            android:textAllCaps="false"
-            android:textSize="10sp" />
-    </LinearLayout>
 
     <TextView
         android:id="@+id/tts_log"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_marginTop="8dp"
+        android:layout_weight="1"
         android:background="#EEEEEE"
         android:padding="8dp"
-        android:text="TTS日志:"
+        android:text="日志:"
         android:textColor="#333333"
         android:textSize="12sp" />
 
