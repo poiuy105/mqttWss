@@ -20,7 +20,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 
 class MainActivity : AppCompatActivity(), MqttCallback {
-    private var mClient: MqttAsyncClient? = null
+    var mClient: MqttAsyncClient? = null
     private var mConnection: Connection? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     private var isConnecting = false
@@ -399,6 +399,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             appendLog("===== MESSAGE RECEIVED =====")
             appendLog("Topic: $topic")
             appendLog("Payload: $payload")
+
+            (mFragmentList[2] as? SubscriptionFragment)?.updateSubscriptionMessage(topic, payload)
 
             if (isFloatWindowEnabled) {
                 Log.d("MainActivity", "Showing float window for message")

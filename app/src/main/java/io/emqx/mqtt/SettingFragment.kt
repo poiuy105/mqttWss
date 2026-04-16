@@ -189,6 +189,19 @@ class SettingFragment : BaseFragment() {
             appendLog("Show Debug Log ${if (isChecked) "enabled" else "disabled"}")
         }
 
+        (activity as? MainActivity)?.let { main ->
+            main.setOnMqttStatusChangedListener { connected ->
+                activity?.runOnUiThread {
+                    updateConnectionStatus(connected)
+                }
+            }
+            if (main.mClient?.isConnected == true) {
+                updateConnectionStatus(true)
+            } else {
+                updateConnectionStatus(false)
+            }
+        }
+
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
                 R.id.protocol_tcp -> 1883

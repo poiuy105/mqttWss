@@ -28,6 +28,7 @@ class ConfigManager(context: Context) {
         private const val KEY_PUBLISH_PAYLOAD = "publish_payload"
         private const val KEY_PUBLISH_QOS = "publish_qos"
         private const val KEY_PUBLISH_RETAINED = "publish_retained"
+        private const val KEY_SUBSCRIPTION_HISTORY = "subscription_history"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -106,6 +107,10 @@ class ConfigManager(context: Context) {
     var publishRetained: Boolean
         get() = prefs.getBoolean(KEY_PUBLISH_RETAINED, false)
         set(value) = prefs.edit().putBoolean(KEY_PUBLISH_RETAINED, value).apply()
+
+    var subscriptionHistory: String
+        get() = prefs.getString(KEY_SUBSCRIPTION_HISTORY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_SUBSCRIPTION_HISTORY, value).apply()
 
     var keepAlive: Int
         get() = prefs.getInt(KEY_KEEP_ALIVE, 60)
