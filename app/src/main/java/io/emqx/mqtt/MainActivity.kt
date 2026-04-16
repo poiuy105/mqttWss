@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         if (isLandscape) {
             tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                tabHeight,
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT
             )
             tabs.tabGravity = TabLayout.GRAVITY_FILL
