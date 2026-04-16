@@ -235,18 +235,22 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/log_text"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_marginTop="4dp"
             android:layout_weight="1"
-            android:background="#F5F5F5"
-            android:fontFamily="monospace"
-            android:minHeight="120dp"
-            android:padding="8dp"
-            android:text=""
-            android:textSize="12sp" />
+            android:background="#F5F5F5">
+
+            <TextView
+                android:id="@+id/log_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="8dp"
+                android:text=""
+                android:textSize="12sp" />
+        </ScrollView>
 
         <TextView
             android:layout_width="wrap_content"

@@ -123,14 +123,16 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         val tabs = findViewById<TabLayout>(R.id.tabs)
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+        val tabHeight = resources.getDimensionPixelSize(R.dimen.tab_height)
+
         if (isLandscape) {
             tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                tabHeight,
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT
             )
             tabs.tabGravity = TabLayout.GRAVITY_FILL
             tabs.tabMode = TabLayout.MODE_FIXED
-            tabs.rotation = 90f
+            tabs.rotation = 270f
 
             val viewPager = findViewById<ViewPager>(R.id.view_pager)
             viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
