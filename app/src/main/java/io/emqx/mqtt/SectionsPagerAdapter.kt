@@ -2,6 +2,7 @@ package io.emqx.mqtt
 
 import android.content.Context
 import android.view.ViewGroup
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -16,8 +17,14 @@ class SectionsPagerAdapter(
         return mFragmentList[position]
     }
 
-    override fun getPageTitle(position: Int): CharSequence {
-        return mContext.resources.getString(TAB_TITLES[position])
+    @StringRes
+    override fun getPageTitle(position: Int): Int {
+        return TAB_TITLES[position]
+    }
+
+    @DrawableRes
+    fun getPageIcon(position: Int): Int {
+        return TAB_ICONS[position]
     }
 
     override fun getCount(): Int {
@@ -28,11 +35,21 @@ class SectionsPagerAdapter(
 
     companion object {
         @StringRes
-        private val TAB_TITLES = intArrayOf(
+        val TAB_TITLES = intArrayOf(
+            R.string.home,
             R.string.connection,
             R.string.subscription,
             R.string.publish,
             R.string.message
+        )
+
+        @DrawableRes
+        val TAB_ICONS = intArrayOf(
+            R.drawable.ic_home,
+            R.drawable.ic_connection,
+            R.drawable.ic_subscription,
+            R.drawable.ic_publish,
+            R.drawable.ic_message
         )
     }
 }

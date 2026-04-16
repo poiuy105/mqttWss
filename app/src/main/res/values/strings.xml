@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Mqtt Example</string>
+    <string name="home">Home</string>
     <string name="connection">Connection</string>
     <string name="subscription">Subscription</string>
     <string name="publish">Publish</string>

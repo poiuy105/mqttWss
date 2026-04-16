@@ -1,9 +1,11 @@
 package io.emqx.mqtt
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -42,6 +44,16 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
+
         setContentView(R.layout.activity_main)
 
         CapturedTextManager.init(this)
@@ -65,6 +77,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
         floatWindowManager = FloatWindowManager.getInstance(this)
 
+        mFragmentList.add(HomeFragment.newInstance())
         mFragmentList.add(ConnectionFragment.newInstance())
         mFragmentList.add(SubscriptionFragment.newInstance())
         mFragmentList.add(PublishFragment.newInstance())
@@ -72,11 +85,21 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         val sectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager, this, mFragmentList)
         val viewPager = findViewById<ViewPager>(R.id.view_pager)
-        viewPager.offscreenPageLimit = 3
+        viewPager.offscreenPageLimit = 4
         viewPager.adapter = sectionsPagerAdapter
 
         val tabs = findViewById<TabLayout>(R.id.tabs)
         tabs.setupWithViewPager(viewPager)
+
+        for (i in 0 until tabs.tabCount) {
+            val tab = tabs.getTabAt(i)
+            tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
+        }
+
+        tabs.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateTabLayoutForOrientation()
+        }
+        updateTabLayoutForOrientation()
 
         setupAccessibilityService()
 
@@ -86,6 +109,51 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 autoConnectIfConfigured()
             }, 1000)
         }
+    }
+
+    private fun updateTabLayoutForOrientation() {
+        val tabs = findViewById<TabLayout>(R.id.tabs)
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscape) {
+            tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            tabs.tabGravity = TabLayout.GRAVITY_FILL
+            tabs.tabMode = TabLayout.MODE_FIXED
+            tabs.rotation = 90
+
+            val viewPager = findViewById<ViewPager>(R.id.view_pager)
+            viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
+                0,
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                1f
+            )
+
+            val rootLayout = findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.root_layout)
+            rootLayout?.orientation = android.widget.LinearLayout.HORIZONTAL
+        } else {
+            tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            tabs.tabGravity = TabLayout.GRAVITY_FILL
+            tabs.tabMode = TabLayout.MODE_FIXED
+            tabs.rotation = 0
+
+            val viewPager = findViewById<ViewPager>(R.id.view_pager)
+            viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        recreate()
     }
 
     private fun autoConnectIfConfigured() {
@@ -307,7 +375,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         isConnecting = false
         MqttService.updateConnectionStatus(this, false)
         runOnUiThread {
-            (mFragmentList[0] as? ConnectionFragment)?.updateButtonText()
+            (mFragmentList[1] as? ConnectionFragment)?.updateButtonText()
         }
     }
 
