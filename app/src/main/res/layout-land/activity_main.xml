@@ -15,7 +15,6 @@
         app:tabIndicatorColor="@android:color/white"
         app:tabIndicatorFullWidth="false"
         app:tabMode="fixed"
-        app:tabRotation="90"
         app:tabTextAppearance="@style/TabLayoutTextStyle" />
 
     <androidx.viewpager.widget.ViewPager

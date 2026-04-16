@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             )
             tabs.tabGravity = TabLayout.GRAVITY_FILL
             tabs.tabMode = TabLayout.MODE_FIXED
-            tabs.rotation = 90
+            tabs.rotation = 90f
 
             val viewPager = findViewById<ViewPager>(R.id.view_pager)
             viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 1f
             )
 
-            val rootLayout = findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.root_layout)
+            val rootLayout = findViewById<android.widget.LinearLayout>(R.id.root_layout)
             rootLayout?.orientation = android.widget.LinearLayout.HORIZONTAL
         } else {
             tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
@@ -140,7 +140,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             )
             tabs.tabGravity = TabLayout.GRAVITY_FILL
             tabs.tabMode = TabLayout.MODE_FIXED
-            tabs.rotation = 0
+            tabs.rotation = 0f
 
             val viewPager = findViewById<ViewPager>(R.id.view_pager)
             viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
