@@ -13,6 +13,10 @@ object CapturedTextManager {
     private var whitelistApp: String? = null
     private var prefs: SharedPreferences? = null
 
+    private var onlyCaptureFrames = ArrayList<CaptureFrame>()
+    private var onlyCapturePrefix = ""
+    private var onlyCaptureSuffix = ""
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences("capture_settings", Context.MODE_PRIVATE)
         loadSettings()
@@ -92,10 +96,52 @@ object CapturedTextManager {
         }
     }
 
+    fun addOnlyCaptureFrame(text: String, packageName: String, viewClass: String = "") {
+        val frame = CaptureFrame(text, packageName, viewClass, System.currentTimeMillis())
+        onlyCaptureFrames.add(0, frame)
+        saveOnlyCaptureFrames()
+    }
+
+    fun removeOnlyCaptureFrame(index: Int) {
+        if (index >= 0 && index < onlyCaptureFrames.size) {
+            onlyCaptureFrames.removeAt(index)
+            saveOnlyCaptureFrames()
+        }
+    }
+
+    fun getOnlyCaptureFrames(): List<CaptureFrame> = onlyCaptureFrames.toList()
+
+    fun setOnlyCapturePrefix(prefix: String) {
+        onlyCapturePrefix = prefix
+        saveOnlyCaptureSettings()
+    }
+
+    fun getOnlyCapturePrefix(): String = onlyCapturePrefix
+
+    fun setOnlyCaptureSuffix(suffix: String) {
+        onlyCaptureSuffix = suffix
+        saveOnlyCaptureSettings()
+    }
+
+    fun getOnlyCaptureSuffix(): String = onlyCaptureSuffix
+
     fun saveSettings() {
         prefs?.edit()?.apply {
             putStringSet("excluded", excludedApps)
             putString("whitelist", whitelistApp)
+            apply()
+        }
+    }
+
+    private fun saveOnlyCaptureFrames() {
+        val data = onlyCaptureFrames.joinToString(";;") { "${it.text}|${it.packageName}|${it.viewClass}|${it.timestamp}" }
+        prefs?.edit()?.putString("only_capture_frames", data)?.apply()
+    }
+
+    private fun saveOnlyCaptureSettings() {
+        prefs?.edit()?.apply {
+            putString("only_capture_prefix", onlyCapturePrefix)
+            putString("only_capture_suffix", onlyCaptureSuffix)
             apply()
         }
     }
@@ -105,6 +151,27 @@ object CapturedTextManager {
             excludedApps.clear()
             p.getStringSet("excluded", emptySet())?.let { excludedApps.addAll(it) }
             whitelistApp = p.getString("whitelist", null)
+
+            onlyCaptureFrames.clear()
+            val framesData = p.getString("only_capture_frames", "") ?: ""
+            if (framesData.isNotEmpty()) {
+                framesData.split(";;").forEach { item ->
+                    val parts = item.split("|")
+                    if (parts.size >= 4) {
+                        onlyCaptureFrames.add(CaptureFrame(parts[0], parts[1], parts[2], parts[3].toLongOrNull() ?: 0))
+                    }
+                }
+            }
+
+            onlyCapturePrefix = p.getString("only_capture_prefix", "") ?: ""
+            onlyCaptureSuffix = p.getString("only_capture_suffix", "") ?: ""
         }
     }
 }
+
+data class CaptureFrame(
+    val text: String,
+    val packageName: String,
+    val viewClass: String,
+    val timestamp: Long
+)

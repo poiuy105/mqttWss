@@ -4,7 +4,7 @@
     <string name="setting">Setting</string>
     <string name="subscription">Subscription</string>
     <string name="publish">Publish</string>
-    <string name="message">Messages</string>
+    <string name="message">Voice</string>
     <string name="host">Host</string>
     <string name="port">Port</string>
     <string name="client_id">Client ID</string>

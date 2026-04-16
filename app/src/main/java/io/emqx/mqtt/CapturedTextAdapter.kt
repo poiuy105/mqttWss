@@ -6,8 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class CapturedTextAdapter(private val list: ArrayList<CapturedText>) :
-    RecyclerView.Adapter<CapturedTextAdapter.ViewHolder>() {
+class CapturedTextAdapter(
+    private val list: ArrayList<CapturedText>,
+    private val onLongClick: (CapturedText) -> Unit
+) : RecyclerView.Adapter<CapturedTextAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val timeText: TextView = view.findViewById(R.id.captured_time)
@@ -32,6 +34,11 @@ class CapturedTextAdapter(private val list: ArrayList<CapturedText>) :
         holder.appText.text = item.packageName
         holder.classText.text = item.viewClass
         holder.textContent.text = item.text
+
+        holder.itemView.setOnLongClickListener {
+            onLongClick(item)
+            true
+        }
     }
 
     override fun getItemCount(): Int = list.size

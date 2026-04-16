@@ -2,8 +2,11 @@ package io.emqx.mqtt
 
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -16,6 +19,9 @@ class MessageFragment : BaseFragment() {
     private val mAppPackages: LinkedHashSet<String> = LinkedHashSet()
     private var mFilterContainer: LinearLayout? = null
     private var mExcludedCountText: TextView? = null
+    private var mOnlyCaptureContainer: LinearLayout? = null
+    private var mPrefixInput: EditText? = null
+    private var mSuffixInput: EditText? = null
 
     private val captureListener: (CapturedText) -> Unit = { captured ->
         activity?.runOnUiThread {
@@ -34,11 +40,17 @@ class MessageFragment : BaseFragment() {
                 DividerItemDecoration.VERTICAL
             )
         )
-        mAdapter = CapturedTextAdapter(mAllCapturedList)
+
+        mAdapter = CapturedTextAdapter(mAllCapturedList) { captured ->
+            showAddToOnlyCaptureDialog(captured)
+        }
         recyclerView.adapter = mAdapter
 
         mFilterContainer = view.findViewById(R.id.app_filter_container)
         mExcludedCountText = view.findViewById(R.id.excluded_count)
+        mOnlyCaptureContainer = view.findViewById(R.id.only_capture_container)
+        mPrefixInput = view.findViewById(R.id.prefix_input)
+        mSuffixInput = view.findViewById(R.id.suffix_input)
 
         CapturedTextManager.init(requireContext())
         CapturedTextManager.addListener(captureListener)
@@ -50,8 +62,25 @@ class MessageFragment : BaseFragment() {
             Toast.makeText(fragmentActivity, "Log cleared", Toast.LENGTH_SHORT).show()
         }
 
+        mPrefixInput?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                CapturedTextManager.setOnlyCapturePrefix(s?.toString() ?: "")
+            }
+        })
+
+        mSuffixInput?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                CapturedTextManager.setOnlyCaptureSuffix(s?.toString() ?: "")
+            }
+        })
+
         restoreSettings()
         rebuildFilterChips()
+        rebuildOnlyCaptureFrames()
         filterList()
     }
 
@@ -68,6 +97,9 @@ class MessageFragment : BaseFragment() {
             mAppPackages.add(whitelist)
         }
         updateExcludedCount()
+
+        mPrefixInput?.setText(CapturedTextManager.getOnlyCapturePrefix())
+        mSuffixInput?.setText(CapturedTextManager.getOnlyCaptureSuffix())
     }
 
     private fun addCapturedText(captured: CapturedText) {
@@ -189,6 +221,47 @@ class MessageFragment : BaseFragment() {
         mAllCapturedList.clear()
         mAllCapturedList.addAll(filtered)
         mAdapter?.notifyDataSetChanged()
+    }
+
+    private fun showAddToOnlyCaptureDialog(captured: CapturedText) {
+        val prefix = CapturedTextManager.getOnlyCapturePrefix()
+        val suffix = CapturedTextManager.getOnlyCaptureSuffix()
+        val fullText = prefix + captured.text + suffix
+
+        CapturedTextManager.addOnlyCaptureFrame(captured.text, captured.packageName, captured.viewClass)
+        rebuildOnlyCaptureFrames()
+        Toast.makeText(fragmentActivity, "Added to Only Capture Frame", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun rebuildOnlyCaptureFrames() {
+        mOnlyCaptureContainer?.removeAllViews()
+        val frames = CapturedTextManager.getOnlyCaptureFrames()
+        frames.forEachIndexed { index, frame ->
+            val chip = createOnlyCaptureChip(frame, index)
+            mOnlyCaptureContainer?.addView(chip)
+        }
+    }
+
+    private fun createOnlyCaptureChip(frame: CaptureFrame, index: Int): Button {
+        val prefix = CapturedTextManager.getOnlyCapturePrefix()
+        val suffix = CapturedTextManager.getOnlyCaptureSuffix()
+        val displayText = if (frame.text.length > 10) frame.text.substring(0, 10) + "..." else frame.text
+
+        val chip = Button(requireContext()).apply {
+            text = "$prefix$displayText$suffix"
+            tag = index
+            textSize = 11f
+            setBackgroundColor(Color.parseColor("#E3F2FD"))
+            setTextColor(Color.parseColor("#1565C0"))
+
+            setOnLongClickListener {
+                CapturedTextManager.removeOnlyCaptureFrame(index)
+                rebuildOnlyCaptureFrames()
+                Toast.makeText(fragmentActivity, "Removed from Only Capture Frame", Toast.LENGTH_SHORT).show()
+                true
+            }
+        }
+        return chip
     }
 
     private fun getAppName(packageName: String): String {
