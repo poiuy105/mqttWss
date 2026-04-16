@@ -34,7 +34,7 @@ class SectionsPagerAdapter(
     companion object {
         val TAB_TITLES = intArrayOf(
             R.string.home,
-            R.string.connection,
+            R.string.setting,
             R.string.subscription,
             R.string.publish,
             R.string.message
@@ -43,7 +43,7 @@ class SectionsPagerAdapter(
         @DrawableRes
         val TAB_ICONS = intArrayOf(
             R.drawable.ic_home,
-            R.drawable.ic_connection,
+            R.drawable.ic_setting,
             R.drawable.ic_subscription,
             R.drawable.ic_publish,
             R.drawable.ic_message

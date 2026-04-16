@@ -105,54 +105,13 @@
         android:text="@string/publish"
         android:textAllCaps="false" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/test_tts"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="测试TTS"
-            android:textAllCaps="false" />
-
-        <Button
-            android:id="@+id/test_popup"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="测试弹窗"
-            android:textAllCaps="false" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/test_overlay_permission"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp"
-        android:text="申请悬浮窗权限"
-        android:textAllCaps="false" />
-
-    <TextView
-        android:id="@+id/tts_log"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:background="#EEEEEE"
-        android:padding="8dp"
-        android:text="日志:"
-        android:textColor="#333333"
-        android:textSize="12sp" />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/publish" />
+        android:layout_marginTop="24dp"
+        android:text="@string/publish"
+        android:textColor="@android:color/black"
+        android:textStyle="bold" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/publication_list"

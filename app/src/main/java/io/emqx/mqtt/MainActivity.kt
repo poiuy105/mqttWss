@@ -43,6 +43,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     var isAutoCaptureVoiceEnabled = false
 
+    private var mqttStatusListener: ((Boolean) -> Unit)? = null
+
+    fun setOnMqttStatusChangedListener(listener: (Boolean) -> Unit) {
+        mqttStatusListener = listener
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -80,7 +86,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         floatWindowManager = FloatWindowManager.getInstance(this)
 
         mFragmentList.add(HomeFragment.newInstance())
-        mFragmentList.add(ConnectionFragment.newInstance())
+        mFragmentList.add(SettingFragment.newInstance())
         mFragmentList.add(SubscriptionFragment.newInstance())
         mFragmentList.add(PublishFragment.newInstance())
         mFragmentList.add(MessageFragment.newInstance())
@@ -251,6 +257,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     MqttService.updateConnectionStatus(this@MainActivity, true)
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
+                        mqttStatusListener?.invoke(true)
                     }
                 }
 
@@ -262,17 +269,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     exception?.printStackTrace()
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
+                        mqttStatusListener?.invoke(false)
                     }
                 }
             })
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             isConnecting = false
             MqttService.updateConnectionStatus(this, false)
+            mqttStatusListener?.invoke(false)
             e.printStackTrace()
             Toast.makeText(this, "MqttException: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             isConnecting = false
             MqttService.updateConnectionStatus(this, false)
+            mqttStatusListener?.invoke(false)
             e.printStackTrace()
             Toast.makeText(this, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -287,8 +297,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             mClient = null
             mConnection = null
             MqttService.updateConnectionStatus(this, false)
+            mqttStatusListener?.invoke(false)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             MqttService.updateConnectionStatus(this, false)
+            mqttStatusListener?.invoke(false)
             e.printStackTrace()
         }
     }
@@ -376,8 +388,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         appendLog("Connection lost: $cause")
         isConnecting = false
         MqttService.updateConnectionStatus(this, false)
+        mqttStatusListener?.invoke(false)
         runOnUiThread {
-            (mFragmentList[1] as? ConnectionFragment)?.updateButtonText()
+            (mFragmentList[1] as? SettingFragment)?.updateButtonText()
         }
     }
 
