@@ -35,6 +35,8 @@ class SettingFragment : BaseFragment() {
     private lateinit var mVoiceSwitch: Switch
     private lateinit var mAutoStartSwitch: Switch
     private lateinit var mNotificationSwitch: Switch
+    private lateinit var mShowDebugLogSwitch: Switch
+    private lateinit var mDebugLogContainer: View
     private lateinit var mConfigManager: ConfigManager
 
     private val logBuilder = StringBuilder()
@@ -126,6 +128,8 @@ class SettingFragment : BaseFragment() {
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
         mAutoStartSwitch = view.findViewById(R.id.auto_start_switch)
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
+        mShowDebugLogSwitch = view.findViewById(R.id.show_debug_log_switch)
+        mDebugLogContainer = view.findViewById(R.id.debug_log_container)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -178,6 +182,11 @@ class SettingFragment : BaseFragment() {
         mNotificationSwitch.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.persistentNotification = isChecked
             appendLog("Persistent Notification ${if (isChecked) "enabled" else "disabled"}")
+        }
+
+        mShowDebugLogSwitch.setOnCheckedChangeListener { _, isChecked ->
+            mDebugLogContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
+            appendLog("Show Debug Log ${if (isChecked) "enabled" else "disabled"}")
         }
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->

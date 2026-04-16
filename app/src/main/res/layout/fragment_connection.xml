@@ -191,15 +191,6 @@
                     android:textSize="18sp" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Tools"
-                android:textColor="@android:color/black"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -348,15 +339,39 @@
                     android:checked="true" />
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Show Debug Log"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+                <Switch
+                    android:id="@+id/show_debug_log_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+            </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 
     <LinearLayout
+        android:id="@+id/debug_log_container"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="#F5F5F5">
+        android:background="#F5F5F5"
+        android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
