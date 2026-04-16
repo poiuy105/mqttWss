@@ -302,7 +302,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         try {
-            mClient?.subscribe(subscription.topic, subscription.qos)
+            mClient?.subscribe(subscription.topic, subscription.qos, null, listener)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to subscribe", Toast.LENGTH_SHORT).show()
