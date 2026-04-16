@@ -52,16 +52,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            or View.SYSTEM_UI_FLAG_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        )
-
         setContentView(R.layout.activity_main)
 
         CapturedTextManager.init(this)
@@ -127,7 +117,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         if (isLandscape) {
             tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
-                tabHeight,
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT
             )
             tabs.tabGravity = TabLayout.GRAVITY_FILL
