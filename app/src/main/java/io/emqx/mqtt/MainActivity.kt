@@ -318,7 +318,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 publish.topic,
                 publish.payload.toByteArray(),
                 publish.qos,
-                publish.isRetained
+                publish.isRetained,
+                null,
+                callback
             )
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             e.printStackTrace()

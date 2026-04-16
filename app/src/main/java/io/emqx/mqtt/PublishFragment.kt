@@ -1,29 +1,38 @@
 package io.emqx.mqtt
 
+import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
+import java.util.ArrayList
 
 class PublishFragment : BaseFragment() {
-    private var mTopic: EditText? = null
-    private var mPayload: EditText? = null
-    private var mQosRadioGroup: RadioGroup? = null
-    private var mRetainedRadioGroup: RadioGroup? = null
-    var mAdapter: PublishRecyclerViewAdapter? = null
-    var mPublishList: ArrayList<Publish> = ArrayList()
+    private var mAdapter: PublishRecyclerViewAdapter? = null
+    private val mPublishList: ArrayList<Publish> = ArrayList()
     private lateinit var mConfigManager: ConfigManager
 
     override val layoutResId: Int
         get() = R.layout.fragment_publish_list
 
+    private fun appendLog(message: String) {
+        (fragmentActivity as? MainActivity)?.let { main ->
+            main.appendLog("[Publish] $message")
+        }
+    }
+
     override fun setUpView(view: View) {
         mConfigManager = ConfigManager.getInstance(fragmentActivity!!)
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.publication_list)
-        mAdapter = PublishRecyclerViewAdapter(mPublishList)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.publish_list)
+        mAdapter = PublishRecyclerViewAdapter(
+            mPublishList,
+            onDeleteClick = { publish -> deletePublish(publish) },
+            onRepublishClick = { publish -> republish(publish) }
+        )
         recyclerView.adapter = mAdapter
         recyclerView.addItemDecoration(
             DividerItemDecoration(
@@ -31,86 +40,105 @@ class PublishFragment : BaseFragment() {
                 DividerItemDecoration.VERTICAL
             )
         )
-        mTopic = view.findViewById(R.id.topic)
-        mPayload = view.findViewById(R.id.payload)
-        mQosRadioGroup = view.findViewById(R.id.qos)
-        mRetainedRadioGroup = view.findViewById(R.id.retained)
 
-        loadPublishSettings()
+        view.findViewById<Button>(R.id.btn_add_publish).setOnClickListener {
+            showAddPublishDialog()
+        }
 
-        val pubBtn = view.findViewById<Button>(R.id.publish)
-        pubBtn.setOnClickListener {
-            val publish = publish
-            savePublishSettings()
-            (fragmentActivity as MainActivity).appendLog("Publish: topic=${publish.topic}")
-            (fragmentActivity as MainActivity).publish(publish, object : IMqttActionListener {
+        loadPublishHistory()
+    }
+
+    private fun showAddPublishDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_publish, null)
+        val topicInput = dialogView.findViewById<EditText>(R.id.dialog_topic)
+        val payloadInput = dialogView.findViewById<EditText>(R.id.dialog_payload)
+        val qosGroup = dialogView.findViewById<RadioGroup>(R.id.dialog_qos)
+        val retainedGroup = dialogView.findViewById<RadioGroup>(R.id.dialog_retained)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Add Publish")
+            .setView(dialogView)
+            .setPositiveButton("Publish") { _, _ ->
+                val topic = topicInput.text.toString()
+                val payload = payloadInput.text.toString()
+                if (topic.isEmpty()) {
+                    Toast.makeText(fragmentActivity, "Please enter topic", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val qos = when (qosGroup.checkedRadioButtonId) {
+                    R.id.dialog_qos1 -> 1
+                    R.id.dialog_qos2 -> 2
+                    else -> 0
+                }
+                val retained = retainedGroup.checkedRadioButtonId == R.id.dialog_retained_true
+                val publish = Publish(topic, payload, qos, retained)
+                publishToTopic(publish)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun publishToTopic(publish: Publish) {
+        appendLog("Publishing to: ${publish.topic}, payload: ${publish.payload}")
+        (fragmentActivity as MainActivity).publish(
+            publish,
+            object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
-                    mPublishList.add(0, publish)
-                    mAdapter!!.notifyItemInserted(0)
-                    (fragmentActivity as MainActivity).appendLog("Publish success")
+                    appendLog("Publish SUCCESS: ${publish.topic}")
+                    activity?.runOnUiThread {
+                        mPublishList.add(0, publish)
+                        mAdapter?.notifyItemInserted(0)
+                        savePublishHistory()
+                        Toast.makeText(fragmentActivity, "Published: ${publish.topic}", Toast.LENGTH_SHORT).show()
+                    }
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
-                    Toast.makeText(fragmentActivity, "Failed to publish", Toast.LENGTH_SHORT).show()
-                    (fragmentActivity as MainActivity).appendLog("Publish failed: ${exception?.message}")
+                    appendLog("Publish FAILED: $exception")
+                    activity?.runOnUiThread {
+                        Toast.makeText(fragmentActivity, "Failed to publish: $exception", Toast.LENGTH_SHORT).show()
+                    }
                 }
             })
+    }
+
+    private fun deletePublish(publish: Publish) {
+        val index = mPublishList.indexOf(publish)
+        if (index != -1) {
+            mPublishList.removeAt(index)
+            mAdapter?.notifyItemRemoved(index)
+            savePublishHistory()
+            appendLog("Deleted publish: ${publish.topic}")
+            Toast.makeText(fragmentActivity, "Deleted: ${publish.topic}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun savePublishSettings() {
-        mConfigManager.publishTopic = mTopic?.text.toString() ?: ""
-        mConfigManager.publishPayload = mPayload?.text.toString() ?: ""
-        mConfigManager.publishQos = when (mQosRadioGroup?.checkedRadioButtonId) {
-            R.id.qos0 -> 0
-            R.id.qos1 -> 1
-            R.id.qos2 -> 2
-            else -> 0
-        }
-        mConfigManager.publishRetained = when (mRetainedRadioGroup?.checkedRadioButtonId) {
-            R.id.retained_true -> true
-            else -> false
-        }
+    private fun republish(publish: Publish) {
+        publishToTopic(publish)
     }
 
-    private fun loadPublishSettings() {
-        val savedTopic = mConfigManager.publishTopic
-        val savedPayload = mConfigManager.publishPayload
-        val savedQos = mConfigManager.publishQos
-        val savedRetained = mConfigManager.publishRetained
-
-        mTopic?.setText(savedTopic)
-        mPayload?.setText(savedPayload)
-
-        when (savedQos) {
-            0 -> mQosRadioGroup?.check(R.id.qos0)
-            1 -> mQosRadioGroup?.check(R.id.qos1)
-            2 -> mQosRadioGroup?.check(R.id.qos2)
-        }
-        if (savedRetained) {
-            mRetainedRadioGroup?.check(R.id.retained_true)
-        } else {
-            mRetainedRadioGroup?.check(R.id.retained_false)
-        }
+    private fun savePublishHistory() {
+        val history = mPublishList.joinToString(";") { "${it.topic},${it.payload},${it.qos},${it.retained}" }
+        mConfigManager.publishHistory = history
     }
 
-    private val publish: Publish
-        get() {
-            val topic = mTopic!!.text.toString()
-            val message = mPayload!!.text.toString()
-            var qos = 0
-            when (mQosRadioGroup!!.checkedRadioButtonId) {
-                R.id.qos0 -> qos = 0
-                R.id.qos1 -> qos = 1
-                R.id.qos2 -> qos = 2
+    private fun loadPublishHistory() {
+        val saved = mConfigManager.publishHistory
+        if (saved.isNotEmpty()) {
+            mPublishList.clear()
+            saved.split(";").forEach { item ->
+                val parts = item.split(",")
+                if (parts.size >= 4) {
+                    val topic = parts[0]
+                    val payload = parts[1]
+                    val qos = parts[2].toIntOrNull() ?: 0
+                    val retained = parts[3].toBoolean()
+                    mPublishList.add(Publish(topic, payload, qos, retained))
+                }
             }
-            var retained = false
-            when (mRetainedRadioGroup!!.checkedRadioButtonId) {
-                R.id.retained_true -> retained = true
-                R.id.retained_false -> retained = false
-            }
-            return Publish(topic, message, qos, retained)
+            mAdapter?.notifyDataSetChanged()
         }
+    }
 
     companion object {
         fun newInstance(): PublishFragment {
