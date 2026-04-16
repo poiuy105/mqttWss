@@ -118,7 +118,7 @@ class PublishFragment : BaseFragment() {
     }
 
     private fun savePublishHistory() {
-        val history = mPublishList.joinToString(";") { "${it.topic},${it.payload},${it.qos},${it.retained}" }
+        val history = mPublishList.joinToString(";") { "${it.topic},${it.payload},${it.qos},${it.isRetained}" }
         mConfigManager.publishHistory = history
     }
 

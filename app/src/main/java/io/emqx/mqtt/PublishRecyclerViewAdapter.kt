@@ -27,7 +27,7 @@ class PublishRecyclerViewAdapter(
         holder.mTopicView.text = item.topic
         holder.mPayloadView.text = item.payload
         holder.mQosView.text = "QoS: ${item.qos}"
-        holder.mRetainedView.text = "Retained: ${item.retained}"
+        holder.mRetainedView.text = "Retained: ${item.isRetained}"
 
         val isExpanded = position == expandedPosition
         holder.mActionButtons.visibility = if (isExpanded) View.VISIBLE else View.GONE
