@@ -70,19 +70,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     Log.e("MainActivity", "TTS initialization failed! status=$status")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show()
-                        // 检查是否有可用的TTS引擎
-                        if (!ttsManager?.hasAvailableEngine()!!) {
-                            // 引导用户安装或选择TTS引擎
-                            val checkIntent = ttsManager?.getTTSCheckIntent()
-                            if (checkIntent != null) {
-                                Toast.makeText(this@MainActivity, "Please install a TTS engine to use voice features", Toast.LENGTH_LONG).show()
-                                startActivityForResult(checkIntent, 1001)
-                            }
-                        } else {
-                            // 有可用引擎但初始化失败，尝试重新初始化
-                            Toast.makeText(this@MainActivity, "TTS engine available but initialization failed, retrying...", Toast.LENGTH_LONG).show()
-                            ttsManager?.reinitialize()
-                        }
                     }
                 }
             })

@@ -3,7 +3,6 @@ package io.emqx.mqtt
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import io.emqx.mqtt.MainActivity
 
 object CapturedTextManager {
     private val listeners = mutableListOf<(CapturedText) -> Unit>()
@@ -15,13 +14,14 @@ object CapturedTextManager {
     private var prefs: SharedPreferences? = null
     private var context: Context? = null
 
+    // Home Assistant & Only Capture 功能 (from kotlin_temp)
     private var onlyCaptureFrames = ArrayList<CaptureFrame>()
     private var onlyCapturePrefix = ""
     private var onlyCaptureSuffix = ""
     private var isOnlyCaptureEnabled = false
     private var sendToHomeAssistant = false
     private var lastCommandTime = 0L
-    private const val DEBOUNCE_DELAY = 1000L // 1 second
+    private const val DEBOUNCE_DELAY = 1000L
 
     fun init(context: Context) {
         this.context = context
@@ -55,28 +55,24 @@ object CapturedTextManager {
             return
         }
 
-        // Apply text prefix/suffix restrictions
+        // Apply text prefix/suffix restrictions (HA feature)
         val prefix = onlyCapturePrefix
         val suffix = onlyCaptureSuffix
         
         if (prefix.isNotEmpty() && !text.startsWith(prefix)) {
-            return // Skip if text doesn't match prefix
+            return
         }
         
         if (suffix.isNotEmpty() && !text.endsWith(suffix)) {
-            return // Skip if text doesn't match suffix
+            return
         }
 
         // Selective monitoring: only process text if it matches frames in Only Capture Frame
         if (onlyCaptureFrames.isNotEmpty()) {
             val matchesFrame = onlyCaptureFrames.any { frame ->
-                // Match by package name
                 frame.packageName == packageName &&
-                // Match by layer (viewDepth)
                 (frame.viewDepth == -1 || frame.viewDepth == viewDepth) &&
-                // Match by layer name (viewClass)
                 (frame.viewClass.isEmpty() || frame.viewClass == viewClass) &&
-                // Match by approximate position (within 10px tolerance)
                 (frame.boundsLeft == -1 || Math.abs(frame.boundsLeft - boundsLeft) < 10) &&
                 (frame.boundsTop == -1 || Math.abs(frame.boundsTop - boundsTop) < 10) &&
                 (frame.boundsRight == -1 || Math.abs(frame.boundsRight - boundsRight) < 10) &&
@@ -84,7 +80,7 @@ object CapturedTextManager {
             }
             
             if (!matchesFrame) {
-                return // Skip if no matching frame found
+                return
             }
         }
 
@@ -104,57 +100,33 @@ object CapturedTextManager {
 
         // Send to Home Assistant if enabled and not in debounce period
         if (sendToHomeAssistant) {
-            Log.d("CapturedTextManager", "sendToHomeAssistant is enabled, processing text: $text")
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastCommandTime > DEBOUNCE_DELAY) {
-                Log.d("CapturedTextManager", "Debounce check passed, sending to Home Assistant")
                 lastCommandTime = currentTime
                 
-                // Extract valid text (remove prefix and suffix)
                 var validText = text
                 if (onlyCapturePrefix.isNotEmpty() && validText.startsWith(onlyCapturePrefix)) {
                     validText = validText.substring(onlyCapturePrefix.length)
-                    Log.d("CapturedTextManager", "Removed prefix, text becomes: $validText")
                 }
                 if (onlyCaptureSuffix.isNotEmpty() && validText.endsWith(onlyCaptureSuffix)) {
                     validText = validText.substring(0, validText.length - onlyCaptureSuffix.length)
-                    Log.d("CapturedTextManager", "Removed suffix, text becomes: $validText")
                 }
                 validText = validText.trim()
-                Log.d("CapturedTextManager", "Final valid text: $validText")
                 
                 if (validText.isNotEmpty()) {
-                    Log.d("CapturedTextManager", "Valid text is not empty, sending to Home Assistant")
-                    // Send to Home Assistant
                     context?.let { ctx ->
-                        Log.d("CapturedTextManager", "Context is available, calling HomeAssistantService.sendCommand")
                         HomeAssistantService.sendCommand(ctx, validText) { success, speech ->
                             if (success && speech != null) {
-                                Log.d("CapturedTextManager", "Home Assistant response received: $speech")
-                                // Broadcast speech response via TTS
                                 (ctx as? MainActivity)?.let { activity ->
-                                    // Click back button to dismiss any UI
                                     activity.onBackPressed()
-                                    
-                                    // Show popup with response
                                     activity.showFloatMessage("Home Assistant", speech)
-                                    
-                                    // TTS broadcast
                                     activity.ttsManager?.speak(speech)
                                 }
-                            } else {
-                                Log.d("CapturedTextManager", "Home Assistant response failed: $speech")
                             }
                         }
-                    } ?: Log.d("CapturedTextManager", "Context is null, cannot send to Home Assistant")
-                } else {
-                    Log.d("CapturedTextManager", "Valid text is empty, skipping Home Assistant send")
+                    }
                 }
-            } else {
-                Log.d("CapturedTextManager", "Debounce check failed, skipping Home Assistant send")
             }
-        } else {
-            Log.d("CapturedTextManager", "sendToHomeAssistant is disabled, skipping Home Assistant send")
         }
     }
 
@@ -190,6 +162,8 @@ object CapturedTextManager {
             excludedApps.contains(packageName)
         }
     }
+
+    // === Home Assistant & Only Capture 方法 ===
 
     fun addOnlyCaptureFrame(text: String, packageName: String, viewClass: String = "", boundsLeft: Int = -1, boundsTop: Int = -1, boundsRight: Int = -1, boundsBottom: Int = -1, viewDepth: Int = -1) {
         val frame = CaptureFrame(text, packageName, viewClass, System.currentTimeMillis(), boundsLeft, boundsTop, boundsRight, boundsBottom, viewDepth)
@@ -233,11 +207,12 @@ object CapturedTextManager {
 
     fun setSendToHomeAssistant(enabled: Boolean) {
         sendToHomeAssistant = enabled
-        Log.d("CapturedTextManager", "sendToHomeAssistant set to: $enabled")
         saveOnlyCaptureSettings()
     }
 
     fun getSendToHomeAssistant(): Boolean = sendToHomeAssistant
+
+    // === 持久化方法 ===
 
     fun saveSettings() {
         prefs?.edit()?.apply {
@@ -289,7 +264,6 @@ object CapturedTextManager {
                             if (parts.size >= 9) parts[8].toIntOrNull() ?: -1 else -1
                         ))
                     } else if (parts.size >= 4) {
-                        // Backward compatibility for old format
                         onlyCaptureFrames.add(CaptureFrame(
                             parts[0],
                             parts[1],

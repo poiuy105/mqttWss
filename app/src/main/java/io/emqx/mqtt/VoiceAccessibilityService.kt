@@ -12,7 +12,7 @@ class VoiceAccessibilityService : AccessibilityService() {
     companion object {
         private var instance: VoiceAccessibilityService? = null
         private const val THROTTLE_DELAY_MS = 300L
-        private const val MAX_DEPTH = 20
+        private const val MAX_DEPTH = 12
         private const val MIN_TEXT_LENGTH = 1
 
         fun getInstance(): VoiceAccessibilityService? = instance
@@ -27,8 +27,6 @@ class VoiceAccessibilityService : AccessibilityService() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        // 初始化 CapturedTextManager
-        CapturedTextManager.init(this)
     }
 
     override fun onDestroy() {
@@ -95,18 +93,21 @@ class VoiceAccessibilityService : AccessibilityService() {
             }
         }
 
-        // Process all captured text
         for (captured in capturedList) {
-            CapturedTextManager.onTextCaptured(
-                text = captured.first,
-                packageName = packageName,
-                boundsLeft = captured.second.left,
-                boundsTop = captured.second.top,
-                boundsRight = captured.second.right,
-                boundsBottom = captured.second.bottom,
-                viewDepth = captured.third.first,
-                viewClass = captured.third.second
-            )
+            val textHash = captured.first.hashCode()
+            if (textHash != lastCapturedHash) {
+                lastCapturedHash = textHash
+                CapturedTextManager.onTextCaptured(
+                    text = captured.first,
+                    packageName = packageName,
+                    boundsLeft = captured.second.left,
+                    boundsTop = captured.second.top,
+                    boundsRight = captured.second.right,
+                    boundsBottom = captured.second.bottom,
+                    viewDepth = captured.third.first,
+                    viewClass = captured.third.second
+                )
+            }
         }
     }
 
