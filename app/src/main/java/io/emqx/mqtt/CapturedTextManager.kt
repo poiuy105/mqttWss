@@ -117,23 +117,24 @@ object CapturedTextManager {
                 
                 if (validText.isNotEmpty()) {
                     // Send to Home Assistant
-                    HomeAssistantService.sendCommand(prefs?.context ?: return) { success, speech ->
-                        if (success && speech != null) {
-                            // Broadcast speech response via TTS
-                            (prefs?.context as? MainActivity)?.let { activity ->
-                                // Click back button to dismiss any UI
-                                activity.onBackPressed()
-                                
-                                // Show popup with response
-                                activity.showFloatMessage("Home Assistant", speech)
-                                
-                                // TTS broadcast
-                                activity.ttsManager?.speak(speech)
+                    prefs?.context?.let { context ->
+                        HomeAssistantService.sendCommand(context, validText) { success, speech ->
+                            if (success && speech != null) {
+                                // Broadcast speech response via TTS
+                                (context as? MainActivity)?.let { activity ->
+                                    // Click back button to dismiss any UI
+                                    activity.onBackPressed()
+                                    
+                                    // Show popup with response
+                                    activity.showFloatMessage("Home Assistant", speech)
+                                    
+                                    // TTS broadcast
+                                    activity.ttsManager?.speak(speech)
+                                }
                             }
                         }
                     }
                 }
-            }
         }
     }
 

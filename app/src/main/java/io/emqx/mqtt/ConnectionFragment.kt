@@ -34,6 +34,10 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mNotificationSwitch: Switch
     private lateinit var mAllowUntrustedCheckbox: CheckBox
     private lateinit var mSslUntrustedContainer: LinearLayout
+    private lateinit var mHaAddress: EditText
+    private lateinit var mHaToken: EditText
+    private lateinit var mHaLanguage: EditText
+    private lateinit var mHaHttpsCheckbox: CheckBox
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -73,7 +77,11 @@ class ConnectionFragment : BaseFragment() {
             username = mUsername.text.toString(),
             password = mPassword.text.toString(),
             protocol = protocolName,
-            allowUntrusted = mAllowUntrustedCheckbox.isChecked
+            allowUntrusted = mAllowUntrustedCheckbox.isChecked,
+            haAddress = mHaAddress.text.toString(),
+            haToken = mHaToken.text.toString(),
+            haLanguage = mHaLanguage.text.toString(),
+            haHttps = mHaHttpsCheckbox.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -92,6 +100,10 @@ class ConnectionFragment : BaseFragment() {
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
             mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
+            mHaAddress.setText(mConfigManager.haAddress)
+            mHaToken.setText(mConfigManager.haToken)
+            mHaLanguage.setText(mConfigManager.haLanguage)
+            mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -126,6 +138,10 @@ class ConnectionFragment : BaseFragment() {
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
         mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
         mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
+        mHaAddress = view.findViewById(R.id.ha_address)
+        mHaToken = view.findViewById(R.id.ha_token)
+        mHaLanguage = view.findViewById(R.id.ha_language)
+        mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
