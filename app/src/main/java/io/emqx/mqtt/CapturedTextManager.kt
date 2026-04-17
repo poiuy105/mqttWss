@@ -104,25 +104,33 @@ object CapturedTextManager {
 
         // Send to Home Assistant if enabled and not in debounce period
         if (sendToHomeAssistant) {
+            Log.d("CapturedTextManager", "sendToHomeAssistant is enabled, processing text: $text")
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastCommandTime > DEBOUNCE_DELAY) {
+                Log.d("CapturedTextManager", "Debounce check passed, sending to Home Assistant")
                 lastCommandTime = currentTime
                 
                 // Extract valid text (remove prefix and suffix)
                 var validText = text
                 if (onlyCapturePrefix.isNotEmpty() && validText.startsWith(onlyCapturePrefix)) {
                     validText = validText.substring(onlyCapturePrefix.length)
+                    Log.d("CapturedTextManager", "Removed prefix, text becomes: $validText")
                 }
                 if (onlyCaptureSuffix.isNotEmpty() && validText.endsWith(onlyCaptureSuffix)) {
                     validText = validText.substring(0, validText.length - onlyCaptureSuffix.length)
+                    Log.d("CapturedTextManager", "Removed suffix, text becomes: $validText")
                 }
                 validText = validText.trim()
+                Log.d("CapturedTextManager", "Final valid text: $validText")
                 
                 if (validText.isNotEmpty()) {
+                    Log.d("CapturedTextManager", "Valid text is not empty, sending to Home Assistant")
                     // Send to Home Assistant
                     context?.let { ctx ->
+                        Log.d("CapturedTextManager", "Context is available, calling HomeAssistantService.sendCommand")
                         HomeAssistantService.sendCommand(ctx, validText) { success, speech ->
                             if (success && speech != null) {
+                                Log.d("CapturedTextManager", "Home Assistant response received: $speech")
                                 // Broadcast speech response via TTS
                                 (ctx as? MainActivity)?.let { activity ->
                                     // Click back button to dismiss any UI
@@ -134,11 +142,19 @@ object CapturedTextManager {
                                     // TTS broadcast
                                     activity.ttsManager?.speak(speech)
                                 }
+                            } else {
+                                Log.d("CapturedTextManager", "Home Assistant response failed: $speech")
                             }
                         }
-                    }
+                    } ?: Log.d("CapturedTextManager", "Context is null, cannot send to Home Assistant")
+                } else {
+                    Log.d("CapturedTextManager", "Valid text is empty, skipping Home Assistant send")
                 }
+            } else {
+                Log.d("CapturedTextManager", "Debounce check failed, skipping Home Assistant send")
             }
+        } else {
+            Log.d("CapturedTextManager", "sendToHomeAssistant is disabled, skipping Home Assistant send")
         }
     }
 
