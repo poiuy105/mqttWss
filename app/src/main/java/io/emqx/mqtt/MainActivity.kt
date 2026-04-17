@@ -2,12 +2,18 @@ package io.emqx.mqtt
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -76,15 +82,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         val tabs = findViewById<TabLayout>(R.id.tabs)
         tabs.setupWithViewPager(viewPager)
 
-        for (i in 0 until tabs.tabCount) {
-            val tab = tabs.getTabAt(i)
-            tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        if (isLandscape) {
+            setupLandscapeTabs(tabs, sectionsPagerAdapter)
+        } else {
+            for (i in 0 until tabs.tabCount) {
+                val tab = tabs.getTabAt(i)
+                tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
+            }
         }
-
-        tabs.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            updateTabLayoutForOrientation()
-        }
-        updateTabLayoutForOrientation()
 
         setupAccessibilityService()
 
@@ -96,51 +102,51 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
     }
 
-    private fun updateTabLayoutForOrientation() {
-        val tabs = findViewById<TabLayout>(R.id.tabs)
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    private fun setupLandscapeTabs(tabs: TabLayout, adapter: SectionsPagerAdapter) {
+        val iconSize = resources.getDimensionPixelSize(R.dimen.landscape_tab_icon_size)
+        val textSize = resources.getDimension(R.dimen.landscape_tab_text_size)
+        val padding = resources.getDimensionPixelSize(R.dimen.landscape_tab_padding)
 
-        val tabHeight = resources.getDimensionPixelSize(R.dimen.tab_height)
+        for (i in 0 until adapter.count) {
+            val tab = tabs.getTabAt(i) ?: continue
 
-        if (isLandscape) {
-            tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
-                tabHeight,
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT
-            )
-            tabs.tabGravity = TabLayout.GRAVITY_FILL
-            tabs.tabMode = TabLayout.MODE_FIXED
-            tabs.rotation = 270f
+            val container = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                setPadding(padding, padding * 2, padding, padding * 2)
+            }
 
-            val viewPager = findViewById<ViewPager>(R.id.view_pager)
-            viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
-                0,
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                1f
-            )
+            val imageView = ImageView(this).apply {
+                setImageResource(adapter.getPageIcon(i))
+                setColorFilter(Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+            }
 
-            val rootLayout = findViewById<android.widget.LinearLayout>(R.id.root_layout)
-            rootLayout?.orientation = android.widget.LinearLayout.HORIZONTAL
-        } else {
-            tabs.layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            tabs.tabGravity = TabLayout.GRAVITY_FILL
-            tabs.tabMode = TabLayout.MODE_FIXED
-            tabs.rotation = 0f
+            val textView = TextView(this).apply {
+                text = getString(adapter.TAB_TITLES[i])
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
+                isSingleLine = true
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = padding }
+            }
 
-            val viewPager = findViewById<ViewPager>(R.id.view_pager)
-            viewPager.layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
+            container.addView(imageView)
+            container.addView(textView)
+            tab.customView = container
         }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        recreate()
+        // 使用layout-land资源限定符，系统自动重新inflate布局，无需手动recreate
     }
 
     private fun autoConnectIfConfigured() {
