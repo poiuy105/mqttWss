@@ -32,6 +32,8 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mVoiceSwitch: Switch
     private lateinit var mAutoStartSwitch: Switch
     private lateinit var mNotificationSwitch: Switch
+    private lateinit var mAllowUntrustedCheckbox: CheckBox
+    private lateinit var mSslUntrustedContainer: LinearLayout
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -70,7 +72,8 @@ class ConnectionFragment : BaseFragment() {
             clientId = mClientId.text.toString(),
             username = mUsername.text.toString(),
             password = mPassword.text.toString(),
-            protocol = protocolName
+            protocol = protocolName,
+            allowUntrusted = mAllowUntrustedCheckbox.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -88,6 +91,7 @@ class ConnectionFragment : BaseFragment() {
             mAutoConnect.isChecked = mConfigManager.autoConnect
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
+            mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -120,6 +124,8 @@ class ConnectionFragment : BaseFragment() {
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
         mAutoStartSwitch = view.findViewById(R.id.auto_start_switch)
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
+        mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
+        mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -189,6 +195,12 @@ class ConnectionFragment : BaseFragment() {
                 else -> View.GONE
             }
             mPath.visibility = pathVisibility
+
+            val sslUntrustedVisibility = when (checkedId) {
+                R.id.protocol_ssl -> View.VISIBLE
+                else -> View.GONE
+            }
+            mSslUntrustedContainer.visibility = sslUntrustedVisibility
         }
 
         mButton.setOnClickListener {
@@ -220,7 +232,8 @@ class ConnectionFragment : BaseFragment() {
                     mUsername.text.toString(),
                     mPassword.text.toString(),
                     protocolName,
-                    mPath.text.toString()
+                    mPath.text.toString(),
+                    mAllowUntrustedCheckbox.isChecked
                 )
                 appendLog("Calling connect()...")
 

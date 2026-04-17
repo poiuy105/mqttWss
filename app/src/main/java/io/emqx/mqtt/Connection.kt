@@ -13,7 +13,8 @@ class Connection(
     var username: String,
     var password: String,
     private val protocol: String,
-    private val path: String
+    private val path: String,
+    private val allowUntrusted: Boolean = false
 ) {
     enum class Protocol {
         TCP, SSL, WS, WSS
@@ -43,8 +44,12 @@ class Connection(
             options.keepAliveInterval = 60
             if (protocol == "SSL") {
                 try {
-                    options.socketFactory =
-                        SSLUtils.getSingleSocketFactory(context.resources.openRawResource(R.raw.cacert))
+                    if (allowUntrusted) {
+                        options.socketFactory = SSLUtils.getInsecureSocketFactory()
+                    } else {
+                        options.socketFactory =
+                            SSLUtils.getSingleSocketFactory(context.resources.openRawResource(R.raw.cacert))
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

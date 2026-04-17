@@ -61,6 +61,29 @@
                     android:textSize="16sp" />
             </RadioGroup>
 
+            <LinearLayout
+                android:id="@+id/ssl_untrusted_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Allow untrusted certificates"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+                <CheckBox
+                    android:id="@+id/allow_untrusted_checkbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

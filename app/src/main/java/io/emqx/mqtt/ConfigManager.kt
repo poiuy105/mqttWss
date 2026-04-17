@@ -30,6 +30,7 @@ class ConfigManager(context: Context) {
         private const val KEY_PUBLISH_RETAINED = "publish_retained"
         private const val KEY_SUBSCRIPTION_HISTORY = "subscription_history"
         private const val KEY_PUBLISH_HISTORY = "publish_history"
+        private const val KEY_ALLOW_UNTRUSTED = "allow_untrusted"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -129,6 +130,10 @@ class ConfigManager(context: Context) {
         get() = prefs.getLong(KEY_LAST_CONNECTED, 0)
         set(value) = prefs.edit().putLong(KEY_LAST_CONNECTED, value).apply()
 
+    var allowUntrusted: Boolean
+        get() = prefs.getBoolean(KEY_ALLOW_UNTRUSTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_ALLOW_UNTRUSTED, value).apply()
+
     fun saveConnectionConfig(
         host: String,
         port: Int,
@@ -136,7 +141,8 @@ class ConfigManager(context: Context) {
         clientId: String,
         username: String,
         password: String,
-        protocol: String
+        protocol: String,
+        allowUntrusted: Boolean
     ) {
         prefs.edit().apply {
             putString(KEY_HOST, host)
@@ -146,6 +152,7 @@ class ConfigManager(context: Context) {
             putString(KEY_USERNAME, username)
             putString(KEY_PASSWORD, password)
             putString(KEY_PROTOCOL, protocol)
+            putBoolean(KEY_ALLOW_UNTRUSTED, allowUntrusted)
             putLong(KEY_LAST_CONNECTED, System.currentTimeMillis())
             apply()
         }
