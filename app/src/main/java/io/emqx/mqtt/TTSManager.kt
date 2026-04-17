@@ -7,14 +7,34 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
+import android.util.Log
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class TTSManager(private val context: Context) {
     private var tts: TextToSpeech? = null
+    @Volatile
     private var isInitialized = false
-    private var initStatus: Int = -1
+    private val initStatus = AtomicInteger(-1)
     private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // 车机优化：重试和引擎切换机制
+    private var retryCount = 0
+    private val maxRetries = 3
+    private val retryDelayMs = 2000L
+    private var triedEngines = mutableSetOf<String>()
+    private val isInitializing = AtomicBoolean(false)
+    private var timeoutRunnable: Runnable? = null
+
+    companion object {
+        private const val TAG = "TTSManager"
+        // 车机TTS初始化需要更长时间（比亚迪车机可能需要15-30秒）
+        const val INIT_TIMEOUT_MS = 30000L
+    }
 
     interface TTSListener {
         fun onSpeakStart(){}
@@ -33,61 +53,332 @@ class TTSManager(private val context: Context) {
     fun setTTSListener(listener: TTSListener?) { this.ttsListener = listener }
     fun setOnInitListener(listener: OnInitListener?) { this.initListener = listener }
     fun isReady(): Boolean = isInitialized
-    fun getInitStatus(): Int = initStatus
+    fun getInitStatus(): Int = initStatus.get()
 
-    init { executor.execute { initTTS() } }
+    init { executor.execute { initTTS(null) } }
 
-    private fun initTTS() {
-        tts = TextToSpeech(context) { status ->
-            initStatus = status
-            if (status == TextToSpeech.SUCCESS) {
-                val lang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Locale.SIMPLIFIED_CHINESE else Locale.CHINA
-                val langResult = tts?.setLanguage(lang)
-                if (langResult == TextToSpeech.LANG_AVAILABLE || langResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-                    isInitialized = true
-                    setupListener()
-                    initListener?.onInitSuccess()
-                } else {
-                    initListener?.onInitFailed(-3)
-                }
-            } else {
-                initListener?.onInitFailed(status)
-            }
+    /**
+     * 重新初始化TTS（用于外部调用）
+     */
+    fun reinitialize() {
+        Log.d(TAG, "reinitialize() called")
+        if (isInitializing.get()) {
+            Log.w(TAG, "Already initializing, skipping reinitialize")
+            return
+        }
+        executor.execute {
+            releaseInternal()
+            retryCount = 0
+            triedEngines.clear()
+            initStatus.set(-1)
+            isInitialized = false
+            initTTS(null)
+        }
+    }
+
+    private fun initTTS(enginePackageName: String?) {
+        if (!isInitializing.compareAndSet(false, true)) {
+            Log.w(TAG, "initTTS: already initializing, skipping")
+            return
         }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (initStatus == -1) initListener?.onInitFailed(-2)
-        }, 8000)
+        val engineDesc = enginePackageName ?: "default"
+        Log.d(TAG, "initTTS: starting with engine='$engineDesc', retry=$retryCount/$maxRetries")
+
+        try {
+            tts = TextToSpeech(context, object : TextToSpeech.OnInitListener {
+                override fun onInit(status: Int) {
+                    val prevStatus = initStatus.getAndSet(status)
+                    Log.d(TAG, "onInit: status=$status, previous=$prevStatus, engine='$engineDesc'")
+
+                    when (status) {
+                        TextToSpeech.SUCCESS -> {
+                            handleInitSuccess(enginePackageName)
+                        }
+                        else -> {
+                            handleInitFailure(status, enginePackageName)
+                        }
+                    }
+                }
+            }, enginePackageName)
+
+            // 设置超时检测（车机需要更长时间）
+            timeoutRunnable = Runnable {
+                if (initStatus.get() == -1 && isInitialized.not()) {
+                    Log.w(TAG, "initTTS: TIMEOUT after ${INIT_TIMEOUT_MS}ms, engine='$engineDesc'")
+                    handleInitFailure(-2, enginePackageName)
+                }
+            }
+            mainHandler.postDelayed(timeoutRunnable!!, INIT_TIMEOUT_MS)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "initTTS: exception during creation", e)
+            isInitializing.set(false)
+            initListener?.onInitFailed(-5)
+        }
+    }
+
+    private fun handleInitSuccess(enginePackageName: String?) {
+        Log.d(TAG, "handleInitSuccess: TextToSpeech.SUCCESS received")
+        
+        // 尝试设置中文语言
+        val targetLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) 
+            Locale.SIMPLIFIED_CHINESE else Locale.CHINA
+        
+        val langResult = tts?.setLanguage(targetLocale)
+        Log.d(TAG, "handleInitSuccess: setLanguage($targetLocale)=$langResult")
+
+        when (langResult) {
+            TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE -> {
+                // 语言设置成功
+                cancelTimeout()
+                isInitialized = true
+                isInitializing.set(false)
+                
+                setupListener()
+                Log.i(TAG, "handleInitSuccess: TTS ready! Engine=${tts?.defaultEngine}")
+                initListener?.onInitSuccess()
+            }
+            TextToSpeech.LANG_MISSING_DATA -> {
+                // 缺少语言数据 - 尝试安装或降级到可用语言
+                Log.w(TAG, "handleInitSuccess: LANG_MISSING_DATA for $targetLocale, trying fallback")
+                tryFallbackLanguage(enginePackageName)
+            }
+            TextToSpeech.LANG_NOT_SUPPORTED -> {
+                // 中文不支持 - 尝试其他语言或引擎
+                Log.w(TAG, "handleInitSuccess: LANG_NOT_SUPPORTED for $targetLocale")
+                tryFallbackLanguage(enginePackageName)
+            }
+            else -> {
+                Log.e(TAG, "handleInitSuccess: unknown langResult=$langResult")
+                handleInitFailure(-3, enginePackageName)
+            }
+        }
+    }
+
+    /**
+     * 尝试使用备用语言（英语等）初始化
+     */
+    private fun tryFallbackLanguage(enginePackageName: String?) {
+        // 尝试系统默认语言
+        val defaultLangResult = tts?.setLanguage(Locale.getDefault())
+        Log.d(TAG, "tryFallbackLanguage: Locale.getDefault()=${Locale.getDefault()}, result=$defaultLangResult")
+        
+        if (defaultLangResult == TextToSpeech.LANG_AVAILABLE || defaultLangResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+            cancelTimeout()
+            isInitialized = true
+            isInitializing.set(false)
+            setupListener()
+            Log.i(TAG, "tryFallbackSuccess: Using ${Locale.getDefault()} language")
+            initListener?.onInitSuccess()
+        } else {
+            // 再尝试英语
+            val englishResult = tts?.setLanguage(Locale.ENGLISH)
+            if (englishResult == TextToSpeech.LANG_AVAILABLE || englishResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+                cancelTimeout()
+                isInitialized = true
+                isInitializing.set(false)
+                setupListener()
+                Log.i(TAG, "tryFallbackSuccess: Using English language")
+                initListener?.onInitSuccess()
+            } else {
+                Log.e(TAG, "tryFallbackLanguage: no available language found")
+                handleInitFailure(-4, enginePackageName)
+            }
+        }
+    }
+
+    private fun handleInitFailure(status: Int, currentEngine: String?) {
+        Log.e(TAG, "handleInitFailure: status=$status, engine='$currentEngine', retry=$retryCount/$maxRetries")
+
+        // 清理当前失败的TTS实例
+        try {
+            tts?.shutdown()
+        } catch (e: Exception) {
+            Log.w(TAG, "handleInitFailure: error shutting down tts", e)
+        }
+        tts = null
+
+        // 策略：先尝试其他引擎，再重试当前引擎
+        if (retryCount < maxRetries) {
+            retryCount++
+
+            // 收集所有可用的TTS引擎
+            val tempTts = TextToSpeech(context, null)
+            val engines = tempTts.engines?.toList()?.filter { 
+                it.name.isNotEmpty() && it.name !in triedEngines 
+            }
+            
+            if (!engines.isNullOrEmpty()) {
+                // 有其他未尝试的引擎
+                val nextEngine = engines.first()
+                triedEngines.add(nextEngine.name!!)
+                tempTts.shutdown()
+                
+                Log.d(TAG, "handleInitFailure: Trying alternative engine: ${nextEngine.name} (${retryCount}/$maxRetries)")
+                isInitializing.set(false)
+                initStatus.set(-1)
+                
+                // 延迟后重试下一个引擎
+                executor.execute {
+                    Thread.sleep(retryDelayMs)
+                    initTTS(nextEngine.name)
+                }
+            } else {
+                // 没有其他引擎了，用默认引擎重试
+                tempTts.shutdown()
+                
+                Log.d(TAG, "handleInitFailure: Retrying with default engine (${retryCount}/$maxRetries)")
+                isInitializing.set(false)
+                initStatus.set(-1)
+                
+                executor.execute {
+                    Thread.sleep(retryDelayMs)
+                    initTTS(null)
+                }
+            }
+        } else {
+            // 达到最大重试次数，彻底失败
+            cancelTimeout()
+            isInitializing.set(false)
+            Log.e(TAG, "handleInitFailure: Max retries ($maxRetries) exceeded. Final status=$status")
+            initListener?.onInitFailed(status)
+        }
+    }
+
+    private fun cancelTimeout() {
+        timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
+        timeoutRunnable = null
     }
 
     private fun setupListener() {
-        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(id: String?) { ttsListener?.onSpeakStart() }
-            override fun onDone(id: String?) { ttsListener?.onSpeakDone() }
-            override fun onError(id: String?) { ttsListener?.onSpeakError() }
-        })
+        try {
+            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(id: String?) {
+                    Log.d(TAG, "Utterance onStart: id=$id")
+                    ttsListener?.onSpeakStart()
+                }
+                override fun onDone(id: String?) {
+                    Log.d(TAG, "Utterance onDone: id=$id")
+                    ttsListener?.onSpeakDone()
+                }
+                override fun onError(id: String?) {
+                    Log.e(TAG, "Utterance onError: id=$id")
+                    ttsListener?.onSpeakError()
+                }
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "setupListener: exception", e)
+        }
     }
 
     fun speak(text: String) {
+        if (text.isBlank()) {
+            Log.w(TAG, "speak: text is blank, ignoring")
+            return
+        }
+        
         executor.execute {
-            if (!isInitialized) return@execute
-            val params = Bundle()
-            params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f)
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "tts_${System.currentTimeMillis()}")
+            if (!isInitialized) {
+                Log.w(TAG, "speak: TTS not initialized, skipping speak('$text')")
+                return@execute
+            }
+            
+            try {
+                val params = Bundle().apply {
+                    putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f)
+                    // Android 21+ 支持流类型设置
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
+                    }
+                    // Android 22+ 支持语音质量
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        putInt(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS, 1)
+                    }
+                }
+                
+                val utteranceId = "tts_${System.currentTimeMillis()}"
+                Log.d(TAG, "speak: '$text' (id=$utteranceId, engine=${tts?.defaultEngine})")
+                
+                val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+                if (result != TextToSpeech.SUCCESS && result != TextToSpeech.ERROR) {
+                    Log.e(TAG, "speak: unexpected result=$result")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "speak: exception", e)
+            }
         }
     }
 
     fun setSpeechRate(rate: Float) {
-        executor.execute { tts?.setSpeechRate(rate) }
+        executor.execute {
+            try {
+                val safeRate = rate.coerceIn(0.1f, 3.0f)
+                tts?.setSpeechRate(safeRate)
+                Log.d(TAG, "setSpeechRate: $safeRate")
+            } catch (e: Exception) {
+                Log.e(TAG, "setSpeechRate: exception", e)
+            }
+        }
+    }
+
+    /**
+     * 检查是否有可用的TTS引擎
+     */
+    fun hasAvailableEngine(): Boolean {
+        return try {
+            val tempTts = TextToSpeech(context, null)
+            val engines = tempTts.engines
+            val has = !engines.isNullOrEmpty()
+            tempTts.shutdown()
+            Log.d(TAG, "hasAvailableEngine: $has (engines=${engines?.size ?: 0})")
+            has
+        } catch (e: Exception) {
+            Log.e(TAG, "hasAvailableEngine: exception", e)
+            false
+        }
+    }
+
+    /**
+     * 获取所有可用TTS引擎信息
+     */
+    fun getEnginesInfo(): List<Pair<String, String>> {
+        return try {
+            val tempTts = TextToSpeech(context, null)
+            val info = tempTts.engines?.map { 
+                Pair(it.name ?: "", it.label ?: "") 
+            }.orEmpty()
+            tempTts.shutdown()
+            info
+        } catch (e: Exception) {
+            Log.e(TAG, "getEnginesInfo: exception", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 获取TTS引擎检查Intent，用于引导用户安装或选择TTS引擎
+     */
+    fun getTTSCheckIntent(): android.content.Intent {
+        return android.content.Intent(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA)
+    }
+
+    private fun releaseInternal() {
+        cancelTimeout()
+        try {
+            tts?.stop()
+            tts?.shutdown()
+        } catch (e: Exception) {
+            Log.w(TAG, "releaseInternal: error", e)
+        }
+        tts = null
+        isInitialized = false
     }
 
     fun release() {
         executor.execute {
-            tts?.stop()
-            tts?.shutdown()
-            tts = null
-            isInitialized = false
+            releaseInternal()
+            // 不关闭executor，因为可能在release后被重新初始化
         }
-        executor.shutdown()
     }
 }
