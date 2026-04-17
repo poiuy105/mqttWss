@@ -59,24 +59,26 @@ class TTSManager(private val context: Context) {
     }
 
     private fun initWithEngine(enginePackageName: String?) {
-        tts = TextToSpeech(context, enginePackageName) { status ->
-            initStatus = status
-            if (status == TextToSpeech.SUCCESS) {
-                val lang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Locale.SIMPLIFIED_CHINESE else Locale.CHINA
-                val langResult = tts?.setLanguage(lang)
-                if (langResult == TextToSpeech.LANG_AVAILABLE || langResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-                    isInitialized = true
-                    setupListener()
-                    initListener?.onInitSuccess()
+        tts = TextToSpeech(context, object : TextToSpeech.OnInitListener {
+            override fun onInit(status: Int) {
+                initStatus = status
+                if (status == TextToSpeech.SUCCESS) {
+                    val lang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Locale.SIMPLIFIED_CHINESE else Locale.CHINA
+                    val langResult = tts?.setLanguage(lang)
+                    if (langResult == TextToSpeech.LANG_AVAILABLE || langResult == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
+                        isInitialized = true
+                        setupListener()
+                        initListener?.onInitSuccess()
+                    } else {
+                        // 语言不可用，尝试使用其他可用引擎
+                        tryNextEngine()
+                    }
                 } else {
-                    // 语言不可用，尝试使用其他可用引擎
+                    // 初始化失败，尝试使用其他可用引擎
                     tryNextEngine()
                 }
-            } else {
-                // 初始化失败，尝试使用其他可用引擎
-                tryNextEngine()
             }
-        }
+        }, enginePackageName)
 
         Handler(Looper.getMainLooper()).postDelayed({ 
             if (initStatus == -1) {
