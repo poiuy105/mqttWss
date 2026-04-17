@@ -59,7 +59,7 @@ class MessageFragment : BaseFragment() {
         
         mHaSendCheckbox?.setOnCheckedChangeListener { _, isChecked ->
             CapturedTextManager.setSendToHomeAssistant(isChecked)
-            android.util.Log.d("MessageFragment", "sendToHomeAssistant is ${if (isChecked) "enabled" else "disabled"}")
+            (activity as? MainActivity)?.appendLog("[Message] sendToHomeAssistant is ${if (isChecked) "enabled" else "disabled"}")
         }
 
         CapturedTextManager.init(requireContext())
