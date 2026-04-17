@@ -17,6 +17,10 @@ object HomeAssistantService {
         .writeTimeout(10, TimeUnit.SECONDS)
         .build()
 
+    private fun appendLog(context: Context, message: String) {
+        (context as? MainActivity)?.appendLog("[HA] $message") ?: Log.d(TAG, message)
+    }
+
     fun sendCommand(context: Context, text: String, callback: (Boolean, String?) -> Unit) {
         val configManager = ConfigManager.getInstance(context)
         val haAddress = configManager.haAddress
@@ -25,12 +29,16 @@ object HomeAssistantService {
         val useHttps = configManager.haHttps
 
         if (haAddress.isBlank() || haToken.isBlank()) {
+            appendLog(context, "Configuration incomplete - haAddress or haToken is empty")
             callback(false, "Home Assistant configuration is incomplete")
             return
         }
 
         val protocol = if (useHttps) "https" else "http"
         val url = "$protocol://$haAddress/api/conversation/process"
+
+        appendLog(context, "Preparing HTTP POST request")
+        appendLog(context, "URL: $url")
 
         val json = JSONObject()
         json.put("text", text)
@@ -39,15 +47,11 @@ object HomeAssistantService {
         val requestBody = json.toString()
             .toRequestBody("application/json".toMediaType())
 
-        // Add debug log for curl command
-        Log.d(TAG, "Sending command to Home Assistant:")
-        Log.d(TAG, "URL: $url")
-        Log.d(TAG, "Headers:")
-        Log.d(TAG, "  Authorization: Bearer $haToken")
-        Log.d(TAG, "  Content-Type: application/json")
-        Log.d(TAG, "Body: ${json.toString()}")
-        Log.d(TAG, "Equivalent curl command:")
-        Log.d(TAG, "curl -X POST $url -H \"Authorization: Bearer $haToken\" -H \"Content-Type: application/json\" -d '${json.toString()}'")
+        appendLog(context, "Request Headers:")
+        appendLog(context, "  Authorization: Bearer ${haToken.take(10)}...")
+        appendLog(context, "  Content-Type: application/json")
+        appendLog(context, "Request Body: ${json.toString()}")
+        appendLog(context, "curl command: curl -X POST $url -H \"Authorization: Bearer $haToken\" -H \"Content-Type: application/json\" -d '${json.toString()}'")
 
         val request = Request.Builder()
             .url(url)
@@ -56,14 +60,18 @@ object HomeAssistantService {
             .addHeader("Content-Type", "application/json")
             .build()
 
+        appendLog(context, "Executing HTTP request...")
+
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                Log.e(TAG, "Failed to send command to Home Assistant: ${e.message}")
+                appendLog(context, "HTTP Request FAILED: ${e.message}")
                 callback(false, "Failed to connect to Home Assistant: ${e.message}")
             }
 
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                appendLog(context, "HTTP Response received - Status: ${response.code}")
                 val responseBody = response.body?.string()
+                appendLog(context, "Response Body: $responseBody")
                 if (response.isSuccessful && responseBody != null) {
                     try {
                         val jsonResponse = JSONObject(responseBody)
@@ -71,13 +79,14 @@ object HomeAssistantService {
                             ?.optJSONObject("speech")
                             ?.optJSONObject("plain")
                             ?.optString("speech")
+                        appendLog(context, "Parsed speech response: $speech")
                         callback(true, speech)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse Home Assistant response: ${e.message}")
+                        appendLog(context, "JSON Parse FAILED: ${e.message}")
                         callback(false, "Failed to parse Home Assistant response: ${e.message}")
                     }
                 } else {
-                    Log.e(TAG, "Home Assistant returned error: ${response.code} - ${responseBody}")
+                    appendLog(context, "HTTP Error: ${response.code} - $responseBody")
                     callback(false, "Home Assistant returned error: ${response.code}")
                 }
             }
