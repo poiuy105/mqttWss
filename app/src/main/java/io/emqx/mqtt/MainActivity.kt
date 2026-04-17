@@ -15,6 +15,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
@@ -127,7 +128,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             }
 
             val textView = TextView(this).apply {
-                text = getString(adapter.TAB_TITLES[i])
+                text = getString(SectionsPagerAdapter.TAB_TITLES[i])
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
                 isSingleLine = true
