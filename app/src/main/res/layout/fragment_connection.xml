@@ -475,13 +475,40 @@
         android:background="#F5F5F5"
         android:visibility="gone">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Debug Log:"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Debug Log:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_log_clear"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:minWidth="60dp"
+                android:text="Clear"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btn_log_copy"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="6dp"
+                android:minWidth="60dp"
+                android:text="Copy"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"

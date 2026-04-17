@@ -269,6 +269,25 @@ class SettingFragment : BaseFragment() {
             appendLog("Show Debug Log ${if (isChecked) "enabled" else "disabled"}")
         }
 
+        // Debug Log 容器内的 Clear 和 Copy 按钮
+        view.findViewById<Button>(R.id.btn_log_clear)?.setOnClickListener {
+            logBuilder.clear()
+            mLogText.text = ""
+            appendLog("Debug log cleared")
+        }
+        view.findViewById<Button>(R.id.btn_log_copy)?.setOnClickListener {
+            val logContent = logBuilder.toString()
+            if (logContent.isNotBlank()) {
+                val clipboard = context?.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Debug Log", logContent)
+                clipboard?.setPrimaryClip(clip)
+                Toast.makeText(context, "Copied ${logContent.length} chars to clipboard", Toast.LENGTH_SHORT).show()
+                appendLog("Debug log copied to clipboard (${logContent.length} chars)")
+            } else {
+                Toast.makeText(context, "Log is empty", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         (activity as? MainActivity)?.let { main ->
             main.setOnMqttStatusChangedListener { connected ->
                 activity?.runOnUiThread {
