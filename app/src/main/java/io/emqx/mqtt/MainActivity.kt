@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         CapturedTextManager.init(this)
 
         window.decorView.post {
-            ttsManager = TTSManager(this)
+            ttsManager = TTSManager(applicationContext)
             ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
                 override fun onInitSuccess() {
                     Log.d("MainActivity", "TTS initialized successfully!")
@@ -69,6 +69,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     Log.e("MainActivity", "TTS initialization failed! status=$status")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show()
+                        // 检查是否有可用的TTS引擎
+                        if (!ttsManager?.hasAvailableEngine()!!) {
+                            // 引导用户安装或选择TTS引擎
+                            val checkIntent = ttsManager?.getTTSCheckIntent()
+                            if (checkIntent != null) {
+                                Toast.makeText(this@MainActivity, "Please install a TTS engine to use voice features", Toast.LENGTH_LONG).show()
+                                startActivityForResult(checkIntent, 1001)
+                            }
+                        } else {
+                            // 有可用引擎但初始化失败，尝试重新初始化
+                            Toast.makeText(this@MainActivity, "TTS engine available but initialization failed, retrying...", Toast.LENGTH_LONG).show()
+                            ttsManager?.reinitialize()
+                        }
                     }
                 }
             })
@@ -423,4 +436,41 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken) {}
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1001) {
+            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+                // TTS引擎和语言数据可用，重新初始化
+                Log.d("MainActivity", "TTS engine and language data available, reinitializing")
+                ttsManager?.release()
+                ttsManager = TTSManager(applicationContext)
+                ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
+                    override fun onInitSuccess() {
+                        Log.d("MainActivity", "TTS reinitialized successfully!")
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    override fun onInitFailed(status: Int) {
+                        Log.e("MainActivity", "TTS reinitialization failed! status=$status")
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                })
+            } else {
+                // TTS引擎或语言数据不可用
+                Log.e("MainActivity", "TTS engine or language data not available")
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // 释放TTS资源
+        ttsManager?.release()
+        // 释放浮动窗口资源
+        floatWindowManager?.release()
+    }
 }

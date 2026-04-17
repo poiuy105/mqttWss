@@ -91,8 +91,14 @@ class FloatWindowManager(private val context: Context) {
         }
 
         floatView = createFloatView(topic, payload)
-        windowManager?.addView(floatView, layoutParams)
-        Log.d("FloatWindow", "Float window created")
+        try {
+            windowManager?.addView(floatView, layoutParams)
+            Log.d("FloatWindow", "Float window created")
+        } catch (e: Exception) {
+            Log.e("FloatWindow", "Error adding view: ${e.message}")
+            floatView = null
+            payloadTextView = null
+        }
     }
 
     private fun createFloatView(topic: String, payload: String): View {
@@ -147,4 +153,9 @@ class FloatWindowManager(private val context: Context) {
     }
 
     fun isShowing(): Boolean = floatView != null
+
+    fun release() {
+        hide()
+        instance = null
+    }
 }

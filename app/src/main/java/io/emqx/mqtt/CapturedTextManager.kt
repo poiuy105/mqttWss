@@ -16,6 +16,7 @@ object CapturedTextManager {
     private var onlyCaptureFrames = ArrayList<CaptureFrame>()
     private var onlyCapturePrefix = ""
     private var onlyCaptureSuffix = ""
+    private var isOnlyCaptureEnabled = false
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences("capture_settings", Context.MODE_PRIVATE)
@@ -158,6 +159,17 @@ object CapturedTextManager {
 
     fun getOnlyCaptureSuffix(): String = onlyCaptureSuffix
 
+    fun setOnlyCaptureEnabled(enabled: Boolean) {
+        if (prefs == null) {
+            Log.w("CapturedTextManager", "init() must be called before setOnlyCaptureEnabled()")
+            return
+        }
+        isOnlyCaptureEnabled = enabled
+        prefs?.edit()?.putBoolean("only_capture_enabled", enabled)?.apply()
+    }
+
+    fun getOnlyCaptureEnabled(): Boolean = isOnlyCaptureEnabled
+
     fun saveSettings() {
         prefs?.edit()?.apply {
             putStringSet("excluded", excludedApps)
@@ -167,6 +179,10 @@ object CapturedTextManager {
     }
 
     private fun saveOnlyCaptureFrames() {
+        if (prefs == null) {
+            Log.w("CapturedTextManager", "init() must be called before saveOnlyCaptureFrames()")
+            return
+        }
         val data = onlyCaptureFrames.joinToString(";;") { "${it.text}|${it.packageName}|${it.viewClass}|${it.timestamp}|${it.boundsLeft}|${it.boundsTop}|${it.boundsRight}|${it.boundsBottom}|${it.viewDepth}" }
         prefs?.edit()?.putString("only_capture_frames", data)?.apply()
     }
@@ -216,6 +232,7 @@ object CapturedTextManager {
 
             onlyCapturePrefix = p.getString("only_capture_prefix", "") ?: ""
             onlyCaptureSuffix = p.getString("only_capture_suffix", "") ?: ""
+            isOnlyCaptureEnabled = p.getBoolean("only_capture_enabled", false)
         }
     }
 }

@@ -164,6 +164,12 @@ class SettingFragment : BaseFragment() {
             }
         }
         mVoiceSwitch.setOnCheckedChangeListener { _, isChecked ->
+            // 确保CapturedTextManager已初始化
+            if (!::mConfigManager.isInitialized) {
+                mConfigManager = ConfigManager.getInstance(requireContext())
+            }
+            // 初始化CapturedTextManager
+            CapturedTextManager.init(requireContext())
             CapturedTextManager.isEnabled = isChecked
             (activity as? MainActivity)?.let { main ->
                 main.isAutoCaptureVoiceEnabled = isChecked

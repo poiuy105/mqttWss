@@ -27,6 +27,8 @@ class VoiceAccessibilityService : AccessibilityService() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        // 初始化 CapturedTextManager
+        CapturedTextManager.init(this)
     }
 
     override fun onDestroy() {

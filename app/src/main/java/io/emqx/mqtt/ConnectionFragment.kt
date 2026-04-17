@@ -101,6 +101,8 @@ class ConnectionFragment : BaseFragment() {
 
     override fun setUpView(view: View) {
         mConfigManager = ConfigManager.getInstance(requireContext())
+        // 初始化 CapturedTextManager
+        CapturedTextManager.init(requireContext())
 
         mHost = view.findViewById(R.id.host)
         mPort = view.findViewById(R.id.port)
