@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 
@@ -228,7 +229,16 @@ class MessageFragment : BaseFragment() {
         val suffix = CapturedTextManager.getOnlyCaptureSuffix()
         val fullText = prefix + captured.text + suffix
 
-        CapturedTextManager.addOnlyCaptureFrame(captured.text, captured.packageName, captured.viewClass)
+        CapturedTextManager.addOnlyCaptureFrame(
+            captured.text, 
+            captured.packageName, 
+            captured.viewClass,
+            captured.boundsLeft,
+            captured.boundsTop,
+            captured.boundsRight,
+            captured.boundsBottom,
+            captured.viewDepth
+        )
         rebuildOnlyCaptureFrames()
         Toast.makeText(fragmentActivity, "Added to Only Capture Frame", Toast.LENGTH_SHORT).show()
     }
@@ -246,13 +256,19 @@ class MessageFragment : BaseFragment() {
         val prefix = CapturedTextManager.getOnlyCapturePrefix()
         val suffix = CapturedTextManager.getOnlyCaptureSuffix()
         val displayText = if (frame.text.length > 10) frame.text.substring(0, 10) + "..." else frame.text
+        val appName = getAppName(frame.packageName)
+        val chipText = "$appName: $prefix$displayText$suffix"
 
         val chip = Button(requireContext()).apply {
-            text = "$prefix$displayText$suffix"
+            text = chipText
             tag = index
             textSize = 11f
             setBackgroundColor(Color.parseColor("#E3F2FD"))
             setTextColor(Color.parseColor("#1565C0"))
+
+            setOnClickListener {
+                showFrameDetailsDialog(frame)
+            }
 
             setOnLongClickListener {
                 CapturedTextManager.removeOnlyCaptureFrame(index)
@@ -262,6 +278,24 @@ class MessageFragment : BaseFragment() {
             }
         }
         return chip
+    }
+
+    private fun showFrameDetailsDialog(frame: CaptureFrame) {
+        val appName = getAppName(frame.packageName)
+        val details = buildString {
+            append("App: $appName\n")
+            append("Package: ${frame.packageName}\n")
+            append("Text: ${frame.text}\n")
+            append("Layer: ${frame.viewDepth}\n")
+            append("Layer Name: ${frame.viewClass}\n")
+            append("Position: [${frame.boundsLeft}, ${frame.boundsTop}] - [${frame.boundsRight}, ${frame.boundsBottom}]")
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Frame Details")
+            .setMessage(details)
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .show()
     }
 
     private fun getAppName(packageName: String): String {

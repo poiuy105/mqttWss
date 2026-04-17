@@ -45,6 +45,19 @@
         android:textColor="#666666"
         android:textSize="12sp" />
 
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_marginTop="4dp"
+        android:scrollbars="horizontal">
+
+        <LinearLayout
+            android:id="@+id/only_capture_container"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -80,19 +93,6 @@
                 android:textSize="12sp" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:layout_marginTop="4dp"
-        android:scrollbars="horizontal">
-
-        <LinearLayout
-            android:id="@+id/only_capture_container"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"

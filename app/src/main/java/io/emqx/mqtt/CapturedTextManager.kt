@@ -48,6 +48,23 @@ object CapturedTextManager {
             return
         }
 
+        // Selective monitoring: only process text if it matches frames in Only Capture Frame
+        if (onlyCaptureFrames.isNotEmpty()) {
+            val matchesFrame = onlyCaptureFrames.any { frame ->
+                // Match by package name
+                frame.packageName == packageName &&
+                // Optional: match by approximate position (within 10px tolerance)
+                (frame.boundsLeft == -1 || Math.abs(frame.boundsLeft - boundsLeft) < 10) &&
+                (frame.boundsTop == -1 || Math.abs(frame.boundsTop - boundsTop) < 10) &&
+                (frame.boundsRight == -1 || Math.abs(frame.boundsRight - boundsRight) < 10) &&
+                (frame.boundsBottom == -1 || Math.abs(frame.boundsBottom - boundsBottom) < 10)
+            }
+            
+            if (!matchesFrame) {
+                return // Skip if no matching frame found
+            }
+        }
+
         val captured = CapturedText(
             text = text,
             packageName = packageName,
@@ -96,9 +113,9 @@ object CapturedTextManager {
         }
     }
 
-    fun addOnlyCaptureFrame(text: String, packageName: String, viewClass: String = "") {
-        val frame = CaptureFrame(text, packageName, viewClass, System.currentTimeMillis())
-        onlyCaptureFrames.add(0, frame)
+    fun addOnlyCaptureFrame(text: String, packageName: String, viewClass: String = "", boundsLeft: Int = -1, boundsTop: Int = -1, boundsRight: Int = -1, boundsBottom: Int = -1, viewDepth: Int = -1) {
+        val frame = CaptureFrame(text, packageName, viewClass, System.currentTimeMillis(), boundsLeft, boundsTop, boundsRight, boundsBottom, viewDepth)
+        onlyCaptureFrames.add(frame)
         saveOnlyCaptureFrames()
     }
 
@@ -134,7 +151,7 @@ object CapturedTextManager {
     }
 
     private fun saveOnlyCaptureFrames() {
-        val data = onlyCaptureFrames.joinToString(";;") { "${it.text}|${it.packageName}|${it.viewClass}|${it.timestamp}" }
+        val data = onlyCaptureFrames.joinToString(";;") { "${it.text}|${it.packageName}|${it.viewClass}|${it.timestamp}|${it.boundsLeft}|${it.boundsTop}|${it.boundsRight}|${it.boundsBottom}|${it.viewDepth}" }
         prefs?.edit()?.putString("only_capture_frames", data)?.apply()
     }
 
@@ -157,8 +174,26 @@ object CapturedTextManager {
             if (framesData.isNotEmpty()) {
                 framesData.split(";;").forEach { item ->
                     val parts = item.split("|")
-                    if (parts.size >= 4) {
-                        onlyCaptureFrames.add(CaptureFrame(parts[0], parts[1], parts[2], parts[3].toLongOrNull() ?: 0))
+                    if (parts.size >= 8) {
+                        onlyCaptureFrames.add(CaptureFrame(
+                            parts[0],
+                            parts[1],
+                            parts[2],
+                            parts[3].toLongOrNull() ?: 0,
+                            parts[4].toIntOrNull() ?: -1,
+                            parts[5].toIntOrNull() ?: -1,
+                            parts[6].toIntOrNull() ?: -1,
+                            parts[7].toIntOrNull() ?: -1,
+                            if (parts.size >= 9) parts[8].toIntOrNull() ?: -1 else -1
+                        ))
+                    } else if (parts.size >= 4) {
+                        // Backward compatibility for old format
+                        onlyCaptureFrames.add(CaptureFrame(
+                            parts[0],
+                            parts[1],
+                            parts[2],
+                            parts[3].toLongOrNull() ?: 0
+                        ))
                     }
                 }
             }
@@ -173,5 +208,10 @@ data class CaptureFrame(
     val text: String,
     val packageName: String,
     val viewClass: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val boundsLeft: Int = -1,
+    val boundsTop: Int = -1,
+    val boundsRight: Int = -1,
+    val boundsBottom: Int = -1,
+    val viewDepth: Int = -1
 )
