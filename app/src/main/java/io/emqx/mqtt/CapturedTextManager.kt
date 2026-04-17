@@ -3,6 +3,7 @@ package io.emqx.mqtt
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import io.emqx.mqtt.MainActivity
 
 object CapturedTextManager {
     private val listeners = mutableListOf<(CapturedText) -> Unit>()
@@ -135,6 +136,7 @@ object CapturedTextManager {
                         }
                     }
                 }
+            }
         }
     }
 
