@@ -39,6 +39,16 @@ object HomeAssistantService {
         val requestBody = json.toString()
             .toRequestBody("application/json".toMediaType())
 
+        // Add debug log for curl command
+        Log.d(TAG, "Sending command to Home Assistant:")
+        Log.d(TAG, "URL: $url")
+        Log.d(TAG, "Headers:")
+        Log.d(TAG, "  Authorization: Bearer $haToken")
+        Log.d(TAG, "  Content-Type: application/json")
+        Log.d(TAG, "Body: ${json.toString()}")
+        Log.d(TAG, "Equivalent curl command:")
+        Log.d(TAG, "curl -X POST $url -H \"Authorization: Bearer $haToken\" -H \"Content-Type: application/json\" -d '${json.toString()}'")
+
         val request = Request.Builder()
             .url(url)
             .post(requestBody)

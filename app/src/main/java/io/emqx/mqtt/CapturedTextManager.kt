@@ -55,6 +55,18 @@ object CapturedTextManager {
             return
         }
 
+        // Apply text prefix/suffix restrictions
+        val prefix = onlyCapturePrefix
+        val suffix = onlyCaptureSuffix
+        
+        if (prefix.isNotEmpty() && !text.startsWith(prefix)) {
+            return // Skip if text doesn't match prefix
+        }
+        
+        if (suffix.isNotEmpty() && !text.endsWith(suffix)) {
+            return // Skip if text doesn't match suffix
+        }
+
         // Selective monitoring: only process text if it matches frames in Only Capture Frame
         if (onlyCaptureFrames.isNotEmpty()) {
             val matchesFrame = onlyCaptureFrames.any { frame ->
@@ -73,18 +85,6 @@ object CapturedTextManager {
             
             if (!matchesFrame) {
                 return // Skip if no matching frame found
-            }
-            
-            // Apply text prefix/suffix restrictions
-            val prefix = onlyCapturePrefix
-            val suffix = onlyCaptureSuffix
-            
-            if (prefix.isNotEmpty() && !text.startsWith(prefix)) {
-                return // Skip if text doesn't match prefix
-            }
-            
-            if (suffix.isNotEmpty() && !text.endsWith(suffix)) {
-                return // Skip if text doesn't match suffix
             }
         }
 
