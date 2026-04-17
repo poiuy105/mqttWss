@@ -80,13 +80,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         viewPager.offscreenPageLimit = 4
         viewPager.adapter = sectionsPagerAdapter
 
-        val tabs = findViewById<TabLayout>(R.id.tabs)
-        tabs.setupWithViewPager(viewPager)
-
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         if (isLandscape) {
-            setupLandscapeTabs(tabs, sectionsPagerAdapter)
+            // 横屏模式：使用自定义垂直侧边栏替代TabLayout
+            val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
+            setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
         } else {
+            // 竖屏模式：使用标准底部TabLayout
+            val tabs = findViewById<TabLayout>(R.id.tabs)
+            tabs.setupWithViewPager(viewPager)
             for (i in 0 until tabs.tabCount) {
                 val tab = tabs.getTabAt(i)
                 tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
@@ -103,22 +105,30 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
     }
 
-    private fun setupLandscapeTabs(tabs: TabLayout, adapter: SectionsPagerAdapter) {
-        val iconSize = resources.getDimensionPixelSize(R.dimen.landscape_tab_icon_size)
-        val textSize = resources.getDimension(R.dimen.landscape_tab_text_size)
-        val padding = resources.getDimensionPixelSize(R.dimen.landscape_tab_padding)
+    // 横屏侧边栏导航项View列表，用于选中态管理
+    private val sidebarNavViews = mutableListOf<View>()
+
+    private fun setupLandscapeSidebar(sidebar: LinearLayout, viewPager: ViewPager, adapter: SectionsPagerAdapter) {
+        val iconSize = resources.getDimensionPixelSize(R.dimen.sidebar_icon_size)
+        val textSize = resources.getDimension(R.dimen.sidebar_text_size)
+        val padding = resources.getDimensionPixelSize(R.dimen.sidebar_item_padding)
+
+        sidebarNavViews.clear()
 
         for (i in 0 until adapter.count) {
-            val tab = tabs.getTabAt(i) ?: continue
-
-            val container = LinearLayout(this).apply {
+            // 每个导航项：垂直LinearLayout，weight=1实现均匀分布
+            val navItem = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
                 )
-                setPadding(padding, padding * 2, padding, padding * 2)
+                setPadding(padding, padding, padding, padding)
+
+                // 点击切换ViewPager页面
+               setOnClickListener { viewPager.currentItem = i }
             }
 
             val imageView = ImageView(this).apply {
@@ -139,9 +149,46 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 ).apply { topMargin = padding }
             }
 
-            container.addView(imageView)
-            container.addView(textView)
-            tab.customView = container
+            navItem.addView(imageView)
+            navItem.addView(textView)
+            sidebar.addView(navItem)
+            sidebarNavViews.add(navItem)
+        }
+
+        // 设置初始选中态(第一个tab)
+        updateSidebarSelection(0)
+
+        // 监听页面滑动同步侧边栏选中态
+        viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+            override fun onPageSelected(position: Int) { updateSidebarSelection(position) }
+            override fun onPageScrollStateChanged(state: Int) {}
+        })
+    }
+
+    private fun updateSidebarSelection(selectedIndex: Int) {
+        val selectedColor = Color.parseColor("#FFFFFF")
+        val unselectedColor = Color.parseColor("#B3FFFFFF") // 70%白色
+
+        sidebarNavViews.forEachIndexed { index, view ->
+            if (index == selectedIndex) {
+                view.setBackgroundColor(Color.parseColor("#33FFFFFF")) // 浅白背景高亮
+                // 图标和文字设为全白
+                (view as? LinearLayout)?.let { container ->
+                    if (container.childCount >= 2) {
+                        (container.getChildAt(0) as? ImageView)?.setColorFilter(selectedColor)
+                        (container.getChildAt(1) as? TextView)?.setTextColor(selectedColor)
+                    }
+                }
+            } else {
+                view.background = null
+                (view as? LinearLayout)?.let { container ->
+                    if (container.childCount >= 2) {
+                        (container.getChildAt(0) as? ImageView)?.setColorFilter(unselectedColor)
+                        (container.getChildAt(1) as? TextView)?.setTextColor(unselectedColor)
+                    }
+                }
+            }
         }
     }
 

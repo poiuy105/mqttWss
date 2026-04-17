@@ -7,8 +7,9 @@
     <dimen name="appbar_padding_top">8dp</dimen>
     <dimen name="text_margin">16dp</dimen>
     <dimen name="tab_height">48dp</dimen>
-    <!-- 横屏导航栏专用尺寸 -->
-    <dimen name="landscape_tab_icon_size">24dp</dimen>
-    <dimen name="landscape_tab_text_size">10sp</dimen>
-    <dimen name="landscape_tab_padding">4dp</dimen>
+    <!-- 横屏侧边栏专用尺寸 -->
+    <dimen name="sidebar_width">56dp</dimen>
+    <dimen name="sidebar_icon_size">24dp</dimen>
+    <dimen name="sidebar_text_size">10sp</dimen>
+    <dimen name="sidebar_item_padding">4dp</dimen>
 </resources>

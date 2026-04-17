@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 横屏布局：侧边栏(左) + 内容区(右) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:orientation="horizontal">
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabs"
-        android:layout_width="@dimen/tab_height"
+    <!-- 自定义垂直导航侧边栏 -->
+    <LinearLayout
+        android:id="@+id/nav_sidebar"
+        android:layout_width="@dimen/sidebar_width"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         android:background="?attr/colorPrimary"
-        app:tabGravity="start"
-        app:tabIndicatorColor="@android:color/white"
-        app:tabIndicatorHeight="0dp"
-        app:tabMode="fixed" />
+        android:gravity="center_horizontal">
+        <!-- 5个导航按钮通过代码动态添加到此处 -->
+    </LinearLayout>
 
+    <!-- 内容区域 -->
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/view_pager"
         android:layout_width="0dp"
