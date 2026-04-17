@@ -53,7 +53,11 @@ object CapturedTextManager {
             val matchesFrame = onlyCaptureFrames.any { frame ->
                 // Match by package name
                 frame.packageName == packageName &&
-                // Optional: match by approximate position (within 10px tolerance)
+                // Match by layer (viewDepth)
+                (frame.viewDepth == -1 || frame.viewDepth == viewDepth) &&
+                // Match by layer name (viewClass)
+                (frame.viewClass.isEmpty() || frame.viewClass == viewClass) &&
+                // Match by approximate position (within 10px tolerance)
                 (frame.boundsLeft == -1 || Math.abs(frame.boundsLeft - boundsLeft) < 10) &&
                 (frame.boundsTop == -1 || Math.abs(frame.boundsTop - boundsTop) < 10) &&
                 (frame.boundsRight == -1 || Math.abs(frame.boundsRight - boundsRight) < 10) &&
@@ -62,6 +66,18 @@ object CapturedTextManager {
             
             if (!matchesFrame) {
                 return // Skip if no matching frame found
+            }
+            
+            // Apply text prefix/suffix restrictions
+            val prefix = onlyCapturePrefix
+            val suffix = onlyCaptureSuffix
+            
+            if (prefix.isNotEmpty() && !text.startsWith(prefix)) {
+                return // Skip if text doesn't match prefix
+            }
+            
+            if (suffix.isNotEmpty() && !text.endsWith(suffix)) {
+                return // Skip if text doesn't match suffix
             }
         }
 
