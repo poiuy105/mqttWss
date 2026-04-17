@@ -365,7 +365,7 @@ class SettingFragment : BaseFragment() {
                 val connection = Connection(
                     fragmentActivity!!,
                     originalHost,
-                    originalPort.toInt(),
+                    originalPort.toIntOrNull() ?: 1883,
                     originalClientId,
                     originalUsername,
                     originalPassword,
