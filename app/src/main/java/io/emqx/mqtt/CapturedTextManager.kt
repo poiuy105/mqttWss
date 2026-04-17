@@ -233,6 +233,7 @@ object CapturedTextManager {
 
     fun setSendToHomeAssistant(enabled: Boolean) {
         sendToHomeAssistant = enabled
+        Log.d("CapturedTextManager", "sendToHomeAssistant set to: $enabled")
         saveOnlyCaptureSettings()
     }
 
