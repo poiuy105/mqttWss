@@ -37,6 +37,8 @@ class SettingFragment : BaseFragment() {
     private lateinit var mNotificationSwitch: Switch
     private lateinit var mShowDebugLogSwitch: Switch
     private lateinit var mDebugLogContainer: View
+    private lateinit var mAllowUntrustedCheckbox: CheckBox
+    private lateinit var mSslUntrustedContainer: LinearLayout
     private lateinit var mConfigManager: ConfigManager
 
     private val logBuilder = StringBuilder()
@@ -81,7 +83,7 @@ class SettingFragment : BaseFragment() {
             username = mUsername.text.toString(),
             password = mPassword.text.toString(),
             protocol = protocolName,
-            allowUntrusted = false
+            allowUntrusted = mAllowUntrustedCheckbox.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -99,6 +101,7 @@ class SettingFragment : BaseFragment() {
             mAutoConnect.isChecked = mConfigManager.autoConnect
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
+            mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -131,6 +134,8 @@ class SettingFragment : BaseFragment() {
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
         mShowDebugLogSwitch = view.findViewById(R.id.show_debug_log_switch)
         mDebugLogContainer = view.findViewById(R.id.debug_log_container)
+        mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
+        mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -142,6 +147,29 @@ class SettingFragment : BaseFragment() {
 
         appendLog("=== MQTT Setting ===")
         appendLog("Fragment initialized")
+
+        mProtocol.setOnCheckedChangeListener { _, checkedId ->
+            val port = when (checkedId) {
+                R.id.protocol_tcp -> 1883
+                R.id.protocol_ssl -> 8883
+                R.id.protocol_ws -> 8083
+                R.id.protocol_wss -> 443
+                else -> 1883
+            }
+            mPort.setText(port.toString())
+
+            val pathVisibility = when (checkedId) {
+                R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
+                else -> View.GONE
+            }
+            mPath.visibility = pathVisibility
+
+            val sslUntrustedVisibility = when (checkedId) {
+                R.id.protocol_ssl -> View.VISIBLE
+                else -> View.GONE
+            }
+            mSslUntrustedContainer.visibility = sslUntrustedVisibility
+        }
 
         loadSavedConfig()
 
@@ -209,23 +237,6 @@ class SettingFragment : BaseFragment() {
             }
         }
 
-        mProtocol.setOnCheckedChangeListener { _, checkedId ->
-            val port = when (checkedId) {
-                R.id.protocol_tcp -> 1883
-                R.id.protocol_ssl -> 8883
-                R.id.protocol_ws -> 8083
-                R.id.protocol_wss -> 443
-                else -> 1883
-            }
-            mPort.setText(port.toString())
-
-            val pathVisibility = when (checkedId) {
-                R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
-                else -> View.GONE
-            }
-            mPath.visibility = pathVisibility
-        }
-
         view.findViewById<Button>(R.id.test_tts).setOnClickListener {
             appendLog("=== TTS测试 ===")
             testTts()
@@ -270,7 +281,8 @@ class SettingFragment : BaseFragment() {
                     mUsername.text.toString(),
                     mPassword.text.toString(),
                     protocolName,
-                    mPath.text.toString()
+                    mPath.text.toString(),
+                    mAllowUntrustedCheckbox.isChecked
                 )
                 appendLog("Calling connect()...")
 
