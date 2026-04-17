@@ -127,6 +127,29 @@ class ConnectionFragment : BaseFragment() {
         mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
         mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
 
+        mProtocol.setOnCheckedChangeListener { _, checkedId ->
+            val port = when (checkedId) {
+                R.id.protocol_tcp -> 1883
+                R.id.protocol_ssl -> 8883
+                R.id.protocol_ws -> 8083
+                R.id.protocol_wss -> 443
+                else -> 1883
+            }
+            mPort.setText(port.toString())
+
+            val pathVisibility = when (checkedId) {
+                R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
+                else -> View.GONE
+            }
+            mPath.visibility = pathVisibility
+
+            val sslUntrustedVisibility = when (checkedId) {
+                R.id.protocol_ssl -> View.VISIBLE
+                else -> View.GONE
+            }
+            mSslUntrustedContainer.visibility = sslUntrustedVisibility
+        }
+
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
         }
@@ -178,29 +201,6 @@ class ConnectionFragment : BaseFragment() {
         mNotificationSwitch.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.persistentNotification = isChecked
             appendLog("Persistent Notification ${if (isChecked) "enabled" else "disabled"}")
-        }
-
-        mProtocol.setOnCheckedChangeListener { _, checkedId ->
-            val port = when (checkedId) {
-                R.id.protocol_tcp -> 1883
-                R.id.protocol_ssl -> 8883
-                R.id.protocol_ws -> 8083
-                R.id.protocol_wss -> 443
-                else -> 1883
-            }
-            mPort.setText(port.toString())
-
-            val pathVisibility = when (checkedId) {
-                R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
-                else -> View.GONE
-            }
-            mPath.visibility = pathVisibility
-
-            val sslUntrustedVisibility = when (checkedId) {
-                R.id.protocol_ssl -> View.VISIBLE
-                else -> View.GONE
-            }
-            mSslUntrustedContainer.visibility = sslUntrustedVisibility
         }
 
         mButton.setOnClickListener {
