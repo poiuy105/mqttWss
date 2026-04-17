@@ -118,9 +118,12 @@ object CapturedTextManager {
                         HomeAssistantService.sendCommand(ctx, validText) { success, speech ->
                             if (success && speech != null) {
                                 (ctx as? MainActivity)?.let { activity ->
-                                    activity.onBackPressed()
-                                    activity.showFloatMessage("Home Assistant", speech)
-                                    activity.ttsManager?.speak(speech)
+                                    // 必须在主线程执行UI操作（OkHttp回调在子线程）
+                                    activity.runOnUiThread {
+                                        activity.onBackPressed()
+                                        activity.showFloatMessage("Home Assistant", speech)
+                                        activity.ttsManager?.speak(speech)
+                                    }
                                 }
                             }
                         }
