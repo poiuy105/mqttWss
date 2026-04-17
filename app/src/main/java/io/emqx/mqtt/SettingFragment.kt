@@ -80,7 +80,8 @@ class SettingFragment : BaseFragment() {
             clientId = mClientId.text.toString(),
             username = mUsername.text.toString(),
             password = mPassword.text.toString(),
-            protocol = protocolName
+            protocol = protocolName,
+            allowUntrusted = false
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
