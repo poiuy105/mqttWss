@@ -13,6 +13,7 @@ object CapturedTextManager {
     private var excludedApps = hashSetOf<String>()
     private var whitelistApp: String? = null
     private var prefs: SharedPreferences? = null
+    private var context: Context? = null
 
     private var onlyCaptureFrames = ArrayList<CaptureFrame>()
     private var onlyCapturePrefix = ""
@@ -23,6 +24,7 @@ object CapturedTextManager {
     private const val DEBOUNCE_DELAY = 1000L // 1 second
 
     fun init(context: Context) {
+        this.context = context
         prefs = context.getSharedPreferences("capture_settings", Context.MODE_PRIVATE)
         loadSettings()
     }
@@ -118,11 +120,11 @@ object CapturedTextManager {
                 
                 if (validText.isNotEmpty()) {
                     // Send to Home Assistant
-                    prefs?.context?.let { context ->
-                        HomeAssistantService.sendCommand(context, validText) { success, speech ->
+                    context?.let { ctx ->
+                        HomeAssistantService.sendCommand(ctx, validText) { success, speech ->
                             if (success && speech != null) {
                                 // Broadcast speech response via TTS
-                                (context as? MainActivity)?.let { activity ->
+                                (ctx as? MainActivity)?.let { activity ->
                                     // Click back button to dismiss any UI
                                     activity.onBackPressed()
                                     
