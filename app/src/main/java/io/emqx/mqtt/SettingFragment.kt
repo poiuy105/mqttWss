@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
+import android.text.Editable
+import android.text.TextWatcher
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -188,6 +190,33 @@ class SettingFragment : BaseFragment() {
         }
 
         loadSavedConfig()
+
+        // HA容器内控件实时保存监听器 - 输入即持久化到SharedPreferences(掉电保存)
+        mHaAddress.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                mConfigManager.haAddress = s?.toString() ?: ""
+            }
+        })
+        mHaToken.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                mConfigManager.haToken = s?.toString() ?: ""
+            }
+        })
+        mHaLanguage.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                mConfigManager.haLanguage = s?.toString() ?: ""
+            }
+        })
+        mHaHttpsCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.haHttps = isChecked
+            appendLog("HA HTTPS ${if (isChecked) "enabled" else "disabled"}")
+        }
 
         val mainActivity = (activity as? MainActivity)
         mainActivity?.let {
