@@ -8,12 +8,9 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.text.Editable
-import android.text.TextWatcher
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import com.google.android.material.textfield.TextInputLayout
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
@@ -28,12 +25,6 @@ class SettingFragment : BaseFragment() {
     private lateinit var mClientId: EditText
     private lateinit var mUsername: EditText
     private lateinit var mPassword: EditText
-    private lateinit var mTilHost: TextInputLayout
-    private lateinit var mTilPort: TextInputLayout
-    private lateinit var mTilPath: TextInputLayout
-    private lateinit var mTilClientId: TextInputLayout
-    private lateinit var mTilUsername: TextInputLayout
-    private lateinit var mTilPassword: TextInputLayout
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
     private lateinit var mDisconnectButton: Button
@@ -49,19 +40,6 @@ class SettingFragment : BaseFragment() {
     private lateinit var mConfigManager: ConfigManager
 
     private val logBuilder = StringBuilder()
-
-    private var originalHost = ""
-    private var originalPort = ""
-    private var originalPath = ""
-    private var originalClientId = ""
-    private var originalUsername = ""
-    private var originalPassword = ""
-    private var isHostPrivacy = true
-    private var isPortPrivacy = true
-    private var isPathPrivacy = true
-    private var isClientIdPrivacy = true
-    private var isUsernamePrivacy = true
-    private var isPasswordPrivacy = true
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -86,51 +64,6 @@ class SettingFragment : BaseFragment() {
         }
     }
 
-    private fun maskText(text: String): String {
-        if (text.length <= 2) return text
-        return text.take(2) + "*".repeat(text.length - 2)
-    }
-
-    private fun setupPrivacyToggle(
-        til: TextInputLayout,
-        editText: EditText,
-        originalValue: String,
-        isPrivacyMode: Boolean,
-        onToggle: (Boolean, String) -> Unit
-    ) {
-        var currentOriginal = originalValue
-        var currentPrivacy = isPrivacyMode
-
-        if (currentPrivacy && currentOriginal.isNotEmpty()) {
-            editText.setText(maskText(currentOriginal))
-        }
-
-        til.setEndIconOnClickListener {
-            currentPrivacy = !currentPrivacy
-            if (currentPrivacy) {
-                til.setEndIconDrawable(R.drawable.ic_eye_off)
-                if (currentOriginal.isNotEmpty()) {
-                    editText.setText(maskText(currentOriginal))
-                }
-            } else {
-                til.setEndIconDrawable(R.drawable.ic_eye_on)
-                editText.setText(currentOriginal)
-            }
-            onToggle(currentPrivacy, currentOriginal)
-        }
-
-        editText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (!currentPrivacy) {
-                    currentOriginal = s?.toString() ?: ""
-                    onToggle(currentPrivacy, currentOriginal)
-                }
-            }
-        })
-    }
-
     private fun saveCurrentConfig() {
         val protocolName = when (mProtocol.checkedRadioButtonId) {
             R.id.protocol_tcp -> "TCP"
@@ -141,12 +74,12 @@ class SettingFragment : BaseFragment() {
         }
 
         mConfigManager.saveConnectionConfig(
-            host = originalHost,
-            port = originalPort.toIntOrNull() ?: 1883,
-            path = originalPath,
-            clientId = originalClientId,
-            username = originalUsername,
-            password = originalPassword,
+            host = mHost.text.toString(),
+            port = mPort.text.toString().toIntOrNull() ?: 1883,
+            path = mPath.text.toString(),
+            clientId = mClientId.text.toString(),
+            username = mUsername.text.toString(),
+            password = mPassword.text.toString(),
             protocol = protocolName
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
@@ -156,19 +89,12 @@ class SettingFragment : BaseFragment() {
 
     private fun loadSavedConfig() {
         if (mConfigManager.hasSavedConfig()) {
-            originalHost = mConfigManager.host
-            originalPort = mConfigManager.port.toString()
-            originalPath = mConfigManager.path
-            originalClientId = mConfigManager.clientId
-            originalUsername = mConfigManager.username
-            originalPassword = mConfigManager.password
-
-            mHost.setText(if (isHostPrivacy && originalHost.isNotEmpty()) maskText(originalHost) else originalHost)
-            mPort.setText(if (isPortPrivacy && originalPort.isNotEmpty()) maskText(originalPort) else originalPort)
-            mPath.setText(if (isPathPrivacy && originalPath.isNotEmpty()) maskText(originalPath) else originalPath)
-            mClientId.setText(if (isClientIdPrivacy && originalClientId.isNotEmpty()) maskText(originalClientId) else originalClientId)
-            mUsername.setText(if (isUsernamePrivacy && originalUsername.isNotEmpty()) maskText(originalUsername) else originalUsername)
-            mPassword.setText(if (isPasswordPrivacy && originalPassword.isNotEmpty()) maskText(originalPassword) else originalPassword)
+            mHost.setText(mConfigManager.host)
+            mPort.setText(mConfigManager.port.toString())
+            mPath.setText(mConfigManager.path)
+            mClientId.setText(mConfigManager.clientId)
+            mUsername.setText(mConfigManager.username)
+            mPassword.setText(mConfigManager.password)
             mAutoConnect.isChecked = mConfigManager.autoConnect
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
@@ -192,12 +118,6 @@ class SettingFragment : BaseFragment() {
         mClientId = view.findViewById(R.id.clientid)
         mUsername = view.findViewById(R.id.username)
         mPassword = view.findViewById(R.id.password)
-        mTilHost = view.findViewById(R.id.til_host)
-        mTilPort = view.findViewById(R.id.til_port)
-        mTilPath = view.findViewById(R.id.til_path)
-        mTilClientId = view.findViewById(R.id.til_clientid)
-        mTilUsername = view.findViewById(R.id.til_username)
-        mTilPassword = view.findViewById(R.id.til_password)
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
         mDisconnectButton = view.findViewById(R.id.btn_disconnect)
@@ -212,8 +132,7 @@ class SettingFragment : BaseFragment() {
         mDebugLogContainer = view.findViewById(R.id.debug_log_container)
 
         if (mClientId.text.isNullOrEmpty()) {
-            originalClientId = MqttAsyncClient.generateClientId()
-            mClientId.setText(originalClientId)
+            mClientId.setText(MqttAsyncClient.generateClientId())
         }
 
         (activity as? MainActivity)?.setLogCallback { message ->
@@ -224,31 +143,6 @@ class SettingFragment : BaseFragment() {
         appendLog("Fragment initialized")
 
         loadSavedConfig()
-
-        setupPrivacyToggle(mTilHost, mHost, originalHost, isHostPrivacy) { privacy, original ->
-            isHostPrivacy = privacy
-            originalHost = original
-        }
-        setupPrivacyToggle(mTilPort, mPort, originalPort, isPortPrivacy) { privacy, original ->
-            isPortPrivacy = privacy
-            originalPort = original
-        }
-        setupPrivacyToggle(mTilPath, mPath, originalPath, isPathPrivacy) { privacy, original ->
-            isPathPrivacy = privacy
-            originalPath = original
-        }
-        setupPrivacyToggle(mTilClientId, mClientId, originalClientId, isClientIdPrivacy) { privacy, original ->
-            isClientIdPrivacy = privacy
-            originalClientId = original
-        }
-        setupPrivacyToggle(mTilUsername, mUsername, originalUsername, isUsernamePrivacy) { privacy, original ->
-            isUsernamePrivacy = privacy
-            originalUsername = original
-        }
-        setupPrivacyToggle(mTilPassword, mPassword, originalPassword, isPasswordPrivacy) { privacy, original ->
-            isPasswordPrivacy = privacy
-            originalPassword = original
-        }
 
         val mainActivity = (activity as? MainActivity)
         mainActivity?.let {
@@ -316,8 +210,7 @@ class SettingFragment : BaseFragment() {
                 R.id.protocol_wss -> 443
                 else -> 1883
             }
-            originalPort = port.toString()
-            mPort.setText(if (isPortPrivacy && originalPort.isNotEmpty()) maskText(originalPort) else originalPort)
+            mPort.setText(port.toString())
 
             val pathVisibility = when (checkedId) {
                 R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
@@ -353,24 +246,24 @@ class SettingFragment : BaseFragment() {
 
                 appendLog("=== Starting Connection ===")
                 appendLog("Protocol: $protocolName")
-                appendLog("Host: $originalHost")
-                appendLog("Port: $originalPort")
-                appendLog("Path: $originalPath")
-                appendLog("ClientId: $originalClientId")
-                appendLog("Username: $originalUsername")
+                appendLog("Host: ${mHost.text}")
+                appendLog("Port: ${mPort.text}")
+                appendLog("Path: ${mPath.text}")
+                appendLog("ClientId: ${mClientId.text}")
+                appendLog("Username: ${mUsername.text}")
                 appendLog("TTS: ${mTtsSwitch.isChecked}, Float: ${mFloatSwitch.isChecked}")
 
                 saveCurrentConfig()
 
                 val connection = Connection(
                     fragmentActivity!!,
-                    originalHost,
-                    originalPort.toIntOrNull() ?: 1883,
-                    originalClientId,
-                    originalUsername,
-                    originalPassword,
+                    mHost.text.toString(),
+                    mPort.text.toString().toInt(),
+                    mClientId.text.toString(),
+                    mUsername.text.toString(),
+                    mPassword.text.toString(),
                     protocolName,
-                    originalPath
+                    mPath.text.toString()
                 )
                 appendLog("Calling connect()...")
 
@@ -476,7 +369,7 @@ class SettingFragment : BaseFragment() {
             mButton.text = "Connected"
             mButton.isEnabled = false
             mDisconnectButton.isEnabled = true
-            updateNotificationStatus("MQTT Connected", "$originalHost:$originalPort")
+            updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
         } else {
             mButton.text = getString(R.string.connect)
             mButton.isEnabled = true
@@ -501,7 +394,7 @@ class SettingFragment : BaseFragment() {
             }
         }
         MqttService.startService(requireContext())
-        updateNotificationStatus("MQTT Connected", "$originalHost:$originalPort")
+        updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
     }
 
     private fun stopNotificationService() {
