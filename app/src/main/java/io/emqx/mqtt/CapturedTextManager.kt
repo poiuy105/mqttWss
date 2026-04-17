@@ -17,6 +17,9 @@ object CapturedTextManager {
     private var onlyCapturePrefix = ""
     private var onlyCaptureSuffix = ""
     private var isOnlyCaptureEnabled = false
+    private var sendToHomeAssistant = false
+    private var lastCommandTime = 0L
+    private const val DEBOUNCE_DELAY = 1000L // 1 second
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences("capture_settings", Context.MODE_PRIVATE)
@@ -95,6 +98,43 @@ object CapturedTextManager {
         )
         capturedTexts.add(0, captured)
         listeners.forEach { it(captured) }
+
+        // Send to Home Assistant if enabled and not in debounce period
+        if (sendToHomeAssistant) {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastCommandTime > DEBOUNCE_DELAY) {
+                lastCommandTime = currentTime
+                
+                // Extract valid text (remove prefix and suffix)
+                var validText = text
+                if (onlyCapturePrefix.isNotEmpty() && validText.startsWith(onlyCapturePrefix)) {
+                    validText = validText.substring(onlyCapturePrefix.length)
+                }
+                if (onlyCaptureSuffix.isNotEmpty() && validText.endsWith(onlyCaptureSuffix)) {
+                    validText = validText.substring(0, validText.length - onlyCaptureSuffix.length)
+                }
+                validText = validText.trim()
+                
+                if (validText.isNotEmpty()) {
+                    // Send to Home Assistant
+                    HomeAssistantService.sendCommand(prefs?.context ?: return) { success, speech ->
+                        if (success && speech != null) {
+                            // Broadcast speech response via TTS
+                            (prefs?.context as? MainActivity)?.let { activity ->
+                                // Click back button to dismiss any UI
+                                activity.onBackPressed()
+                                
+                                // Show popup with response
+                                activity.showFloatMessage("Home Assistant", speech)
+                                
+                                // TTS broadcast
+                                activity.ttsManager?.speak(speech)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun getAllCaptured(): List<CapturedText> = capturedTexts.toList()
@@ -170,6 +210,13 @@ object CapturedTextManager {
 
     fun getOnlyCaptureEnabled(): Boolean = isOnlyCaptureEnabled
 
+    fun setSendToHomeAssistant(enabled: Boolean) {
+        sendToHomeAssistant = enabled
+        saveOnlyCaptureSettings()
+    }
+
+    fun getSendToHomeAssistant(): Boolean = sendToHomeAssistant
+
     fun saveSettings() {
         prefs?.edit()?.apply {
             putStringSet("excluded", excludedApps)
@@ -191,6 +238,7 @@ object CapturedTextManager {
         prefs?.edit()?.apply {
             putString("only_capture_prefix", onlyCapturePrefix)
             putString("only_capture_suffix", onlyCaptureSuffix)
+            putBoolean("send_to_home_assistant", sendToHomeAssistant)
             apply()
         }
     }
@@ -233,6 +281,7 @@ object CapturedTextManager {
             onlyCapturePrefix = p.getString("only_capture_prefix", "") ?: ""
             onlyCaptureSuffix = p.getString("only_capture_suffix", "") ?: ""
             isOnlyCaptureEnabled = p.getBoolean("only_capture_enabled", false)
+            sendToHomeAssistant = p.getBoolean("send_to_home_assistant", false)
         }
     }
 }

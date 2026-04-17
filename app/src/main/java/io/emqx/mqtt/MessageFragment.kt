@@ -6,6 +6,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -23,6 +24,8 @@ class MessageFragment : BaseFragment() {
     private var mOnlyCaptureContainer: LinearLayout? = null
     private var mPrefixInput: EditText? = null
     private var mSuffixInput: EditText? = null
+    private var mHaSendCheckbox: CheckBox? = null
+    private val mConfigManager: ConfigManager by lazy { ConfigManager.getInstance(requireContext()) }
 
     private val captureListener: (CapturedText) -> Unit = { captured ->
         activity?.runOnUiThread {
@@ -52,6 +55,11 @@ class MessageFragment : BaseFragment() {
         mOnlyCaptureContainer = view.findViewById(R.id.only_capture_container)
         mPrefixInput = view.findViewById(R.id.prefix_input)
         mSuffixInput = view.findViewById(R.id.suffix_input)
+        mHaSendCheckbox = view.findViewById(R.id.ha_send_checkbox)
+        
+        mHaSendCheckbox?.setOnCheckedChangeListener { _, isChecked ->
+            CapturedTextManager.setSendToHomeAssistant(isChecked)
+        }
 
         CapturedTextManager.init(requireContext())
         CapturedTextManager.addListener(captureListener)
@@ -101,6 +109,7 @@ class MessageFragment : BaseFragment() {
 
         mPrefixInput?.setText(CapturedTextManager.getOnlyCapturePrefix())
         mSuffixInput?.setText(CapturedTextManager.getOnlyCaptureSuffix())
+        mHaSendCheckbox?.isChecked = CapturedTextManager.getSendToHomeAssistant()
     }
 
     private fun addCapturedText(captured: CapturedText) {

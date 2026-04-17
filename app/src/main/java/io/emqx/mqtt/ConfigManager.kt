@@ -31,6 +31,10 @@ class ConfigManager(context: Context) {
         private const val KEY_SUBSCRIPTION_HISTORY = "subscription_history"
         private const val KEY_PUBLISH_HISTORY = "publish_history"
         private const val KEY_ALLOW_UNTRUSTED = "allow_untrusted"
+        private const val KEY_HA_ADDRESS = "ha_address"
+        private const val KEY_HA_TOKEN = "ha_token"
+        private const val KEY_HA_LANGUAGE = "ha_language"
+        private const val KEY_HA_HTTPS = "ha_https"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -134,6 +138,22 @@ class ConfigManager(context: Context) {
         get() = prefs.getBoolean(KEY_ALLOW_UNTRUSTED, false)
         set(value) = prefs.edit().putBoolean(KEY_ALLOW_UNTRUSTED, value).apply()
 
+    var haAddress: String
+        get() = prefs.getString(KEY_HA_ADDRESS, "homeassistant.local") ?: "homeassistant.local"
+        set(value) = prefs.edit().putString(KEY_HA_ADDRESS, value).apply()
+
+    var haToken: String
+        get() = prefs.getString(KEY_HA_TOKEN, "abcdefg") ?: "abcdefg"
+        set(value) = prefs.edit().putString(KEY_HA_TOKEN, value).apply()
+
+    var haLanguage: String
+        get() = prefs.getString(KEY_HA_LANGUAGE, "zh") ?: "zh"
+        set(value) = prefs.edit().putString(KEY_HA_LANGUAGE, value).apply()
+
+    var haHttps: Boolean
+        get() = prefs.getBoolean(KEY_HA_HTTPS, true)
+        set(value) = prefs.edit().putBoolean(KEY_HA_HTTPS, value).apply()
+
     fun saveConnectionConfig(
         host: String,
         port: Int,
@@ -142,7 +162,11 @@ class ConfigManager(context: Context) {
         username: String,
         password: String,
         protocol: String,
-        allowUntrusted: Boolean
+        allowUntrusted: Boolean,
+        haAddress: String,
+        haToken: String,
+        haLanguage: String,
+        haHttps: Boolean
     ) {
         prefs.edit().apply {
             putString(KEY_HOST, host)
@@ -153,6 +177,10 @@ class ConfigManager(context: Context) {
             putString(KEY_PASSWORD, password)
             putString(KEY_PROTOCOL, protocol)
             putBoolean(KEY_ALLOW_UNTRUSTED, allowUntrusted)
+            putString(KEY_HA_ADDRESS, haAddress)
+            putString(KEY_HA_TOKEN, haToken)
+            putString(KEY_HA_LANGUAGE, haLanguage)
+            putBoolean(KEY_HA_HTTPS, haHttps)
             putLong(KEY_LAST_CONNECTED, System.currentTimeMillis())
             apply()
         }

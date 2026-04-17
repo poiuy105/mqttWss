@@ -39,6 +39,10 @@ class SettingFragment : BaseFragment() {
     private lateinit var mDebugLogContainer: View
     private lateinit var mAllowUntrustedCheckbox: CheckBox
     private lateinit var mSslUntrustedContainer: LinearLayout
+    private lateinit var mHaAddress: EditText
+    private lateinit var mHaToken: EditText
+    private lateinit var mHaLanguage: EditText
+    private lateinit var mHaHttpsCheckbox: CheckBox
     private lateinit var mConfigManager: ConfigManager
 
     private val logBuilder = StringBuilder()
@@ -83,7 +87,11 @@ class SettingFragment : BaseFragment() {
             username = mUsername.text.toString(),
             password = mPassword.text.toString(),
             protocol = protocolName,
-            allowUntrusted = mAllowUntrustedCheckbox.isChecked
+            allowUntrusted = mAllowUntrustedCheckbox.isChecked,
+            haAddress = mHaAddress.text.toString(),
+            haToken = mHaToken.text.toString(),
+            haLanguage = mHaLanguage.text.toString(),
+            haHttps = mHaHttpsCheckbox.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -102,6 +110,10 @@ class SettingFragment : BaseFragment() {
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
             mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
+            mHaAddress.setText(mConfigManager.haAddress)
+            mHaToken.setText(mConfigManager.haToken)
+            mHaLanguage.setText(mConfigManager.haLanguage)
+            mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -136,6 +148,10 @@ class SettingFragment : BaseFragment() {
         mDebugLogContainer = view.findViewById(R.id.debug_log_container)
         mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
         mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
+        mHaAddress = view.findViewById(R.id.ha_address)
+        mHaToken = view.findViewById(R.id.ha_token)
+        mHaLanguage = view.findViewById(R.id.ha_language)
+        mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
