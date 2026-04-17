@@ -8,6 +8,8 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -117,7 +119,7 @@ class SettingFragment : BaseFragment() {
             onToggle(currentPrivacy, currentOriginal)
         }
 
-        editText.addTextChangedListener(object : android.text.TextWatcher {
+        editText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
