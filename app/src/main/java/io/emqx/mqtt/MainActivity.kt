@@ -255,6 +255,35 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         recreate()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // 保存关键运行时状态，供recreate()后恢复
+        outState.putBoolean("was_connected", mClient?.isConnected == true)
+        outState.putBoolean("was_connecting", isConnecting)
+        outState.putInt("current_tab", findViewById<ViewPager>(R.id.view_pager)?.currentItem ?: 0)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        val wasConnected = savedInstanceState.getBoolean("was_connected", false)
+        val currentTab = savedInstanceState.getInt("current_tab", 0)
+        Log.d("MainActivity", "onRestoreInstanceState: wasConnected=$wasConnected, currentTab=$currentTab")
+        // 恢复ViewPager当前页（延迟执行确保adapter已设置）
+        window.decorView.post {
+            findViewById<ViewPager>(R.id.view_pager)?.currentItem = currentTab
+        }
+    }
+
+    /** singleTask模式下从通知栏/BootReceiver返回时触发 */
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // 处理auto_connect参数（BootReceiver场景）
+        if (intent?.getBooleanExtra("auto_connect", false) == true) {
+            window.decorView.postDelayed({ autoConnectIfConfigured() }, 1000)
+        }
+    }
+
     private fun autoConnectIfConfigured() {
         val configManager = ConfigManager.getInstance(this)
         if (configManager.autoConnect && configManager.hasSavedConfig()) {
