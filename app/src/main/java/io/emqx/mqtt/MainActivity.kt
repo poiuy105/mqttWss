@@ -109,9 +109,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         CapturedTextManager.init(this)
 
         window.decorView.post {
-            // recreate()导致的Activity重建：如果TTS之前已就绪，静默重新初始化不显示toast
+            // ★★★ 不再启动时自动初始化TTS，改为在Setting页面手动触发 ★★★
+            // recreate()导致的Activity重建：静默恢复
             skipTtsReadyToast = savedInstanceState?.getBoolean("tts_was_ready") == true
-            initTTSForCarMachine(skipTtsReadyToast)
+            // 仅创建空实例，不自动初始化
+            ttsManager = TTSManager(this@MainActivity)
+            appendLog("[TTS] 已创建TTS实例（未初始化），请在设置页面手动加载")
         }
         floatWindowManager = FloatWindowManager.getInstance(this)
 
@@ -755,27 +758,21 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1001) {
             if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                // TTS引擎和语言数据可用，重新初始化
-                Log.d("MainActivity", "TTS engine and language data available, reinitializing")
-                ttsManager?.release()
-                ttsManager = TTSManager(applicationContext)
+                // TTS引擎和语言数据可用
+                Log.d("MainActivity", "TTS engine data OK")
+                ttsManager?.initWithEngine(null)
                 ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
                     override fun onInitSuccess() {
-                        Log.d("MainActivity", "TTS reinitialized successfully!")
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show()
-                        }
+                        Log.d("MainActivity", "TTS reinitialized after engine check!")
+                        runOnUiThread { Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show() }
                     }
                     override fun onInitFailed(status: Int) {
-                        Log.e("MainActivity", "TTS reinitialization failed! status=$status")
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show()
-                        }
+                        Log.e("MainActivity", "TTS reinit failed! status=$status")
+                        runOnUiThread { Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show() }
                     }
                 })
             } else {
-                // TTS引擎或语言数据不可用
-                Log.e("MainActivity", "TTS engine or language data not available")
+                Log.e("MainActivity", "TTS engine data not available")
             }
         }
     }

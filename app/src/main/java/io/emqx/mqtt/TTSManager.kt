@@ -55,25 +55,51 @@ class TTSManager(private val context: Context) {
     fun isReady(): Boolean = isInitialized
     fun getInitStatus(): Int = initStatus.get()
 
-    init { executor.execute { initTTS(null) } }
+    /** 获取当前使用的引擎包名（仅初始化成功后有效） */
+    fun getCurrentEngineName(): String? = tts?.defaultEngine
+
+    /** 获取当前初始化状态描述文字 */
+    fun getStatusDescription(): String {
+        if (isInitialized) return "READY (${tts?.defaultEngine ?: "unknown"})"
+        val status = initStatus.get()
+        if (isInitializing.get()) return "INITIALIZING... (status=$status)"
+        return when (status) {
+            -1 -> "NOT_INITIALIZED"
+            -2 -> "TIMEOUT"
+            -3 -> "LANG_NOT_SUPPORTED"
+            -4 -> "NO_AVAILABLE_LANGUAGE"
+            -5 -> "EXCEPTION"
+            else -> "FAILED(status=$status)"
+        }
+    }
+
+    // ★★★ 不再自动初始化，改为手动调用 initWithEngine() ★★★
 
     /**
-     * 重新初始化TTS（用于外部调用）
+     * 手动初始化TTS（指定引擎）
+     * @param enginePackageName null=系统默认引擎, 其他=指定引擎包名(如"com.google.android.tts")
      */
-    fun reinitialize() {
-        Log.d(TAG, "reinitialize() called")
+    fun initWithEngine(enginePackageName: String?) {
+        Log.d(TAG, "initWithEngine: engine='$enginePackageName'")
         if (isInitializing.get()) {
-            Log.w(TAG, "Already initializing, skipping reinitialize")
+            Log.w(TAG, "Already initializing, skipping")
             return
         }
-        executor.execute {
-            releaseInternal()
-            retryCount = 0
-            triedEngines.clear()
-            initStatus.set(-1)
-            isInitialized = false
-            initTTS(null)
-        }
+        // 先释放旧实例
+        releaseInternal()
+        retryCount = 0
+        triedEngines.clear()
+        if (enginePackageName != null) triedEngines.add(enginePackageName)
+        initStatus.set(-1)
+        isInitialized = false
+        executor.execute { initTTS(enginePackageName) }
+    }
+
+    /**
+     * 使用默认引擎重新初始化（兼容旧接口）
+     */
+    fun reinitialize() {
+        initWithEngine(null)
     }
 
     private fun initTTS(enginePackageName: String?) {

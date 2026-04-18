@@ -50,6 +50,18 @@ class SettingFragment : BaseFragment() {
     private lateinit var mBatteryOptButton: Button
     private lateinit var mAutostartButton: Button
 
+    // TTS 调试按钮
+    private lateinit var mTtsStatusText: TextView
+    private lateinit var mBtnTtsDefault: Button
+    private lateinit var mBtnTtsGoogle: Button
+    private lateinit var mBtnTtsIflytek: Button
+    private lateinit var mBtnTtsListEngines: Button
+    private lateinit var mBtnTtsTestSpeak: Button
+    private lateinit var mBtnTtsRelease: Button
+
+    /** TTS状态定时刷新Runnable */
+    private var ttsStatusRefreshRunnable: Runnable? = null
+
     private val logBuilder = StringBuilder()
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -172,6 +184,15 @@ class SettingFragment : BaseFragment() {
         mBydWhitelistButton = view.findViewById(R.id.btn_byd_whitelist)
         mBatteryOptButton = view.findViewById(R.id.btn_battery_opt)
         mAutostartButton = view.findViewById(R.id.btn_autostart)
+
+        // ========== TTS调试区域初始化 ==========
+        mTtsStatusText = view.findViewById(R.id.tts_status_text)
+        mBtnTtsDefault = view.findViewById(R.id.btn_tts_default)
+        mBtnTtsGoogle = view.findViewById(R.id.btn_tts_google)
+        mBtnTtsIflytek = view.findViewById(R.id.btn_tts_iflytek)
+        mBtnTtsListEngines = view.findViewById(R.id.btn_tts_list_engines)
+        mBtnTtsTestSpeak = view.findViewById(R.id.btn_tts_test_speak)
+        mBtnTtsRelease = view.findViewById(R.id.btn_tts_release)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -436,6 +457,9 @@ class SettingFragment : BaseFragment() {
             appendLog("跳转自启动管理")
             BydPermitUtils.jumpToAutoStart(requireContext())
         }
+
+        // ========== TTS调试按钮 ==========
+        setupTtsDebugButtons()
     }
 
     private fun testTts() {
@@ -450,6 +474,167 @@ class SettingFragment : BaseFragment() {
         } else {
             appendLog("TTS未就绪!")
         }
+    }
+
+    // ========== TTS 调试区域方法 ==========
+
+    /** 初始化所有TTS调试按钮的点击事件 */
+    private fun setupTtsDebugButtons() {
+        // 1. 默认引擎
+        mBtnTtsDefault.setOnClickListener {
+            appendLog("[TTS] 尝试加载：默认引擎 (engine=null)")
+            doInitTtsWithStatus(null)
+        }
+
+        // 2. Google TTS
+        mBtnTtsGoogle.setOnClickListener {
+            appendLog("[TTS] 尝试加载：Google TTS (com.google.android.tts)")
+            doInitTtsWithStatus("com.google.android.tts")
+        }
+
+        // 3. 讯飞TTS
+        mBtnTtsIflytek.setOnClickListener {
+            appendLog("[TTS] 尝试加载：讯飞TTS (com.iflytek.speechcloud)")
+            doInitTtsWithStatus("com.iflytek.speechcloud")
+        }
+
+        // 4. 列出所有引擎
+        mBtnTtsListEngines.setOnClickListener {
+            val tts = getTtsManager()
+            if (tts == null) {
+                appendLog("[TTS] TTSManager为NULL!")
+                return@setOnClickListener
+            }
+            val engines = tts.getEnginesInfo()
+            if (engines.isNullOrEmpty()) {
+                appendLog("[TTS] 未发现任何TTS引擎!")
+                updateTtsStatusText("⚠️ 未发现任何TTS引擎")
+            } else {
+                val sb = StringBuilder()
+                sb.appendLine("发现 ${engines.size} 个引擎:")
+                engines.forEachIndexed { index, pair ->
+                    sb.appendLine("  [$index] ${pair.second} (${pair.first})")
+                }
+                appendLog(sb.toString())
+                updateTtsStatusText(sb.toString())
+
+                // 同时显示当前状态
+                appendLog("当前状态: ${tts.getStatusDescription()}")
+            }
+        }
+
+        // 5. 测试朗读
+        mBtnTtsTestSpeak.setOnClickListener {
+            testTts()
+        }
+
+        // 6. 释放TTS
+        mBtnTtsRelease.setOnClickListener {
+            val tts = getTtsManager()
+            if (tts != null) {
+                tts.release()
+                appendLog("[TTS] 已释放TTS资源")
+                updateTtsStatusText("已释放（点击上方按钮重新加载）")
+            } else {
+                appendLog("[TTS] TTSManager为NULL，无法释放")
+            }
+        }
+
+        // 初始状态显示
+        refreshTtsStatus()
+
+        // 每3秒自动刷新状态（方便观察初始化进度）
+        startTtsStatusRefresh()
+    }
+
+    /**
+     * 使用指定引擎初始化TTS，并设置回调更新UI
+     * @param enginePackageName null=默认引擎, 其他=指定包名
+     */
+    private fun doInitTtsWithStatus(enginePackageName: String?) {
+        val tts = getTtsManager()
+        if (tts == null) {
+            appendLog("[TTS] 错误: TTSManager为NULL! (MainActivity可能尚未创建)")
+            updateTtsStatusText("❌ TTSManager为NULL")
+            return
+        }
+
+        val engineLabel = enginePackageName ?: "默认"
+        appendLog("[TTS] 开始初始化 → $engineLabel ...")
+        updateTtsStatusText("⏳ 正在初始化 ($engineLabel)...")
+
+        tts.setOnInitListener(object : TTSManager.OnInitListener {
+            override fun onInitSuccess() {
+                val engineName = tts.getCurrentEngineName() ?: engineLabel
+                val status = tts.getStatusDescription()
+                activity?.runOnUiThread {
+                    appendLog("[TTS] ✅ 初始化成功! $status")
+                    updateTtsStatusText("✅ 成功! $status\n→ 可点击「测试朗读」验证")
+                    Toast.makeText(context, "TTS加载成功: $engineName", Toast.LENGTH_SHORT).show()
+                }
+                // 停止自动刷新（已稳定）
+                stopTtsStatusRefresh()
+            }
+
+            override fun onInitFailed(status: Int) {
+                val reason = when (status) {
+                    -1 -> "初始化错误"
+                    -2 -> "超时(30s)"
+                    -3 -> "中文不支持"
+                    -4 -> "无可用语言"
+                    -5 -> "异常"
+                    else -> "错误码$status"
+                }
+                activity?.runOnUiThread {
+                    appendLog("[TTS] ❌ 失败: $reason (status=$status)")
+                    updateTtsStatusText("❌ 失败: $reason\n→ 尝试其他引擎或检查车机TTS设置")
+                }
+            }
+        })
+
+        // 执行初始化
+        tts.initWithEngine(enginePackageName)
+
+        // 启动状态刷新（观察进度）
+        startTtsStatusRefresh()
+    }
+
+    /** 更新TTS状态文字显示 */
+    private fun updateTtsStatusText(text: String) {
+        activity?.runOnUiThread {
+            try { mTtsStatusText.text = text } catch (e: Exception) {}
+        }
+    }
+
+    /** 手动刷新TTS状态 */
+    private fun refreshTtsStatus() {
+        val tts = getTtsManager()
+        if (tts == null) {
+            updateTtsStatusText("⚠️ TTSManager未创建（等待Activity就绪）")
+        } else {
+            updateTtsStatusText(tts.getStatusDescription())
+        }
+    }
+
+    /** 定时刷新TTS状态（观察初始化进度） */
+    private fun startTtsStatusRefresh() {
+        stopTtsStatusRefresh()
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        ttsStatusRefreshRunnable = object : Runnable {
+            override fun run() {
+                refreshTtsStatus()
+                handler.postDelayed(this, 3000)
+            }
+        }
+        handler.post(ttsStatusRefreshRunnable!!)
+    }
+
+    /** 停止定时刷新 */
+    private fun stopTtsStatusRefresh() {
+        ttsStatusRefreshRunnable?.let {
+            android.os.Handler(android.os.Looper.getMainLooper()).removeCallbacks(it)
+        }
+        ttsStatusRefreshRunnable = null
     }
 
     private fun testPopup() {
