@@ -186,7 +186,7 @@ object BydLocalCarApi {
 
     // ========== 安全读取方法 ==========
 
-    private fun safeGetFloat(obj: JSONObject, vararg keys: Float): Float {
+    private fun safeGetFloat(obj: JSONObject, vararg keys: String): Float {
         for (key in keys) {
             if (obj.has(key)) return obj.getDouble(key).toFloat()
         }

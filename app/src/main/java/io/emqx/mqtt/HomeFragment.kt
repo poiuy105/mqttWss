@@ -248,7 +248,6 @@ class HomeFragment : BaseFragment() {
             appendLocalLog("[CarData] UI更新异常: ${e.message}")
         }
     }
-    }
 
     /**
      * Network文字点击计数 - 连续5次显示Debug Log
