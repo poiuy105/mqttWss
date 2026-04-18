@@ -250,7 +250,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // 使用layout-land资源限定符，系统自动重新inflate布局，无需手动recreate
+        // configChanges声明后Android不会自动reinflate布局，必须手动recreate()
+        // 这样onCreate会被重新调用，系统会根据新方向加载layout或layout-land的资源
+        recreate()
     }
 
     private fun autoConnectIfConfigured() {
