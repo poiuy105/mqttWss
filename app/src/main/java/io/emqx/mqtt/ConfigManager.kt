@@ -35,6 +35,10 @@ class ConfigManager(context: Context) {
         private const val KEY_HA_TOKEN = "ha_token"
         private const val KEY_HA_LANGUAGE = "ha_language"
         private const val KEY_HA_HTTPS = "ha_https"
+        private const val KEY_TTS_ENABLED = "tts_enabled"
+        private const val KEY_FLOAT_WINDOW_ENABLED = "float_window_enabled"
+        private const val KEY_VOICE_CAPTURE_ENABLED = "voice_capture_enabled"
+        private const val KEY_SHOW_DEBUG_LOG = "show_debug_log"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -153,6 +157,22 @@ class ConfigManager(context: Context) {
     var haHttps: Boolean
         get() = prefs.getBoolean(KEY_HA_HTTPS, true)
         set(value) = prefs.edit().putBoolean(KEY_HA_HTTPS, value).apply()
+
+    var ttsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_TTS_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_TTS_ENABLED, value).apply()
+
+    var floatWindowEnabled: Boolean
+        get() = prefs.getBoolean(KEY_FLOAT_WINDOW_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_FLOAT_WINDOW_ENABLED, value).apply()
+
+    var voiceCaptureEnabled: Boolean
+        get() = prefs.getBoolean(KEY_VOICE_CAPTURE_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_VOICE_CAPTURE_ENABLED, value).apply()
+
+    var showDebugLog: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_DEBUG_LOG, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_DEBUG_LOG, value).apply()
 
     fun saveConnectionConfig(
         host: String,

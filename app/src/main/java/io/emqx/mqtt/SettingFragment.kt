@@ -101,6 +101,7 @@ class SettingFragment : BaseFragment() {
     }
 
     private fun loadSavedConfig() {
+        // 恢复MQTT连接字段
         if (mConfigManager.hasSavedConfig()) {
             mHost.setText(mConfigManager.host)
             mPort.setText(mConfigManager.port.toString())
@@ -108,23 +109,35 @@ class SettingFragment : BaseFragment() {
             mClientId.setText(mConfigManager.clientId)
             mUsername.setText(mConfigManager.username)
             mPassword.setText(mConfigManager.password)
-            mAutoConnect.isChecked = mConfigManager.autoConnect
-            mAutoStartSwitch.isChecked = mConfigManager.autoStart
-            mNotificationSwitch.isChecked = mConfigManager.persistentNotification
-            mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
-            mHaAddress.setText(mConfigManager.haAddress)
-            mHaToken.setText(mConfigManager.haToken)
-            mHaLanguage.setText(mConfigManager.haLanguage)
-            mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
-
-            when (mConfigManager.protocol) {
-                "TCP" -> mProtocol.check(R.id.protocol_tcp)
-                "SSL" -> mProtocol.check(R.id.protocol_ssl)
-                "WS" -> mProtocol.check(R.id.protocol_ws)
-                "WSS" -> mProtocol.check(R.id.protocol_wss)
-            }
-            appendLog("Loaded saved configuration")
         }
+        
+        // 恢复所有开关和选项（即使没有完整配置也要恢复）
+        mAutoConnect.isChecked = mConfigManager.autoConnect
+        mAutoStartSwitch.isChecked = mConfigManager.autoStart
+        mNotificationSwitch.isChecked = mConfigManager.persistentNotification
+        mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
+        
+        // 恢复HA字段
+        mHaAddress.setText(mConfigManager.haAddress)
+        mHaToken.setText(mConfigManager.haToken)
+        mHaLanguage.setText(mConfigManager.haLanguage)
+        mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
+
+        // 恢复协议选择
+        when (mConfigManager.protocol) {
+            "TCP" -> mProtocol.check(R.id.protocol_tcp)
+            "SSL" -> mProtocol.check(R.id.protocol_ssl)
+            "WS" -> mProtocol.check(R.id.protocol_ws)
+            "WSS" -> mProtocol.check(R.id.protocol_wss)
+        }
+
+        // 恢复功能开关（从持久化存储）
+        mTtsSwitch.isChecked = mConfigManager.ttsEnabled
+        mFloatSwitch.isChecked = mConfigManager.floatWindowEnabled
+        mVoiceSwitch.isChecked = mConfigManager.voiceCaptureEnabled
+        mShowDebugLogSwitch.isChecked = mConfigManager.showDebugLog
+
+        appendLog("Loaded saved configuration")
     }
 
     override fun setUpView(view: View) {
@@ -187,38 +200,85 @@ class SettingFragment : BaseFragment() {
                 else -> View.GONE
             }
             mSslUntrustedContainer.visibility = sslUntrustedVisibility
+
+            // 实时保存协议选择
+            val protoName = when (checkedId) {
+                R.id.protocol_tcp -> "TCP"
+                R.id.protocol_ssl -> "SSL"
+                R.id.protocol_ws -> "WS"
+                R.id.protocol_wss -> "WSS"
+                else -> "TCP"
+            }
+            mConfigManager.protocol = protoName
         }
 
         loadSavedConfig()
 
-        // HA容器内控件实时保存监听器 - 输入即持久化到SharedPreferences(掉电保存)
+        // ========== MQTT连接字段 - 实时保存（输入即持久化）==========
+        mHost.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.host = s?.toString() ?: "" }
+        })
+        mPort.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.port = s?.toString()?.toIntOrNull() ?: 1883 }
+        })
+        mPath.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.path = s?.toString() ?: "/mqtt" }
+        })
+        mClientId.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.clientId = s?.toString() ?: "" }
+        })
+        mUsername.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.username = s?.toString() ?: "" }
+        })
+        mPassword.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { mConfigManager.password = s?.toString() ?: "" }
+        })
+        mAllowUntrustedCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.allowUntrusted = isChecked
+            appendLog("Allow Untrusted ${if (isChecked) "enabled" else "disabled"}")
+        }
+        mAutoConnect.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.autoConnect = isChecked
+            appendLog("Auto Connect ${if (isChecked) "enabled" else "disabled"}")
+        }
+
+        // ========== HA容器控件实时保存 ==========
         mHaAddress.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                mConfigManager.haAddress = s?.toString() ?: ""
-            }
+            override fun afterTextChanged(s: Editable?) { mConfigManager.haAddress = s?.toString() ?: "" }
         })
         mHaToken.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                mConfigManager.haToken = s?.toString() ?: ""
-            }
+            override fun afterTextChanged(s: Editable?) { mConfigManager.haToken = s?.toString() ?: "" }
         })
         mHaLanguage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                mConfigManager.haLanguage = s?.toString() ?: ""
-            }
+            override fun afterTextChanged(s: Editable?) { mConfigManager.haLanguage = s?.toString() ?: "" }
         })
         mHaHttpsCheckbox.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.haHttps = isChecked
             appendLog("HA HTTPS ${if (isChecked) "enabled" else "disabled"}")
         }
 
+        // ========== 功能开关 - 实时持久化 + 同步MainActivity ==========
         val mainActivity = (activity as? MainActivity)
+        
+        // 恢复后立即同步到MainActivity运行时状态
         mainActivity?.let {
             it.isTTSEnabled = mTtsSwitch.isChecked
             it.isFloatWindowEnabled = mFloatSwitch.isChecked
@@ -226,31 +286,23 @@ class SettingFragment : BaseFragment() {
         }
 
         mTtsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            (activity as? MainActivity)?.let { main ->
-                main.isTTSEnabled = isChecked
-                appendLog("TTS ${if (isChecked) "enabled" else "disabled"}")
-            }
+            mConfigManager.ttsEnabled = isChecked
+            (activity as? MainActivity)?.isTTSEnabled = isChecked
+            appendLog("TTS ${if (isChecked) "enabled" else "disabled"}")
         }
         mFloatSwitch.setOnCheckedChangeListener { _, isChecked ->
-            (activity as? MainActivity)?.let { main ->
-                main.isFloatWindowEnabled = isChecked
-                appendLog("Float Window ${if (isChecked) "enabled" else "disabled"}")
-            }
+            mConfigManager.floatWindowEnabled = isChecked
+            (activity as? MainActivity)?.isFloatWindowEnabled = isChecked
+            appendLog("Float Window ${if (isChecked) "enabled" else "disabled"}")
         }
         mVoiceSwitch.setOnCheckedChangeListener { _, isChecked ->
-            // 确保CapturedTextManager已初始化
-            if (!::mConfigManager.isInitialized) {
-                mConfigManager = ConfigManager.getInstance(requireContext())
-            }
-            // 初始化CapturedTextManager
             CapturedTextManager.init(requireContext())
             CapturedTextManager.isEnabled = isChecked
-            (activity as? MainActivity)?.let { main ->
-                main.isAutoCaptureVoiceEnabled = isChecked
-                appendLog("Auto Capture Voice ${if (isChecked) "enabled" else "disabled"}")
-                if (isChecked && !main.isAccessibilityServiceEnabled()) {
-                    main.requestAccessibilityService()
-                }
+            mConfigManager.voiceCaptureEnabled = isChecked
+            (activity as? MainActivity)?.isAutoCaptureVoiceEnabled = isChecked
+            appendLog("Auto Capture Voice ${if (isChecked) "enabled" else "disabled"}")
+            if (isChecked && (activity as? MainActivity)?.isAccessibilityServiceEnabled() == false) {
+                (activity as? MainActivity)?.requestAccessibilityService()
             }
         }
 
@@ -265,6 +317,7 @@ class SettingFragment : BaseFragment() {
         }
 
         mShowDebugLogSwitch.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.showDebugLog = isChecked
             mDebugLogContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
             appendLog("Show Debug Log ${if (isChecked) "enabled" else "disabled"}")
         }
