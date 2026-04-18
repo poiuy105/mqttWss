@@ -759,6 +759,8 @@ class SettingFragment : BaseFragment() {
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
+
+    fun updateButtonText() {
         // 防御性检查: Fragment View 可能尚未创建或已销毁(如recreate()/横竖屏切换后)
         // lateinit属性(mButton/mDisconnectButton)在View未inflate前访问会抛UninitializedPropertyAccessException
         if (!this::mButton.isInitialized) {
