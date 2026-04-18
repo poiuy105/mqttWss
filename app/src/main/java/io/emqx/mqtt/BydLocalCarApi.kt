@@ -467,7 +467,7 @@ object BydLocalCarApi {
      */
     private fun execShellCommand(cmd: String): String {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd"))
+            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             val output = StringBuilder()
             var line: String?
@@ -539,7 +539,7 @@ object BydLocalCarApi {
         )
         for (p in gearPatterns) {
             p.find(output)?.groupValues?.get(1)?.let {
-                if (it.matches(Regex("[PRND]"))) data.gear = it.toUpperCase()
+                if (it.matches(Regex("[PRND]"))) data.gear = it.uppercase()
             }
         }
 
@@ -565,7 +565,7 @@ object BydLocalCarApi {
             for (path in SCAN_PATHS) {
                 if (attemptCount++ >= maxAttempts) {
                     log("[CarHTTP] 达到最大尝试次数($maxAttempts)，停止扫描")
-                    return fail("HTTP扫描达到上限($maxAttempts次)无结果")
+                    return fail("HTTP扫描达到上限(${maxAttempts}次)无结果")
                 }
 
                 try {
@@ -923,7 +923,7 @@ object BydLocalCarApi {
                         val count = cursor.count
                         val cols = cursor.columnNames.joinToString(",")
                         cursor.close()
-                        report.cpResults.add("✓ $uriStr → $count行 [${cols}]")
+                        report.cpResults.add("✓ $uriStr → ${count}行 [${cols}]")
                     }
                 } catch (e: SecurityException) {
                     report.cpResults.add("⚠ $uriStr → 权限不足")
@@ -952,6 +952,3 @@ object BydLocalCarApi {
         var totalTime: Long = 0L
     )
 }
-  
- 
- 
