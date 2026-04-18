@@ -13,10 +13,8 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.view.ViewGroup
@@ -58,43 +56,43 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     var isAutoCaptureVoiceEnabled = false
 
-    private var mqttStatusListener: ((Boolean) -> Unit)? = null
+    // ========== MQTT状态多监听器（解决Home/Setting互相覆盖问题）==========
+    private val mqttStatusListeners = mutableListOf<(Boolean) -> Unit>()
 
-    // ========== Debug Log 容器（主页面） ==========
-    private var mDebugLogContainer: View? = null
-    private var mDebugLogText: TextView? = null
-    private val logBuilder = StringBuilder()
-    private var networkClickCount = 0
-    private var lastNetworkClickTime = 0L
+    fun addMqttStatusListener(listener: (Boolean) -> Unit) {
+        mqttStatusListeners.add(listener)
+    }
 
+    // 保留旧API兼容SettingFragment（内部改用addMqttStatusListener）
+    @Deprecated("Use addMqttStatusListener() for multiple listeners")
     fun setOnMqttStatusChangedListener(listener: (Boolean) -> Unit) {
-        mqttStatusListener = listener
+        mqttStatusListeners.add(listener)
+    }
+
+    // ========== 日志回调（写入HomeFragment的Debug Log容器）==========
+    private var homeLogCallback: ((String) -> Unit)? = null
+    // Network点击触发器（由HomeFragment设置）
+    private var networkClickTrigger: (() -> Unit)? = null
+
+    fun setLogCallbackToHome(callback: (String) -> Unit) {
+        homeLogCallback = callback
+    }
+
+    fun setNetworkClickTrigger(trigger: () -> Unit) {
+        networkClickTrigger = trigger
+    }
+
+    // ========== 全局logBuilder（用于Clear/Copy操作）==========
+    val globalLogBuilder = StringBuilder()
+
+    fun clearDebugLog() {
+        globalLogBuilder.clear()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-
-        // ========== 初始化Debug Log容器（默认隐藏）==========
-        mDebugLogContainer = findViewById(R.id.debug_log_container)
-        mDebugLogText = findViewById(R.id.log_text)
-        findViewById<Button>(R.id.btn_log_clear)?.setOnClickListener {
-            logBuilder.clear()
-            mDebugLogText?.text = ""
-            appendLog("Debug log cleared")
-        }
-        findViewById<Button>(R.id.btn_log_copy)?.setOnClickListener {
-            val content = logBuilder.toString()
-            if (content.isNotBlank()) {
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Debug Log", content))
-                Toast.makeText(this, "Copied ${content.length} chars", Toast.LENGTH_SHORT).show()
-                appendLog("Debug log copied (${content.length} chars)")
-            } else {
-                Toast.makeText(this, "Log is empty", Toast.LENGTH_SHORT).show()
-            }
-        }
 
         CapturedTextManager.init(this)
 
@@ -407,42 +405,38 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
+    /** 保留兼容性：SettingFragment仍通过此回调获取日志 */
     fun setLogCallback(callback: (String) -> Unit) {
         logCallback = callback
     }
 
+    /**
+     * 写入日志：同时写入全局builder + HomeFragment容器 + SettingFragment回调
+     */
     fun appendLog(message: String) {
         runOnUiThread {
-            // 写入主页面Debug Log容器
             val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
-            logBuilder.insert(0, "[$timestamp] $message\n")
-            if (logBuilder.length > 2000) {
-                logBuilder.setLength(2000)
+            val formattedMessage = "[$timestamp] $message\n"
+            
+            // 写入全局builder（用于Clear/Copy）
+            globalLogBuilder.insert(0, formattedMessage)
+            if (globalLogBuilder.length > 2000) {
+                globalLogBuilder.setLength(2000)
             }
-            mDebugLogText?.text = logBuilder.toString()
-            // 回调通知SettingFragment（保留兼容性，但不再由其显示）
+            
+            // 写入HomeFragment的Debug Log容器
+            homeLogCallback?.invoke(message)
+            
+            // 兼容SettingFragment的日志回调
             logCallback?.invoke(message)
+            
             Log.d("MainActivity", message)
         }
     }
 
-    /**
-     * Network文字点击计数器 - 连续5次显示Debug Log容器
-     * 由HomeFragment的network_type TextView调用
-     */
+    /** 触发Network x5 显示Debug Log（由HomeFragment调用） */
     fun onNetworkTextClicked() {
-        val now = System.currentTimeMillis()
-        if (now - lastNetworkClickTime > 2000) {
-            networkClickCount = 0
-        }
-        lastNetworkClickTime = now
-        networkClickCount++
-        if (networkClickCount >= 5) {
-            networkClickCount = 0
-            mDebugLogContainer?.visibility = View.VISIBLE
-            Toast.makeText(this, "Debug Log shown", Toast.LENGTH_SHORT).show()
-            appendLog("=== Debug Log opened (Network x5) ===")
-        }
+        networkClickTrigger?.invoke()
     }
 
     fun connect(connection: Connection, listener: org.eclipse.paho.client.mqttv3.IMqttActionListener?) {
@@ -472,7 +466,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     MqttService.updateConnectionStatus(this@MainActivity, true)
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
-                        mqttStatusListener?.invoke(true)
+                        notifyMqttStatusChanged(true)
                     }
                 }
 
@@ -484,20 +478,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     exception?.printStackTrace()
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
-                        mqttStatusListener?.invoke(false)
+                        notifyMqttStatusChanged(false)
                     }
                 }
             })
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             isConnecting = false
             MqttService.updateConnectionStatus(this, false)
-            mqttStatusListener?.invoke(false)
+            notifyMqttStatusChanged(false)
             e.printStackTrace()
             Toast.makeText(this, "MqttException: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             isConnecting = false
             MqttService.updateConnectionStatus(this, false)
-            mqttStatusListener?.invoke(false)
+            notifyMqttStatusChanged(false)
             e.printStackTrace()
             Toast.makeText(this, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -512,10 +506,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             mClient = null
             mConnection = null
             MqttService.updateConnectionStatus(this, false)
-            mqttStatusListener?.invoke(false)
+            notifyMqttStatusChanged(false)
         } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
             MqttService.updateConnectionStatus(this, false)
-            mqttStatusListener?.invoke(false)
+            notifyMqttStatusChanged(false)
             e.printStackTrace()
         }
     }
@@ -601,11 +595,16 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
     }
 
+    /** 通知所有MQTT状态监听者（HomeFragment + SettingFragment） */
+    private fun notifyMqttStatusChanged(connected: Boolean) {
+        mqttStatusListeners.forEach { it.invoke(connected) }
+    }
+
     override fun connectionLost(cause: Throwable?) {
         appendLog("Connection lost: $cause")
         isConnecting = false
         MqttService.updateConnectionStatus(this, false)
-        mqttStatusListener?.invoke(false)
+        notifyMqttStatusChanged(false)
         runOnUiThread {
             (mFragmentList[1] as? SettingFragment)?.updateButtonText()
         }

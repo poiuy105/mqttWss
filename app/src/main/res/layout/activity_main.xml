@@ -7,91 +7,21 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- 主内容区域（ViewPager + TabLayout） -->
-    <LinearLayout
+    <androidx.viewpager.widget.ViewPager
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_weight="1" />
 
-        <androidx.viewpager.widget.ViewPager
-            android:id="@+id/view_pager"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/colorPrimary"
-            app:tabGravity="fill"
-            app:tabIndicatorColor="@android:color/white"
-            app:tabIndicatorFullWidth="false"
-            app:tabMode="fixed"
-            app:tabTextAppearance="@style/TabLayoutTextStyle" />
-    </LinearLayout>
-
-    <!-- Debug Log容器：竖屏时占屏幕下方1/2，默认隐藏(GONE) -->
-    <LinearLayout
-        android:id="@+id/debug_log_container"
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabs"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:padding="12dp"
-        android:background="#F5F5F5"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Debug Log:"
-                android:textColor="@android:color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btn_log_clear"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:minWidth="56dp"
-                android:text="Clear"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/btn_log_copy"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginStart="6dp"
-                android:minWidth="56dp"
-                android:text="Copy"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="4dp"
-            android:layout_weight="1">
-
-            <TextView
-                android:id="@+id/log_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text=""
-                android:textSize="11sp" />
-        </ScrollView>
-    </LinearLayout>
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@android:color/white"
+        app:tabIndicatorFullWidth="false"
+        app:tabMode="fixed"
+        app:tabTextAppearance="@style/TabLayoutTextStyle" />
 
 </LinearLayout>
