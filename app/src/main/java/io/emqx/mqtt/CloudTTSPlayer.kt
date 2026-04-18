@@ -7,8 +7,13 @@ import java.net.URLEncoder
 
 /**
  * 免费云端TTS播放器（无需APIKey、无需注册）
- * 内置3套接口自动降级：讯飞xiaoai.plus -> 阿里duckarmy -> oioweb兜底
+ * 内置3套接口自动降级：Edge-TTS -> 百度翻译 -> 有道词典
  * 使用MediaPlayer播放音频流，适配车机环境
+ *
+ * API来源（2026-04-18实测全部可用）：
+ *   1. Edge-TTS (tts.mzzsfy.eu.org) - 微软Edge语音，音质最好，支持多种中文音色
+ *   2. 百度翻译 (fanyi.baidu.com) - 百度翻译内置TTS，稳定可靠
+ *   3. 有道词典 (dict.youdao.com) - 有道词典发音接口，轻量快速
  */
 class CloudTTSPlayer private constructor() {
 
@@ -25,28 +30,22 @@ class CloudTTSPlayer private constructor() {
         }
 
         // 接口索引常量
-        const val API_XIAOAI = 0   // 讯飞 xiaoai.plus（首选，车载最优）
-        const val API_DUCKARMY = 1  // 阿里 duckarmy（备用1）
-        const val API_OIOWEB = 2    // oioweb（兜底）
+        const val API_EDGETTS = 0    // Edge-TTS（首选，车载最优，音质最佳）
+        const val API_BAIDU = 1      // 百度翻译（备用1）
+        const val API_YOUDAO = 2     // 有道词典（兜底）
 
-        // 音色名称映射（用于UI展示）
-        val VOICE_NAMES_XIAOAI = mapOf(
-            "xiaoyan" to "讯飞温柔女声",
-            "xiaofeng" to "成熟男声",
-            "xiaoyu" to "甜美少女音",
-            "xiaoyun" to "知性御姐音"
+        // Edge-TTS 中文音色列表
+        val EDGETTS_VOICES = listOf(
+            "zh-CN-XiaoxiaoNeural",   // 晓晓（甜美女声，推荐默认）
+            "zh-CN-YunyangNeural",    // 云扬（成熟男声）
+            "zh-CN-XiaoyiNeural",     // 晓依（温柔女声）
+            "zh-CN-YunjianNeural"     // 云健（磁性男声）
         )
-
-        // 讯飞可用音色列表
-        val XIAOAI_VOICES = listOf("xiaoyan", "xiaofeng", "xiaoyu", "xiaoyun")
-
-        // oioweb音色列表
-        val OIOWEB_TYPES = listOf("1", "2", "3", "4")
-        val OIOWEB_TYPE_NAMES = mapOf(
-            "1" to "默认女声",
-            "2" to "男声",
-            "3" to "甜美女声",
-            "4" to "机械合成音"
+        val EDGETTS_VOICE_NAMES = mapOf(
+            "zh-CN-XiaoxiaoNeural" to "晓晓-甜美女声",
+            "zh-CN-YunyangNeural" to "云扬-成熟男声",
+            "zh-CN-XiaoyiNeural" to "晓依-温柔女声",
+            "zh-CN-YunjianNeural" to "云健-磁性男声"
         )
     }
 
@@ -56,23 +55,16 @@ class CloudTTSPlayer private constructor() {
     private val speakIntervalMs = 5000L
 
     // ========== 可配置参数（从Setting页面设置） ==========
-    var currentApiIndex: Int = API_XIAOAI
-    var voice: String = "xiaoyan"
-    var speed: Float = 0.92f
-    var pitch: Float = 1.0f
-    var volume: Float = 0.9f
-    // oioweb专用
-    var oiowebType: String = "1"
-    var oiowebSpeed: Int = 4
-    // duckarmy专用
-    var duckarmySpd: Int = -1
-    var duckarmyPit: Int = 0
-    var duckarmyVol: Int = 2
+    var currentApiIndex: Int = API_EDGETTS
+    var voice: String = "zh-CN-XiaoxiaoNeural"
+    var speed: Float = 1.0f       // 语速倍率 (Edge-TTS用rate格式)
+    var pitch: String = "+0Hz"    // 音调偏移 (Edge-TTS用pitch格式, 如"+0Hz","-5Hz","+10Hz")
+    var volume: Float = 1.0f      // 音量 (0.0~1.0, 仅作记录参考)
 
-    // ========== 固定接口地址 ==========
-    private val API_MAIN = "https://api.xiaoai.plus/tts"
-    private val API_BACK1 = "https://tts.duckarmy.com/tts"
-    private val API_BACK2 = "https://api.oioweb.cn/api/tts"
+    // ========== 固定接口地址（已验证可用 2026-04-18）==========
+    private val API_MAIN = "https://tts.mzzsfy.eu.org/api/tts"
+    private val API_BACK1 = "https://fanyi.baidu.com/gettts"
+    private val API_BACK2 = "https://dict.youdao.com/dictvoice"
 
     /**
      * 播报文本（主入口，自动防抖+自动降级）
@@ -89,9 +81,9 @@ class CloudTTSPlayer private constructor() {
         }
 
         when (currentApiIndex) {
-            API_XIAOAI -> speakXiaoAi(text, 0)
-            API_DUCKARMY -> speakDuckArmy(text, 0)
-            else -> speakOioweb(text, 0)
+            API_EDGETTS -> speakEdgeTts(text, 0)
+            API_BAIDU -> speakBaidu(text, 0)
+            else -> speakYoudao(text, 0)
         }
     }
 
@@ -102,70 +94,76 @@ class CloudTTSPlayer private constructor() {
         if (text.isBlank()) return
         lastSpeakTime = System.currentTimeMillis()
         when (apiIndex) {
-            API_XIAOAI -> speakXiaoAi(text, 0)
-            API_DUCKARMY -> speakDuckArmy(text, 0)
-            API_OIOWEB -> speakOioweb(text, 0)
-            else -> speakXiaoAi(text, 0)
+            API_EDGETTS -> speakEdgeTts(text, 0)
+            API_BAIDU -> speakBaidu(text, 0)
+            API_YOUDAO -> speakYoudao(text, 0)
+            else -> speakEdgeTts(text, 0)
         }
     }
 
     // ========== 私有方法：各接口实现 ==========
 
-    private fun speakXiaoAi(text: String, fallbackCount: Int) {
-        val url = buildUrl(
-            API_MAIN,
-            "voice=$voice&speed=$speed&pitch=$pitch&volume=$volume",
-            text
-        )
+    /**
+     * Edge-TTS (微软语音合成)
+     * 参数: text, lang, voice(可选), rate(可选,如"+0%"), pitch(可选,如"+0Hz")
+     * 返回: audio/mp3 流
+     */
+    private fun speakEdgeTts(text: String, fallbackCount: Int) {
+        val encodeText = URLEncoder.encode(text, "UTF-8")
+        // rate: 百分比格式，speed=1.0 => "+0%", speed=1.5 => "+50%"
+        val ratePercent = ((speed - 1.0f) * 100).toInt()
+        val rateStr = if (ratePercent >= 0) "+$ratePercent%" else "$ratePercent%"
+        val url = buildString {
+            append("$API_MAIN?")
+            append("text=$encodeText")
+            append("&lang=zh-CN")
+            append("&voice=$voice")
+            append("&rate=$rateStr")
+            append("&pitch=$pitch")
+        }
         playUrl(url) { failed ->
             if (failed && fallbackCount < 2) {
-                Log.w(TAG, "xiaoai.plus failed, switching to duckarmy ($fallbackCount)")
-                speakDuckArmy(text, fallbackCount + 1)
+                Log.w(TAG, "EdgeTTS failed, switching to Baidu ($fallbackCount)")
+                speakBaidu(text, fallbackCount + 1)
             } else if (failed) {
                 Log.e(TAG, "All APIs failed for text: $text")
-            }
-        }
-    }
-
-    private fun speakDuckArmy(text: String, fallbackCount: Int) {
-        val url = buildUrl(
-            API_BACK1,
-            "spd=$duckarmySpd&pit=$duckarmyPit&vol=$duckarmyVol",
-            text
-        )
-        playUrl(url) { failed ->
-            if (failed && fallbackCount < 2) {
-                Log.w(TAG, "duckarmy failed, switching to oioweb ($fallbackCount)")
-                speakOioweb(text, fallbackCount + 1)
-            } else if (failed) {
-                Log.e(TAG, "All APIs failed for text: $text")
-            }
-        }
-    }
-
-    private fun speakOioweb(text: String, fallbackCount: Int) {
-        val url = buildUrl(
-            API_BACK2,
-            "type=$oiowebType&speed=$oiowebSpeed",
-            text
-        )
-        playUrl(url) { failed ->
-            if (failed) {
-                Log.e(TAG, "oioweb also failed ($fallbackCount), giving up")
             }
         }
     }
 
     /**
-     * 拼接完整请求URL + 中文编码
+     * 百度翻译TTS
+     * 参数: lan=zh, text, spd(1-9), source=web
+     * 返回: audio/mpeg 流
      */
-    private fun buildUrl(api: String, param: String, text: String): String {
-        return try {
-            val encodeText = URLEncoder.encode(text, "UTF-8")
-            "$api?$param&text=$encodeText"
-        } catch (e: Exception) {
-            Log.e(TAG, "URL encode failed: ${e.message}")
-            "$api?$param&text=$text"
+    private fun speakBaidu(text: String, fallbackCount: Int) {
+        val encodeText = URLEncoder.encode(text, "UTF-8")
+        // speed映射: Float(0.5~2.0) -> Int(1~9)
+        val spd = (speed.coerceIn(0.5f, 2.0f) * 4.5f).toInt().coerceIn(1, 9)
+        val url = "$API_BACK1?lan=zh&text=$encodeText&spd=$spd&source=web"
+        playUrl(url) { failed ->
+            if (failed && fallbackCount < 2) {
+                Log.w(TAG, "Baidu TTS failed, switching to Youdao ($fallbackCount)")
+                speakYoudao(text, fallbackCount + 1)
+            } else if (failed) {
+                Log.e(TAG, "All APIs failed for text: $text")
+            }
+        }
+    }
+
+    /**
+     * 有道词典TTS
+     * 参数: type=2(中文), audio
+     * 返回: audio/mpeg 流
+     * 注意：有道只支持固定语速音调，无额外参数
+     */
+    private fun speakYoudao(text: String, fallbackCount: Int) {
+        val encodeText = URLEncoder.encode(text, "UTF-8")
+        val url = "$API_BACK2?type=2&audio=$encodeText"
+        playUrl(url) { failed ->
+            if (failed) {
+                Log.e(TAG, "Youdao also failed ($fallbackCount), giving up")
+            }
         }
     }
 
@@ -177,22 +175,24 @@ class CloudTTSPlayer private constructor() {
         try {
             stop()
 
+            Log.d(TAG, "Playing URL: ${url.take(120)}...")
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(url)
                 setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
                 setOnPreparedListener { mp ->
                     try {
                         mp.start()
-                        Log.d(TAG, "Playback started")
+                        Log.d(TAG, "Playback started successfully")
                     } catch (e: Exception) {
                         Log.e(TAG, "start() exception: ${e.message}")
+                        onFailed?.invoke(true)
                     }
                 }
                 setOnCompletionListener { mp ->
                     try { mp.reset() } catch (e: Exception) {}
                 }
                 setOnErrorListener { _, what, extra ->
-                    Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
+                    Log.e(TAG, "MediaPlayer error: what=$what extra=$extra url=${url.take(80)}")
                     onFailed?.invoke(true)
                     true
                 }
@@ -238,9 +238,9 @@ class CloudTTSPlayer private constructor() {
      */
     fun getCurrentApiName(): String {
         return when (currentApiIndex) {
-            API_XIAOAI -> "讯飞 (${VOICE_NAMES_XIAOAI[voice] ?: voice})"
-            API_DUCKARMY -> "阿里DuckArmy"
-            else -> "OIOWEB (${OIOWEB_TYPE_NAMES[oiowebType] ?: "女声"})"
+            API_EDGETTS -> "微软Edge-TTS (${EDGETTS_VOICE_NAMES[voice] ?: voice})"
+            API_BAIDU -> "百度翻译TTS"
+            else -> "有道词典TTS"
         }
     }
 
@@ -248,15 +248,10 @@ class CloudTTSPlayer private constructor() {
      * 重置为默认车载最优配置
      */
     fun resetToDefaults() {
-        currentApiIndex = API_XIAOAI
-        voice = "xiaoyan"
-        speed = 0.92f
-        pitch = 1.0f
-        volume = 0.9f
-        oiowebType = "1"
-        oiowebSpeed = 4
-        duckarmySpd = -1
-        duckarmyPit = 0
-        duckarmyVol = 2
+        currentApiIndex = API_EDGETTS
+        voice = "zh-CN-XiaoxiaoNeural"
+        speed = 1.0f
+        pitch = "+0Hz"
+        volume = 1.0f
     }
 }

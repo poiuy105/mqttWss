@@ -534,11 +534,11 @@ class SettingFragment : BaseFragment() {
             return
         }
 
-        // 1. 接口选择 Spinner（讯飞 / 阿里 / oioweb）
+        // 1. 接口选择 Spinner（Edge-TTS / 百度翻译 / 有道词典）
         val apiAdapter = android.widget.ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            listOf("讯飞 xiaoai.plus (推荐)", "阿里 DuckArmy", "OIOWEB (兜底)")
+            listOf("微软 Edge-TTS (推荐，音质最佳)", "百度翻译 TTS", "有道词典 TTS (兜底)")
         )
         apiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         mCloudTtsApiSpinner?.adapter = apiAdapter
@@ -548,28 +548,28 @@ class SettingFragment : BaseFragment() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 player.currentApiIndex = position
                 mConfigManager.cloudTtsApiIndex = position
-                // 讯飞才显示音色选择
-                mVoiceSelectorContainer?.visibility = if (position == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+                // 仅Edge-TTS才显示音色选择（百度/有道不支持选音色）
+                mVoiceSelectorContainer?.visibility = if (position == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
                 appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
                 syncTtsUiFromPlayer()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // 2. 音色选择（仅讯飞）
-        val voiceNames = CloudTTSPlayer.XIAOAI_VOICES.map {
-            CloudTTSPlayer.VOICE_NAMES_XIAOAI[it] ?: it
+        // 2. 音色选择（仅Edge-TTS支持）
+        val voiceNames = CloudTTSPlayer.EDGETTS_VOICES.map {
+            CloudTTSPlayer.EDGETTS_VOICE_NAMES[it] ?: it
         }
         val voiceAdapter = android.widget.ArrayAdapter(
             requireContext(), android.R.layout.simple_spinner_item, voiceNames
         )
         voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         mCloudTtsVoiceSpinner?.adapter = voiceAdapter
-        val voiceIndex = CloudTTSPlayer.XIAOAI_VOICES.indexOf(player.voice).coerceAtLeast(0)
+        val voiceIndex = CloudTTSPlayer.EDGETTS_VOICES.indexOf(player.voice).coerceAtLeast(0)
         mCloudTtsVoiceSpinner?.setSelection(voiceIndex)
         mCloudTtsVoiceSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                player.voice = CloudTTSPlayer.XIAOAI_VOICES[position]
+                player.voice = CloudTTSPlayer.EDGETTS_VOICES[position]
                 mConfigManager.cloudTtsVoice = player.voice
                 appendLog("[CloudTTS] 音色切换: ${player.voice}")
                 syncTtsUiFromPlayer()
@@ -636,18 +636,18 @@ class SettingFragment : BaseFragment() {
             mConfigManager.cloudTtsApiIndex = player.currentApiIndex
             mConfigManager.cloudTtsVoice = player.voice
             mConfigManager.cloudTtsSpeed = player.speed
-            mConfigManager.cloudTtsPitch = player.pitch
+            mConfigManager.cloudTtsPitch = player.pitch.toFloat() // pitch是String格式如"+0Hz"，取近似float存储
             mConfigManager.cloudTtsVolume = player.volume
             // 刷新UI
             mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
-            mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+            mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
             syncTtsUiFromPlayer()
             appendLog("[CloudTTS] 已重置为默认配置: ${player.getCurrentApiName()}")
             Toast.makeText(context, "TTS settings reset to defaults", Toast.LENGTH_SHORT).show()
         }
 
         // 初始同步音色容器可见性
-        mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+        mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
 
         appendLog("[CloudTTS] 设置已加载: ${player.getCurrentApiName()}")
     }

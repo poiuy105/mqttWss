@@ -187,11 +187,11 @@ class ConfigManager(context: Context) {
 
     // ========== 云端TTS配置 ==========
     var cloudTtsApiIndex: Int
-        get() = prefs.getInt(KEY_CLOUD_TTS_API_INDEX, CloudTTSPlayer.API_XIAOAI)
+        get() = prefs.getInt(KEY_CLOUD_TTS_API_INDEX, CloudTTSPlayer.API_EDGETTS)
         set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_API_INDEX, value).apply()
 
     var cloudTtsVoice: String
-        get() = prefs.getString(KEY_CLOUD_TTS_VOICE, "xiaoyan") ?: "xiaoyan"
+        get() = prefs.getString(KEY_CLOUD_TTS_VOICE, "zh-CN-XiaoxiaoNeural") ?: "zh-CN-XiaoxiaoNeural"
         set(value) = prefs.edit().putString(KEY_CLOUD_TTS_VOICE, value).apply()
 
     var cloudTtsSpeed: Float

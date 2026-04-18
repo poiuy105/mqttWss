@@ -110,13 +110,16 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             currentApiIndex = cfg.cloudTtsApiIndex
             voice = cfg.cloudTtsVoice
             speed = cfg.cloudTtsSpeed
-            pitch = cfg.cloudTtsPitch
+            // pitch在Edge-TTS中为String格式如"+0Hz"，ConfigManager存储的是Float近似值，需要转换
+            val pitchVal = cfg.cloudTtsPitch
+            if (pitchVal > 0f) {
+                pitch = "+${(pitchVal * 10).toInt()}Hz"
+            } else if (pitchVal < 0f) {
+                pitch = "${(pitchVal * 10).toInt()}Hz"
+            } else {
+                pitch = "+0Hz"
+            }
             volume = cfg.cloudTtsVolume
-            oiowebType = cfg.cloudTtsOiowebType
-            oiowebSpeed = cfg.cloudTtsOiowebSpeed
-            duckarmySpd = cfg.cloudTtsDuckarmySpd
-            duckarmyPit = cfg.cloudTtsDuckarmyPit
-            duckarmyVol = cfg.cloudTtsDuckarmyVol
         }
         appendLog("[CloudTTS] 已初始化: ${ttsPlayer?.getCurrentApiName()}")
 
