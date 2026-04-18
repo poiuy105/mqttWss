@@ -127,6 +127,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
         appendLog("[CloudTTS] 已初始化: ${ttsPlayer?.getCurrentApiName()}")
 
+        // ========== 初始化车况API（设置应用上下文用于SDK反射） ==========
+        BydLocalCarApi.appContext = this
+
         floatWindowManager = FloatWindowManager.getInstance(this)
 
         mFragmentList.add(HomeFragment.newInstance())
