@@ -1,5 +1,6 @@
 package io.emqx.mqtt
 
+import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
@@ -118,9 +119,22 @@ object CapturedTextManager {
                         HomeAssistantService.sendCommand(ctx, validText) { success, speech ->
                             if (success && speech != null) {
                                 (ctx as? MainActivity)?.let { activity ->
-                                    // 必须在主线程执行UI操作（OkHttp回调在子线程）
                                     activity.runOnUiThread {
-                                        activity.onBackPressed()
+                                        // 优先使用无障碍服务模拟系统级返回键（可关闭外部语音助手等覆盖层）
+                                        val a11yService = VoiceAccessibilityService.getInstance()
+                                        if (a11yService != null) {
+                                            try {
+                                                a11yService.performGlobalAction(
+                                                    AccessibilityService.GLOBAL_ACTION_BACK
+                                                )
+                                            } catch (e: Exception) {
+                                                Log.w("CapturedTextManager", "GLOBAL_ACTION_BACK failed, fallback to app back", e)
+                                                activity.onBackPressed()
+                                            }
+                                        } else {
+                                            // 无障碍服务未启用时回退到App层面返回
+                                            activity.onBackPressed()
+                                        }
                                         activity.showFloatMessage("Home Assistant", speech)
                                         activity.ttsManager?.speak(speech)
                                     }
