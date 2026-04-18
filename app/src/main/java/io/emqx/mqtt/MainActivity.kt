@@ -89,6 +89,11 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         globalLogBuilder.clear()
     }
 
+    // 标记TTS是否已在之前的Activity实例中初始化完成（用于recreate场景避免重复toast）
+    private var ttsWasReadyBeforeRecreate = false
+    /** 是否跳过TTS就绪toast（recreate场景避免重启感知） */
+    private var skipTtsReadyToast = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -97,7 +102,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         CapturedTextManager.init(this)
 
         window.decorView.post {
-            initTTSForCarMachine()
+            // recreate()导致的Activity重建：如果TTS之前已就绪，静默重新初始化不显示toast
+            skipTtsReadyToast = savedInstanceState?.getBoolean("tts_was_ready") == true
+            initTTSForCarMachine(skipTtsReadyToast)
         }
         floatWindowManager = FloatWindowManager.getInstance(this)
 
@@ -261,6 +268,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         outState.putBoolean("was_connected", mClient?.isConnected == true)
         outState.putBoolean("was_connecting", isConnecting)
         outState.putInt("current_tab", findViewById<ViewPager>(R.id.view_pager)?.currentItem ?: 0)
+        // 保存TTS就绪状态：recreate后新Activity跳过"TTS ready" toast避免重启感知
+        outState.putBoolean("tts_was_ready", ttsManager?.isReady() == true)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -321,9 +330,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
      * - 使用Activity Context而非ApplicationContext
      * - 先检测可用引擎，引导用户安装
      * - 失败时支持重试和重新初始化
+     * @param skipReadyToast true=不显示"TTS ready"toast（recreate场景避免重启感知）
      */
-    private fun initTTSForCarMachine() {
-        Log.d("MainActivity", "initTTSForCarMachine: starting TTS init for car machine")
+    private fun initTTSForCarMachine(skipReadyToast: Boolean = false) {
+        Log.d("MainActivity", "initTTSForCarMachine: starting TTS init for car machine (skipToast=$skipReadyToast)")
         appendLog("[TTS] Initializing for Android ${android.os.Build.VERSION.SDK_INT}...")
         
         // 使用 Activity Context（车机上 ApplicationContext 可能导致 TTS 初始化失败）
@@ -361,13 +371,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     private fun doInitTTSWithRetry() {
+        val shouldSkipToast = this.skipTtsReadyToast
         ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
             override fun onInitSuccess() {
                 Log.i("MainActivity", "initTTSForCarMachine: SUCCESS!")
                 val engineInfo = ttsManager?.getEnginesInfo()?.joinToString { it.second } ?: "unknown"
                 appendLog("[TTS] Ready! Engine: $engineInfo")
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "TTS ready ($engineInfo)", Toast.LENGTH_SHORT).show()
+                // recreate()导致的重建不显示toast，避免用户感知到"重启"
+                if (!shouldSkipToast) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "TTS ready ($engineInfo)", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Log.d("MainActivity", "TTS ready (silent, skip toast for recreate)")
                 }
             }
 
