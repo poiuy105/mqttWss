@@ -135,19 +135,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
             setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
             // 侧边栏宽度 = 屏幕高度/5（正方形图标区域）
-            fun resizeSidebar() {
+            navSidebar.post {
                 val sideSize = navSidebar.height / 5
-                if (sideSize > 0 && navSidebar.width != sideSize) {
+                if (sideSize > 0) {
                     val params = navSidebar.layoutParams as LinearLayout.LayoutParams
                     params.width = sideSize
                     navSidebar.layoutParams = params
                 }
             }
-            navSidebar.post { resizeSidebar() }
-            // 窗口尺寸变化时重新计算（如键盘弹出）
-            val vtoSidebar = navSidebar.viewTreeObserver
-            navSidebar.setTag("vto", vtoSidebar)
-            vtoSidebar.addOnGlobalLayoutListener { _ -> resizeSidebar() }
         } else {
             // 竖屏模式：使用标准底部TabLayout
             val tabs = findViewById<TabLayout>(R.id.tabs)
@@ -157,19 +152,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
             }
             // TabLayout高度 = 宽度/5（正方形图标）
-            fun resizeTabs() {
+            tabs.post {
                 val tabBarHeight = tabs.width / 5
-                if (tabBarHeight > 0 && tabs.height != tabBarHeight) {
+                if (tabBarHeight > 0) {
                     val params = tabs.layoutParams as LinearLayout.LayoutParams
                     params.height = tabBarHeight
                     tabs.layoutParams = params
                 }
             }
-            tabs.post { resizeTabs() }
-            // 窗口尺寸变化时重新计算
-            val vtoTabs = tabs.viewTreeObserver
-            tabs.setTag("vto", vtoTabs)
-            vtoTabs.addOnGlobalLayoutListener { _ -> resizeTabs() }
         }
 
         setupAccessibilityService()
