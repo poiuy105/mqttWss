@@ -381,7 +381,7 @@ object BydLocalCarApi {
 
                     try {
                         val powerLevel = clazz.getMethod("getPowerLevel").invoke(instance)
-                        gear = powerLevel?.toString() ?: "-"
+                        data.gear = powerLevel?.toString() ?: "-"
                         log("[CarSDK] $className.getPowerLevel() = $powerLevel")
                     } catch (_: Exception) {}
                 } catch (e: Exception) {}
