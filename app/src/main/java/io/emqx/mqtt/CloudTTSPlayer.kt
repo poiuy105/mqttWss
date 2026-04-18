@@ -223,7 +223,6 @@ class CloudTTSPlayer private constructor() {
             Log.w(TAG, "stop exception: ${e.message}")
         } finally {
             mediaPlayer = null
-            isPlaying = false
         }
     }
 
