@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.*
+import android.widget.AdapterView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
@@ -51,17 +52,18 @@ class SettingFragment : BaseFragment() {
     private lateinit var mBatteryOptButton: Button
     private lateinit var mAutostartButton: Button
 
-    // TTS 调试按钮
-    private lateinit var mTtsStatusText: TextView
-    private lateinit var mBtnTtsDefault: Button
-    private lateinit var mBtnTtsGoogle: Button
-    private lateinit var mBtnTtsIflytek: Button
-    private lateinit var mBtnTtsListEngines: Button
-    private lateinit var mBtnTtsTestSpeak: Button
-    private lateinit var mBtnTtsRelease: Button
-
-    /** TTS状态定时刷新Runnable */
-    private var ttsStatusRefreshRunnable: Runnable? = null
+    // ========== 云端TTS设置控件 ==========
+    private lateinit var mCloudTtsApiSpinner: Spinner?
+    private lateinit var mCloudTtsVoiceSpinner: Spinner?
+    private lateinit var mVoiceSelectorContainer: View?
+    private lateinit var mTtsSpeedSeekbar: SeekBar?
+    private lateinit var mTtsPitchSeekbar: SeekBar?
+    private lateinit var mTtsVolumeSeekbar: SeekBar?
+    private lateinit var mTtsSpeedValue: TextView?
+    private lateinit var mTtsPitchValue: TextView?
+    private lateinit var mTtsVolumeValue: TextView?
+    private lateinit var mBtnTtsTestCloud: Button?
+    private lateinit var mBtnTtsResetDefault: Button?
 
     private val logBuilder = StringBuilder()
 
@@ -187,14 +189,18 @@ class SettingFragment : BaseFragment() {
         mBatteryOptButton = view.findViewById(R.id.btn_battery_opt)
         mAutostartButton = view.findViewById(R.id.btn_autostart)
 
-        // ========== TTS调试区域初始化 ==========
-        mTtsStatusText = view.findViewById(R.id.tts_status_text)
-        mBtnTtsDefault = view.findViewById(R.id.btn_tts_default)
-        mBtnTtsGoogle = view.findViewById(R.id.btn_tts_google)
-        mBtnTtsIflytek = view.findViewById(R.id.btn_tts_iflytek)
-        mBtnTtsListEngines = view.findViewById(R.id.btn_tts_list_engines)
-        mBtnTtsTestSpeak = view.findViewById(R.id.btn_tts_test_speak)
-        mBtnTtsRelease = view.findViewById(R.id.btn_tts_release)
+        // ========== 云端TTS设置控件初始化 ==========
+        mCloudTtsApiSpinner = view.findViewById(R.id.cloud_tts_api_spinner)
+        mCloudTtsVoiceSpinner = view.findViewById(R.id.cloud_tts_voice_spinner)
+        mVoiceSelectorContainer = view.findViewById(R.id.voice_selector_container)
+        mTtsSpeedSeekbar = view.findViewById(R.id.tts_speed_seekbar)
+        mTtsPitchSeekbar = view.findViewById(R.id.tts_pitch_seekbar)
+        mTtsVolumeSeekbar = view.findViewById(R.id.tts_volume_seekbar)
+        mTtsSpeedValue = view.findViewById(R.id.tts_speed_value)
+        mTtsPitchValue = view.findViewById(R.id.tts_pitch_value)
+        mTtsVolumeValue = view.findViewById(R.id.tts_volume_value)
+        mBtnTtsTestCloud = view.findViewById(R.id.btn_tts_test_cloud)
+        mBtnTtsResetDefault = view.findViewById(R.id.btn_tts_reset_default)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -464,183 +470,8 @@ class SettingFragment : BaseFragment() {
             BydPermitUtils.jumpToAutoStart(requireContext())
         }
 
-        // ========== TTS调试按钮 ==========
-        setupTtsDebugButtons()
-    }
-
-    private fun testTts() {
-        val tts = getTtsManager()
-        appendLog("ttsManager: ${if (tts != null) "OK" else "NULL"}")
-        appendLog("isReady: ${tts?.isReady()}")
-
-        if (tts?.isReady() == true) {
-            appendLog("调用speak(TTS准备就绪)")
-            tts.speak("TTS准备就绪")
-            appendLog("speak()调用完成")
-        } else {
-            appendLog("TTS未就绪!")
-        }
-    }
-
-    // ========== TTS 调试区域方法 ==========
-
-    /** 初始化所有TTS调试按钮的点击事件 */
-    private fun setupTtsDebugButtons() {
-        // 1. 默认引擎
-        mBtnTtsDefault.setOnClickListener {
-            appendLog("[TTS] 尝试加载：默认引擎 (engine=null)")
-            doInitTtsWithStatus(null)
-        }
-
-        // 2. Google TTS
-        mBtnTtsGoogle.setOnClickListener {
-            appendLog("[TTS] 尝试加载：Google TTS (com.google.android.tts)")
-            doInitTtsWithStatus("com.google.android.tts")
-        }
-
-        // 3. 讯飞TTS
-        mBtnTtsIflytek.setOnClickListener {
-            appendLog("[TTS] 尝试加载：讯飞TTS (com.iflytek.speechcloud)")
-            doInitTtsWithStatus("com.iflytek.speechcloud")
-        }
-
-        // 4. 列出所有引擎
-        mBtnTtsListEngines.setOnClickListener {
-            val tts = getTtsManager()
-            if (tts == null) {
-                appendLog("[TTS] TTSManager为NULL!")
-                return@setOnClickListener
-            }
-            val engines = tts.getEnginesInfo()
-            if (engines.isNullOrEmpty()) {
-                appendLog("[TTS] 未发现任何TTS引擎!")
-                updateTtsStatusText("⚠️ 未发现任何TTS引擎")
-            } else {
-                val sb = StringBuilder()
-                sb.appendLine("发现 ${engines.size} 个引擎:")
-                engines.forEachIndexed { index, pair ->
-                    sb.appendLine("  [$index] ${pair.second} (${pair.first})")
-                }
-                appendLog(sb.toString())
-                updateTtsStatusText(sb.toString())
-
-                // 同时显示当前状态
-                appendLog("当前状态: ${tts.getStatusDescription()}")
-            }
-        }
-
-        // 5. 测试朗读
-        mBtnTtsTestSpeak.setOnClickListener {
-            testTts()
-        }
-
-        // 6. 释放TTS
-        mBtnTtsRelease.setOnClickListener {
-            val tts = getTtsManager()
-            if (tts != null) {
-                tts.release()
-                appendLog("[TTS] 已释放TTS资源")
-                updateTtsStatusText("已释放（点击上方按钮重新加载）")
-            } else {
-                appendLog("[TTS] TTSManager为NULL，无法释放")
-            }
-        }
-
-        // 初始状态显示
-        refreshTtsStatus()
-
-        // 每3秒自动刷新状态（方便观察初始化进度）
-        startTtsStatusRefresh()
-    }
-
-    /**
-     * 使用指定引擎初始化TTS，并设置回调更新UI
-     * @param enginePackageName null=默认引擎, 其他=指定包名
-     */
-    private fun doInitTtsWithStatus(enginePackageName: String?) {
-        val tts = getTtsManager()
-        if (tts == null) {
-            appendLog("[TTS] 错误: TTSManager为NULL! (MainActivity可能尚未创建)")
-            updateTtsStatusText("❌ TTSManager为NULL")
-            return
-        }
-
-        val engineLabel = enginePackageName ?: "默认"
-        appendLog("[TTS] 开始初始化 → $engineLabel ...")
-        updateTtsStatusText("⏳ 正在初始化 ($engineLabel)...")
-
-        tts.setOnInitListener(object : TTSManager.OnInitListener {
-            override fun onInitSuccess() {
-                val engineName = tts.getCurrentEngineName() ?: engineLabel
-                val status = tts.getStatusDescription()
-                activity?.runOnUiThread {
-                    appendLog("[TTS] ✅ 初始化成功! $status")
-                    updateTtsStatusText("✅ 成功! $status\n→ 可点击「测试朗读」验证")
-                    Toast.makeText(context, "TTS加载成功: $engineName", Toast.LENGTH_SHORT).show()
-                }
-                // 停止自动刷新（已稳定）
-                stopTtsStatusRefresh()
-            }
-
-            override fun onInitFailed(status: Int) {
-                val reason = when (status) {
-                    -1 -> "初始化错误"
-                    -2 -> "超时(30s)"
-                    -3 -> "中文不支持"
-                    -4 -> "无可用语言"
-                    -5 -> "异常"
-                    else -> "错误码$status"
-                }
-                activity?.runOnUiThread {
-                    appendLog("[TTS] ❌ 失败: $reason (status=$status)")
-                    updateTtsStatusText("❌ 失败: $reason\n→ 尝试其他引擎或检查车机TTS设置")
-                }
-            }
-        })
-
-        // 执行初始化
-        tts.initWithEngine(enginePackageName)
-
-        // 启动状态刷新（观察进度）
-        startTtsStatusRefresh()
-    }
-
-    /** 更新TTS状态文字显示 */
-    private fun updateTtsStatusText(text: String) {
-        activity?.runOnUiThread {
-            try { mTtsStatusText.text = text } catch (e: Exception) {}
-        }
-    }
-
-    /** 手动刷新TTS状态 */
-    private fun refreshTtsStatus() {
-        val tts = getTtsManager()
-        if (tts == null) {
-            updateTtsStatusText("⚠️ TTSManager未创建（等待Activity就绪）")
-        } else {
-            updateTtsStatusText(tts.getStatusDescription())
-        }
-    }
-
-    /** 定时刷新TTS状态（观察初始化进度） */
-    private fun startTtsStatusRefresh() {
-        stopTtsStatusRefresh()
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        ttsStatusRefreshRunnable = object : Runnable {
-            override fun run() {
-                refreshTtsStatus()
-                handler.postDelayed(this, 3000)
-            }
-        }
-        handler.post(ttsStatusRefreshRunnable!!)
-    }
-
-    /** 停止定时刷新 */
-    private fun stopTtsStatusRefresh() {
-        ttsStatusRefreshRunnable?.let {
-            android.os.Handler(android.os.Looper.getMainLooper()).removeCallbacks(it)
-        }
-        ttsStatusRefreshRunnable = null
+        // ========== 云端TTS设置 ==========
+        setupCloudTtsSettings()
     }
 
     private fun testPopup() {
@@ -691,8 +522,144 @@ class SettingFragment : BaseFragment() {
         }
     }
 
-    private fun getTtsManager(): TTSManager? {
-        return (fragmentActivity as? MainActivity)?.ttsManager
+
+    /** 获取云端TTS播放器实例 */
+    private fun getCloudTtsPlayer(): CloudTTSPlayer? {
+        return (fragmentActivity as? MainActivity)?.ttsPlayer
+    }
+
+    /**
+     * 初始化云端TTS设置UI（接口选择、音色、语速/音调/音量滑块、测试按钮）
+     */
+    private fun setupCloudTtsSettings() {
+        val player = getCloudTtsPlayer() ?: run {
+            appendLog("[CloudTTS] CloudTTSPlayer未初始化")
+            return
+        }
+
+        // 1. 接口选择 Spinner（讯飞 / 阿里 / oioweb）
+        mCloudTtsApiSpinner?.adapter = android.widget.ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            listOf("讯飞 xiaoai.plus (推荐)", "阿里 DuckArmy", "OIOWEB (兜底)")
+        ).also { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
+        mCloudTtsApiSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                player.currentApiIndex = position
+                mConfigManager.cloudTtsApiIndex = position
+                // 讯飞才显示音色选择
+                mVoiceSelectorContainer?.visibility = if (position == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+                appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
+                syncTtsUiFromPlayer()
+            }
+            override fun NothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // 2. 音色选择（仅讯飞）
+        val voiceNames = CloudTTSPlayer.XIAOAI_VOICES.map {
+            CloudTTSPlayer.VOICE_NAMES_XIAOAI[it] ?: it
+        }
+        mCloudTtsVoiceSpinner?.adapter = android.widget.ArrayAdapter(
+            requireContext(), android.R.layout.simple_spinner_item, voiceNames
+        ).also { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        val voiceIndex = CloudTTSPlayer.XIAOAI_VOICES.indexOf(player.voice).coerceAtLeast(0)
+        mCloudTtsVoiceSpinner?.setSelection(voiceIndex)
+        mCloudTtsVoiceSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                player.voice = CloudTTSPlayer.XIAOAI_VOICES[position]
+                mConfigManager.cloudTtsVoice = player.voice
+                appendLog("[CloudTTS] 音色切换: ${player.voice}")
+                syncTtsUiFromPlayer()
+            }
+            override fun NothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // 3. 语速滑块 (0.5 ~ 2.0 -> progress 50~200)
+        mTtsSpeedSeekbar?.setProgress((player.speed * 100).toInt())
+        mTtsSpeedValue?.text = String.format("%.2f", player.speed)
+        mTtsSpeedSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                val spd = (progress / 100f).coerceIn(0.5f, 2.0f)
+                player.speed = spd
+                mConfigManager.cloudTtsSpeed = spd
+                mTtsSpeedValue?.text = String.format("%.2f", spd)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // 4. 音调滑块 (0.5 ~ 2.0)
+        mTtsPitchSeekbar?.setProgress((player.pitch * 100).toInt())
+        mTtsPitchValue?.text = String.format("%.1f", player.pitch)
+        mTtsPitchSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                val pit = (progress / 100f).coerceIn(0.5f, 2.0f)
+                player.pitch = pit
+                mConfigManager.cloudTtsPitch = pit
+                mTtsPitchValue?.text = String.format("%.1f", pit)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // 5. 音量滑块 (0.1 ~ 1.0)
+        mTtsVolumeSeekbar?.setProgress((player.volume * 100).toInt())
+        mTtsVolumeValue?.text = String.format("%.1f", player.volume)
+        mTtsVolumeSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                val vol = (progress / 100f).coerceIn(0.1f, 1.0f)
+                player.volume = vol
+                mConfigManager.cloudTtsVolume = vol
+                mTtsVolumeValue?.text = String.format("%.1f", vol)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // 6. 测试按钮
+        mBtnTtsTestCloud?.setOnClickListener {
+            val testText = "你好，这是云端语音合成测试。当前车速35公里，电量75%。"
+            appendLog("[CloudTTS] 测试播报...")
+            player.speak(testText, force = true)
+        }
+
+        // 7. 重置默认按钮
+        mBtnTtsResetDefault?.setOnClickListener {
+            player.resetToDefaults()
+            // 同步ConfigManager
+            mConfigManager.cloudTtsApiIndex = player.currentApiIndex
+            mConfigManager.cloudTtsVoice = player.voice
+            mConfigManager.cloudTtsSpeed = player.speed
+            mConfigManager.cloudTtsPitch = player.pitch
+            mConfigManager.cloudTtsVolume = player.volume
+            // 刷新UI
+            mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
+            mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+            syncTtsUiFromPlayer()
+            appendLog("[CloudTTS] 已重置为默认配置: ${player.getCurrentApiName()}")
+            Toast.makeText(context, "TTS settings reset to defaults", Toast.LENGTH_SHORT).show()
+        }
+
+        // 初始同步音色容器可见性
+        mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_XIAOAI) View.VISIBLE else View.GONE
+
+        appendLog("[CloudTTS] 设置已加载: ${player.getCurrentApiName()}")
+    }
+
+    /** 从CloudTTSPlayer同步滑块值到UI显示 */
+    private fun syncTtsUiFromPlayer() {
+        val player = getCloudTtsPlayer() ?: return
+        mTtsSpeedSeekbar?.progress = (player.speed * 100).toInt()
+        mTtsSpeedValue?.text = String.format("%.2f", player.speed)
+        mTtsPitchSeekbar?.progress = (player.pitch * 100).toInt()
+        mTtsPitchValue?.text = String.format("%.1f", player.pitch)
+        mTtsVolumeSeekbar?.progress = (player.volume * 100).toInt()
+        mTtsVolumeValue?.text = String.format("%.1f", player.volume)
     }
 
     /**

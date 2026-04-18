@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -39,7 +38,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private var isConnecting = false
     private var logCallback: ((String) -> Unit)? = null
 
-    var ttsManager: TTSManager? = null
+    var ttsPlayer: CloudTTSPlayer? = null
     var floatWindowManager: FloatWindowManager? = null
 
     // ========== 横竖屏切换时保持MQTT连接不断（static holder跨recreate存活）==========
@@ -96,11 +95,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         globalLogBuilder.clear()
     }
 
-    // 标记TTS是否已在之前的Activity实例中初始化完成（用于recreate场景避免重复toast）
-    private var ttsWasReadyBeforeRecreate = false
-    /** 是否跳过TTS就绪toast（recreate场景避免重启感知） */
-    private var skipTtsReadyToast = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -108,14 +102,24 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         CapturedTextManager.init(this)
 
-        window.decorView.post {
-            // ★★★ 不再启动时自动初始化TTS，改为在Setting页面手动触发 ★★★
-            // recreate()导致的Activity重建：静默恢复
-            skipTtsReadyToast = savedInstanceState?.getBoolean("tts_was_ready") == true
-            // 仅创建空实例，不自动初始化
-            ttsManager = TTSManager(this@MainActivity)
-            appendLog("[TTS] 已创建TTS实例（未初始化），请在设置页面手动加载")
+        // ========== 初始化云端TTS（启动即用，无需等待） ==========
+        ttsPlayer = CloudTTSPlayer.getInstance()
+        // 从ConfigManager恢复云TTS设置
+        val cfg = ConfigManager.getInstance(this)
+        ttsPlayer?.apply {
+            currentApiIndex = cfg.cloudTtsApiIndex
+            voice = cfg.cloudTtsVoice
+            speed = cfg.cloudTtsSpeed
+            pitch = cfg.cloudTtsPitch
+            volume = cfg.cloudTtsVolume
+            oiowebType = cfg.cloudTtsOiowebType
+            oiowebSpeed = cfg.cloudTtsOiowebSpeed
+            duckarmySpd = cfg.cloudTtsDuckarmySpd
+            duckarmyPit = cfg.cloudTtsDuckarmyPit
+            duckarmyVol = cfg.cloudTtsDuckarmyVol
         }
+        appendLog("[CloudTTS] 已初始化: ${ttsPlayer?.getCurrentApiName()}")
+
         floatWindowManager = FloatWindowManager.getInstance(this)
 
         mFragmentList.add(HomeFragment.newInstance())
@@ -318,8 +322,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         outState.putBoolean("was_connected", mClient?.isConnected == true)
         outState.putBoolean("was_connecting", isConnecting)
         outState.putInt("current_tab", findViewById<ViewPager>(R.id.view_pager)?.currentItem ?: 0)
-        // 保存TTS就绪状态：recreate后新Activity跳过"TTS ready" toast避免重启感知
-        outState.putBoolean("tts_was_ready", ttsManager?.isReady() == true)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -373,110 +375,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 }
             })
         }
-    }
-
-    /**
-     * 车机TTS初始化（适配比亚迪Android 10）
-     * - 使用Activity Context而非ApplicationContext
-     * - 先检测可用引擎，引导用户安装
-     * - 失败时支持重试和重新初始化
-     * @param skipReadyToast true=不显示"TTS ready"toast（recreate场景避免重启感知）
-     */
-    private fun initTTSForCarMachine(skipReadyToast: Boolean = false) {
-        Log.d("MainActivity", "initTTSForCarMachine: starting TTS init for car machine (skipToast=$skipReadyToast)")
-        appendLog("[TTS] Initializing for Android ${android.os.Build.VERSION.SDK_INT}...")
-        
-        // 使用 Activity Context（车机上 ApplicationContext 可能导致 TTS 初始化失败）
-        ttsManager = TTSManager(this@MainActivity)
-        
-        // 先检测是否有可用的 TTS 引擎
-        val hasEngine = ttsManager?.hasAvailableEngine() == true
-        
-        if (!hasEngine) {
-            Log.w("MainActivity", "initTTSForCarMachine: No TTS engine found!")
-            appendLog("[TTS] Warning: No TTS engine detected")
-            
-            // 尝试列出所有引擎信息
-            val engines = ttsManager?.getEnginesInfo()
-            if (engines.isNullOrEmpty()) {
-                appendLog("[TTS] No engines at all, prompting to install...")
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, 
-                        "No TTS engine detected. Please install one.", 
-                        Toast.LENGTH_LONG).show()
-                    val checkIntent = ttsManager?.getTTSCheckIntent()
-                    if (checkIntent != null) {
-                        startActivityForResult(checkIntent, 1001)
-                    }
-                }
-            } else {
-                appendLog("[TTS] Found ${engines.size} engine(s): ${engines.joinToString { it.first }}")
-                // 有引擎但 hasAvailableEngine 返回 false，可能是权限问题，继续尝试初始化
-                doInitTTSWithRetry()
-            }
-        } else {
-            appendLog("[TTS] Engine available, initializing...")
-            doInitTTSWithRetry()
-        }
-    }
-
-    private fun doInitTTSWithRetry() {
-        val shouldSkipToast = this.skipTtsReadyToast
-        ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
-            override fun onInitSuccess() {
-                Log.i("MainActivity", "initTTSForCarMachine: SUCCESS!")
-                val engineInfo = ttsManager?.getEnginesInfo()?.joinToString { it.second } ?: "unknown"
-                appendLog("[TTS] Ready! Engine: $engineInfo")
-                // recreate()导致的重建不显示toast，避免用户感知到"重启"
-                if (!shouldSkipToast) {
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "TTS ready ($engineInfo)", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Log.d("MainActivity", "TTS ready (silent, skip toast for recreate)")
-                }
-            }
-
-            override fun onInitFailed(status: Int) {
-                Log.e("MainActivity", "initTTSForCarMachine: FAILED status=$status")
-                
-                when (status) {
-                    -1 -> appendLog("[TTS] Failed: TextToSpeech initialization error")
-                    -2 -> appendLog("[TTS] Failed: Initialization timeout (${TTSManager.INIT_TIMEOUT_MS}ms)")
-                    -3 -> appendLog("[TTS] Failed: Chinese language not supported")
-                    -4 -> appendLog("[TTS] Failed: No available language")
-                    -5 -> appendLog("[TTS] Failed: Exception during creation")
-                    else -> appendLog("[TTS] Failed: Error code $status")
-                }
-                
-                runOnUiThread {
-                    val msg = when (status) {
-                        -2 -> "TTS timeout (car machine slow). Retrying..."
-                        -3, -4 -> "TTS language not available"
-                        else -> "TTS failed: $status. Will retry..."
-                    }
-                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
-                    
-                    // 延迟后自动重试一次
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        Log.d("MainActivity", "initTTSForCarMachine: Auto-retrying...")
-                        appendLog("[TTS] Auto-retry...")
-                        ttsManager?.reinitialize()
-                        // 更新监听器为简单版本，避免无限重试
-                        ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
-                            override fun onInitSuccess() {
-                                appendLog("[TTS] Retry SUCCESS!")
-                                runOnUiThread { Toast.makeText(this@MainActivity, "TTS ready after retry!", Toast.LENGTH_SHORT).show() }
-                            }
-                            override fun onInitFailed(s: Int) {
-                                appendLog("[TTS] Retry also failed: $s")
-                                runOnUiThread { Toast.makeText(this@MainActivity, "TTS failed completely: $s", Toast.LENGTH_LONG).show() }
-                            }
-                        })
-                    }, 3000)
-                }
-            }
-        })
     }
 
     private fun setupAccessibilityService() {
@@ -715,7 +613,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     fun speakText(text: String) {
         Log.d("MainActivity", "speakText called: $text, isTTSEnabled=$isTTSEnabled")
         if (isTTSEnabled) {
-            ttsManager?.speak(text)
+            ttsPlayer?.speak(text)
         } else {
             Log.d("MainActivity", "TTS is disabled, skipping")
         }
@@ -761,9 +659,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             }
 
             if (isTTSEnabled) {
-                Log.d("MainActivity", "Speaking message with TTS")
-                appendLog("Speaking TTS...")
-                ttsManager?.speak(payload)
+                Log.d("MainActivity", "Speaking with CloudTTS")
+                appendLog("Speaking CloudTTS...")
+                ttsPlayer?.speak(payload, force = true)
             } else {
                 appendLog("TTS is disabled, skipping")
             }
@@ -774,31 +672,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1001) {
-            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                // TTS引擎和语言数据可用
-                Log.d("MainActivity", "TTS engine data OK")
-                ttsManager?.initWithEngine(null)
-                ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
-                    override fun onInitSuccess() {
-                        Log.d("MainActivity", "TTS reinitialized after engine check!")
-                        runOnUiThread { Toast.makeText(this@MainActivity, "TTS ready", Toast.LENGTH_SHORT).show() }
-                    }
-                    override fun onInitFailed(status: Int) {
-                        Log.e("MainActivity", "TTS reinit failed! status=$status")
-                        runOnUiThread { Toast.makeText(this@MainActivity, "TTS init failed: $status", Toast.LENGTH_LONG).show() }
-                    }
-                })
-            } else {
-                Log.e("MainActivity", "TTS engine data not available")
-            }
-        }
+        // 云端TTS不需要onActivityResult处理
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // 释放TTS资源
-        ttsManager?.release()
+        // 释放云端TTS资源
+        ttsPlayer?.release()
         // 释放浮动窗口资源
         floatWindowManager?.release()
     }

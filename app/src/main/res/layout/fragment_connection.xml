@@ -501,98 +501,178 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- ========== TTS 调试区域 ========== -->
+            <!-- ========== 云端TTS设置（免费在线接口） ========== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="TTS 引擎调试"
+                android:text="Cloud TTS Settings (Free)"
                 android:textColor="@android:color/black"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tts_status_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:background="#F5F5F5"
-                android:padding="8dp"
-                android:text="未初始化（点击下方按钮手动加载）"
-                android:textColor="#666666"
-                android:textSize="12sp"
-                android:textIsSelectable="true" />
-
-            <!-- TTS加载按钮行1 -->
+            <!-- 接口选择 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <Button
-                    android:id="@+id/btn_tts_default"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TTS Interface:"
+                    android:textColor="#333333"
+                    android:textSize="14sp" />
+
+                <Spinner
+                    android:id="@+id/cloud_tts_api_spinner"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:text="默认引擎"
-                    android:textAllCaps="false"
-                    android:textSize="12sp" />
+                    android:layout_weight="1.5" />
+            </LinearLayout>
 
-                <Button
-                    android:id="@+id/btn_tts_google"
+            <!-- 讯飞音色选择（仅讯飞接口时显示） -->
+            <LinearLayout
+                android:id="@+id/voice_selector_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Voice:"
+                    android:textColor="#333333"
+                    android:textSize="14sp" />
+
+                <Spinner
+                    android:id="@+id/cloud_tts_voice_spinner"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:text="Google TTS"
-                    android:textAllCaps="false"
-                    android:textSize="12sp" />
+                    android:layout_weight="1.5" />
+            </LinearLayout>
 
-                <Button
-                    android:id="@+id/btn_tts_iflytek"
+            <!-- 语速/音调/音量 滑块行1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="讯飞TTS"
-                    android:textAllCaps="false"
+                    android:text="Speed:"
+                    android:textSize="13sp" />
+
+                <SeekBar
+                    android:id="@+id/tts_speed_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:max="150"
+                    android:progress="92" />
+
+                <TextView
+                    android:id="@+id/tts_speed_value"
+                    android:layout_width="36dp"
+                    android:layout_height="wrap_content"
+                    android:text="0.92"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- TTS加载按钮行2 + 操作按钮 -->
+            <!-- 音调/音量 行2 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Pitch:"
+                    android:textSize="13sp" />
+
+                <SeekBar
+                    android:id="@+id/tts_pitch_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:max="200"
+                    android:progress="100" />
+
+                <TextView
+                    android:id="@+id/tts_pitch_value"
+                    android:layout_width="36dp"
+                    android:layout_height="wrap_content"
+                    android:text="1.0"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Volume:"
+                    android:textSize="13sp" />
+
+                <SeekBar
+                    android:id="@+id/tts_volume_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:max="100"
+                    android:progress="90" />
+
+                <TextView
+                    android:id="@+id/tts_volume_value"
+                    android:layout_width="36dp"
+                    android:layout_height="wrap_content"
+                    android:text="0.9"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 测试按钮行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:orientation="horizontal">
 
                 <Button
-                    android:id="@+id/btn_tts_list_engines"
+                    android:id="@+id/btn_tts_test_cloud"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
-                    android:text="列引擎"
+                    android:text="Test TTS"
                     android:textAllCaps="false"
                     android:textSize="12sp" />
 
                 <Button
-                    android:id="@+id/btn_tts_test_speak"
+                    android:id="@+id/btn_tts_reset_default"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_marginStart="6dp"
                     android:layout_weight="1"
-                    android:text="测试朗读"
-                    android:textAllCaps="false"
-                    android:textSize="12sp" />
-
-                <Button
-                    android:id="@+id/btn_tts_release"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:text="释放TTS"
+                    android:text="Reset Default"
                     android:textAllCaps="false"
                     android:textSize="12sp" />
             </LinearLayout>

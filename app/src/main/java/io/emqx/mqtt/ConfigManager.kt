@@ -39,6 +39,17 @@ class ConfigManager(context: Context) {
         private const val KEY_FLOAT_WINDOW_ENABLED = "float_window_enabled"
         private const val KEY_VOICE_CAPTURE_ENABLED = "voice_capture_enabled"
         private const val KEY_SHOW_DEBUG_LOG = "show_debug_log"
+        // ========== 云端TTS配置 ==========
+        private const val KEY_CLOUD_TTS_API_INDEX = "cloud_tts_api_index"
+        private const val KEY_CLOUD_TTS_VOICE = "cloud_tts_voice"
+        private const val KEY_CLOUD_TTS_SPEED = "cloud_tts_speed"
+        private const val KEY_CLOUD_TTS_PITCH = "cloud_tts_pitch"
+        private const val KEY_CLOUD_TTS_VOLUME = "cloud_tts_volume"
+        private const val KEY_CLOUD_TTS_OIOWEB_TYPE = "cloud_tts_oioweb_type"
+        private const val KEY_CLOUD_TTS_OIOWEB_SPEED = "cloud_tts_oioweb_speed"
+        private const val KEY_CLOUD_TTS_DUCKARMY_SPD = "cloud_tts_duckarmy_spd"
+        private const val KEY_CLOUD_TTS_DUCKARMY_PIT = "cloud_tts_duckarmy_pit"
+        private const val KEY_CLOUD_TTS_DUCKARMY_VOL = "cloud_tts_duckarmy_vol"
 
         @Volatile
         private var instance: ConfigManager? = null
@@ -173,6 +184,47 @@ class ConfigManager(context: Context) {
     var showDebugLog: Boolean
         get() = prefs.getBoolean(KEY_SHOW_DEBUG_LOG, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_DEBUG_LOG, value).apply()
+
+    // ========== 云端TTS配置 ==========
+    var cloudTtsApiIndex: Int
+        get() = prefs.getInt(KEY_CLOUD_TTS_API_INDEX, CloudTTSPlayer.API_XIAOAI)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_API_INDEX, value).apply()
+
+    var cloudTtsVoice: String
+        get() = prefs.getString(KEY_CLOUD_TTS_VOICE, "xiaoyan") ?: "xiaoyan"
+        set(value) = prefs.edit().putString(KEY_CLOUD_TTS_VOICE, value).apply()
+
+    var cloudTtsSpeed: Float
+        get() = prefs.getFloat(KEY_CLOUD_TTS_SPEED, 0.92f)
+        set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_SPEED, value).apply()
+
+    var cloudTtsPitch: Float
+        get() = prefs.getFloat(KEY_CLOUD_TTS_PITCH, 1.0f)
+        set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_PITCH, value).apply()
+
+    var cloudTtsVolume: Float
+        get() = prefs.getFloat(KEY_CLOUD_TTS_VOLUME, 0.9f)
+        set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_VOLUME, value).apply()
+
+    var cloudTtsOiowebType: String
+        get() = prefs.getString(KEY_CLOUD_TTS_OIOWEB_TYPE, "1") ?: "1"
+        set(value) = prefs.edit().putString(KEY_CLOUD_TTS_OIOWEB_TYPE, value).apply()
+
+    var cloudTtsOiowebSpeed: Int
+        get() = prefs.getInt(KEY_CLOUD_TTS_OIOWEB_SPEED, 4)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_OIOWEB_SPEED, value).apply()
+
+    var cloudTtsDuckarmySpd: Int
+        get() = prefs.getInt(KEY_CLOUD_TTS_DUCKARMY_SPD, -1)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_DUCKARMY_SPD, value).apply()
+
+    var cloudTtsDuckarmyPit: Int
+        get() = prefs.getInt(KEY_CLOUD_TTS_DUCKARMY_PIT, 0)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_DUCKARMY_PIT, value).apply()
+
+    var cloudTtsDuckarmyVol: Int
+        get() = prefs.getInt(KEY_CLOUD_TTS_DUCKARMY_VOL, 2)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_TTS_DUCKARMY_VOL, value).apply()
 
     fun saveConnectionConfig(
         host: String,

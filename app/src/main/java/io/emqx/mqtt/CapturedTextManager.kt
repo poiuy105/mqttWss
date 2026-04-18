@@ -136,7 +136,7 @@ object CapturedTextManager {
                                             activity.onBackPressed()
                                         }
                                         activity.showFloatMessage("Home Assistant", speech)
-                                        activity.ttsManager?.speak(speech)
+                                        activity.ttsPlayer?.speak(speech)
                                     }
                                 }
                             }
