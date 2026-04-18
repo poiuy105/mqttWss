@@ -44,6 +44,11 @@ class SettingFragment : BaseFragment() {
     private lateinit var mHaLanguage: EditText
     private lateinit var mHaHttpsCheckbox: Switch
     private lateinit var mConfigManager: ConfigManager
+    // 车机保活按钮
+    private lateinit var mAdbGuideButton: Button
+    private lateinit var mBydWhitelistButton: Button
+    private lateinit var mBatteryOptButton: Button
+    private lateinit var mAutostartButton: Button
 
     private val logBuilder = StringBuilder()
 
@@ -161,6 +166,12 @@ class SettingFragment : BaseFragment() {
         mHaToken = view.findViewById(R.id.ha_token)
         mHaLanguage = view.findViewById(R.id.ha_language)
         mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
+
+        // ========== 车机保活按钮初始化 ==========
+        mAdbGuideButton = view.findViewById(R.id.btn_adb_guide)
+        mBydWhitelistButton = view.findViewById(R.id.btn_byd_whitelist)
+        mBatteryOptButton = view.findViewById(R.id.btn_battery_opt)
+        mAutostartButton = view.findViewById(R.id.btn_autostart)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -408,6 +419,23 @@ class SettingFragment : BaseFragment() {
             stopNotificationService()
             updateConnectionStatus(false)
         }
+
+        // ========== 车机保活设置按钮 ==========
+        mAdbGuideButton.setOnClickListener {
+            showAdbGuideDialog()
+        }
+        mBydWhitelistButton.setOnClickListener {
+            appendLog("跳转比亚迪极速模式白名单")
+            BydPermitUtils.jumpToSpeedWhiteList(requireContext())
+        }
+        mBatteryOptButton.setOnClickListener {
+            appendLog("跳转电池优化设置")
+            BydPermitUtils.jumpToBatteryOptimization(requireContext())
+        }
+        mAutostartButton.setOnClickListener {
+            appendLog("跳转自启动管理")
+            BydPermitUtils.jumpToAutoStart(requireContext())
+        }
     }
 
     private fun testTts() {
@@ -541,7 +569,196 @@ class SettingFragment : BaseFragment() {
         MqttService.stopService(requireContext())
     }
 
-    fun updateButtonText() {
+    /**
+     * 显示 ADB 无障碍永久化说明弹窗
+     * 根据当前系统版本自动切换内容：
+     *   - API 29 (Android 10): 基础版
+     *   - API 30+ (Android 11+): 含「受限制设置」步骤
+     *   - API 34 (Android 14): 含 pm grant WRITE_SECURE_SETTINGS 步骤
+     *
+     * 弹窗包含：可复制的完整命令 + 复制按钮
+     */
+    private fun showAdbGuideDialog() {
+        val sdkInt = Build.VERSION.SDK_INT
+        appendLog("显示ADB说明弹窗 (API $sdkInt)")
+
+        // 根据版本生成说明文本和命令
+        val (title, message, commands) = when {
+            sdkInt >= 34 -> buildApi34Guide()
+            sdkInt >= 30 -> buildApi30Guide()
+            else -> buildApi29Guide()
+        }
+
+        // 构建带复制按钮的弹窗
+        val context = requireContext()
+        val scrollView = android.widget.ScrollView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(350)
+            )
+        }
+        val textView = TextView(context).apply {
+            text = message
+            textSize = 13f
+            setTextColor(android.graphics.Color.parseColor("#333333"))
+            setTypeface(null, android.graphics.Typeface.NORMAL)
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+            setTextIsSelectable(true) // 允许用户长按选择文字
+        }
+        scrollView.addView(textView)
+
+        // 使用AlertDialog构建弹窗
+        val dialog = android.app.AlertDialog.Builder(context)
+            .setTitle(title)
+            .setView(scrollView)
+            .setPositiveButton("📋 复制全部命令") { _, _ ->
+                // 复制所有命令到剪贴板
+                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("ADB Commands", commands)
+                clipboard?.setPrimaryClip(clip)
+                Toast.makeText(context, "已复制到剪贴板！\n请在电脑ADB中使用", Toast.LENGTH_LONG).show()
+                appendLog("已复制ADB命令到剪贴板")
+            }
+            .setNegativeButton("关闭", null)
+            .setNeutralButton("🔗 打开完整文档") { _, _ ->
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://github.com")
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .create()
+
+        dialog.show()
+
+        // 让正按钮文字颜色更醒目
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+            context.resources.getColor(android.R.color.holo_blue_dark, null)
+        )
+    }
+
+    /** Android 10 (API 29) 指南 */
+    private fun buildApi29Guide(): Triple<String, String, String> {
+        val title = "ADB 无障碍锁定 (Android 10)"
+        val commands = buildString {
+            appendLine("# 连接车机")
+            appendLine("adb connect <车机IP>")
+            appendLine("")
+            appendLine("# 写入无障碍服务（核心）")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService")
+            appendLine("")
+            appendLine("# 启用全局无障碍")
+            appendLine("adb shell settings put secure accessibility_enabled 1")
+        }
+        val message = buildString {
+            appendLine("🚗 当前系统：Android 10 (API ${Build.VERSION.SDK_INT})\n")
+            appendLine("━━━ 操作步骤 ━━━\n")
+            appendLine("① 在电脑上打开终端/命令行\n")
+            appendLine("② 用USB线连接车机，或无线连接：")
+            appendLine("   adb connect <车机IP>\n")
+            appendLine("③ 依次执行以下命令：\n")
+            appendLine("【命令1】写入无障碍服务组件名")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService\n")
+            appendLine("【命令2】启用全局无障碍开关")
+            appendLine("adb shell settings put secure accessibility_enabled 1\n")
+            appendLine("④ 验证是否成功：")
+            appendLine("adb shell settings get secure enabled_accessibility_services\n")
+            appendLine("   返回 io.emqx.mqtt/.VoiceAccessibilityService = ✅ 成功\n")
+            appendLine("\n⚠️ 首次使用还需手动操作：")
+            appendLine("• 车机 → 设置 → 无障碍 → 开启MQTT Assistant\n")
+            appendLine("• 配置下方3项白名单（极速模式/电池优化/自启动）\n")
+            appendLine("完成后重启测试，无障碍将永久保持开启！")
+        }
+        return Triple(title, message, commands)
+    }
+
+    /** Android 11-13 (API 30-33) 指南 - 含受限制设置 */
+    private fun buildApi30Guide(): Triple<String, String, String> {
+        val title = "ADB 无障碍锁定 (Android 11~13)"
+        val commands = buildString {
+            appendLine("# 连接车机")
+            appendLine("adb connect <车机IP>")
+            appendLine("")
+            appendLine("# 授予写入权限")
+            appendLine("adb shell pm grant io.emqx.mqtt android.permission.WRITE_SECURE_SETTINGS")
+            appendLine("")
+            appendLine("# 写入无障碍服务（核心）")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService")
+            appendLine("")
+            appendLine("# 启用全局无障碍")
+            appendLine("adb shell settings put secure accessibility_enabled 1")
+        }
+        val message = buildString {
+            appendLine("🚗 当前系统：Android ${if (Build.VERSION.SDK_INT >= 33) "13" else "11/12"} (API ${Build.VERSION.SDK_INT})\n")
+            appendLine("━━━ 操作步骤 ━━━\n")
+            appendLine("⚠️ Android 11+ 需要额外一步！\n")
+            appendLine("【前置】在车机上手动操作：")
+            appendLine("① 设置 → 应用 → MQTT Assistant\n")
+            appendLine("② 右上角 ⋮ 菜单 → 「允许受限制的设置」\n")
+            appendLine("   （验证密码/指纹后确认）\n")
+            appendLine("③ 设置 → 无障碍 → 开启MQTT Assistant\n")
+            appendLine("\n然后在电脑上执行ADB命令：\n")
+            appendLine("【命令1】连接车机")
+            appendLine("adb connect <车机IP>\n")
+            appendLine("【命令2】授予写入权限")
+            appendLine("adb shell pm grant io.emqx.mqtt android.permission.WRITE_SECURE_SETTINGS\n")
+            appendLine("【命令3】写入无障碍服务")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService\n")
+            appendLine("【命令4】启用全局无障碍")
+            appendLine("adb shell settings put secure accessibility_enabled 1\n")
+            appendLine("\n✅ 完成后配置下方白名单，重启即可生效！")
+        }
+        return Triple(title, message, commands)
+    }
+
+    /** Android 14 (API 34+) 指南 - 完整含自动恢复 */
+    private fun buildApi34Guide(): Triple<String, String, String> {
+        val title = "ADB 无障碍锁定 (Android 14+)"
+        val commands = buildString {
+            appendLine("# 连接车机")
+            appendLine("adb connect <车机IP>")
+            appendLine("")
+            appendLine("# 【必须】授予写入权限（支持App内自动恢复！）")
+            appendLine("adb shell pm grant io.emqx.mqtt android.permission.WRITE_SECURE_SETTINGS")
+            appendLine("")
+            appendLine("# 写入无障碍服务（核心）")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService")
+            appendLine("")
+            appendLine("# 启用全局无障碍")
+            appendLine("adb shell settings put secure accessibility_enabled 1")
+            appendLine("")
+            appendLine("# 防重置标记（比亚迪兼容）")
+            appendLine("adb shell settings put global persist.sys.accessibility_retain 1")
+        }
+        val message = buildString {
+            appendLine("🚗 当前系统：Android 14+ (API ${Build.VERSION.SDK_INT})\n")
+            appendLine("━━━ 操作步骤 ━━━\n")
+            appendLine("★ Android 14 特有优势：执行后App可在被抹除时自动恢复！\n")
+            appendLine("【第1步】车机上手动授权（仅首次）：")
+            appendLine("① 设置 → 应用 → MQTT Assistant\n")
+            appendLine("② ⋮ 菜单 → 「允许受限制的设置」→ 确认\n")
+            appendLine("③ 设置 → 无障碍 → 开启MQTT Assistant\n")
+            appendLine("\n【第2步】电脑执行ADB命令：\n")
+            appendLine("adb connect <车机IP>\n")
+            appendLine("adb shell pm grant io.emqx.mqtt android.permission.WRITE_SECURE_SETTINGS\n")
+            appendLine("adb shell settings put secure enabled_accessibility_services io.emqx.mqtt/.VoiceAccessibilityService\n")
+            appendLine("adb shell settings put secure accessibility_enabled 1\n")
+            appendLine("\n【第3步】验证 + 白名单：")
+            appendLine("adb shell settings get secure enabled_accessibility_services\n")
+            appendLine("→ 返回包名即成功\n")
+            appendLine("→ 配置下方：极速白名单 + 电池优化 + 自启动\n")
+            appendLine("\n✨ 效果：即使系统清空，App会在30秒内自动恢复！")
+        }
+        return Triple(title, message, commands)
+    }
+
+    /** dp转px工具 */
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
+    }
         // 防御性检查: Fragment View 可能尚未创建或已销毁(如recreate()/横竖屏切换后)
         // lateinit属性(mButton/mDisconnectButton)在View未inflate前访问会抛UninitializedPropertyAccessException
         if (!this::mButton.isInitialized) {

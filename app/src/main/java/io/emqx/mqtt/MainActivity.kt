@@ -143,6 +143,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         setupAccessibilityService()
 
+        // ========== 比亚迪车机：启动时检测无障碍状态 ==========
+        checkAccessibilityOnStartup()
+
         // 恢复横竖屏切换前保存的MQTT连接（避免断连重连）
         if (sPreservedClient != null && sPreservedClient?.isConnected == true) {
             mClient = sPreservedClient
@@ -476,6 +479,35 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             Toast.LENGTH_LONG
         ).show()
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    // ========== 比亚迪车机：启动时检测无障碍状态 ==========
+    private fun checkAccessibilityOnStartup() {
+        val sp = getSharedPreferences("a11y_status", MODE_PRIVATE)
+        val needsFix = sp.getBoolean("a11y_needs_fix", false)
+
+        // 检测当前无障碍是否真的开启了
+        val isCurrentlyEnabled = isAccessibilityServiceEnabled()
+
+        Log.d("MainActivity", "A11y startup check: needsFix=$needsFix, currentlyEnabled=$isCurrentlyEnabled")
+
+        if (needsFix && !isCurrentlyEnabled) {
+            // 系统重置了无障碍权限！弹出强烈提示
+            sp.edit().remove("a11y_needs_fix").apply()
+            window.decorView.postDelayed({
+                Toast.makeText(this, getString(R.string.a11y_reset_warning), Toast.LENGTH_LONG).show()
+                // 延迟再弹一次引导
+                window.decorView.postDelayed({
+                    requestAccessibilityService()
+                }, 2000)
+            }, 1500)
+        } else if (isCurrentlyEnabled) {
+            // 无障碍正常，清除异常标记
+            sp.edit().remove("a11y_needs_fix").apply()
+            // 记录"本次运行时无障碍是开着的"
+            sp.edit().putBoolean("a11y_was_enabled", true).apply()
+            Log.d("MainActivity", "✅ A11y service is running normally")
+        }
     }
 
     /** 保留兼容性：SettingFragment仍通过此回调获取日志 */

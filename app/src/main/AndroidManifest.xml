@@ -52,6 +52,8 @@
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- 比亚迪车机上电/充电触发（补充BOOT_COMPLETED可能遗漏的场景） -->
+                <action android:name="android.intent.action.POWER_CONNECTED" />
             </intent-filter>
         </receiver>
         <service

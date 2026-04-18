@@ -28,4 +28,15 @@
     <string name="auto_capture_voice">Auto Capture Voice</string>
     <string name="voice_captured">Voice Captured</string>
     <string name="publish_voice">Publish Voice</string>
+
+    <!-- ============ 比亚迪车机无障碍永久化相关 ============ -->
+    <string name="acc_channel_name">车机无障碍服务</string>
+    <string name="acc_channel_desc">用于语音捕获的常驻无障碍服务，请勿关闭</string>
+    <string name="acc_notify_title">无障碍服务运行中</string>
+    <string name="acc_notify_text">车机辅助功能已开启 · MQTT Assistant</string>
+    <string name="byd_autostart_fallback">请在应用详情中关闭「禁止自启动」</string>
+    <string name="byd_speed_whitelist_fallback">请长按桌面S图标→添加到极速模式白名单</string>
+    <string name="byd_battery_not_needed">安卓6以下无需设置电池优化</string>
+    <string name="byd_all_settings_hint">将依次打开3项设置：\n1.极速白名单 → 2.电池优化 → 3.自启动\n请每项都确认完成！</string>
+    <string name="a11y_reset_warning">⚠️ 无障碍权限被系统重置！\n请重新执行ADB锁定命令\n或前往设置手动开启</string>
 </resources>
