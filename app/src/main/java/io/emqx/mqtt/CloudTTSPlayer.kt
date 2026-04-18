@@ -51,6 +51,7 @@ class CloudTTSPlayer private constructor() {
     }
 
     private var mediaPlayer: MediaPlayer? = null
+    @Volatile
     private var isPlaying = false
 
     /** 播报防抖间隔：5秒内不重复播报（防止车况轮询刷屏） */

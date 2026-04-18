@@ -53,17 +53,17 @@ class SettingFragment : BaseFragment() {
     private lateinit var mAutostartButton: Button
 
     // ========== 云端TTS设置控件 ==========
-    private lateinit var mCloudTtsApiSpinner: Spinner?
-    private lateinit var mCloudTtsVoiceSpinner: Spinner?
-    private lateinit var mVoiceSelectorContainer: View?
-    private lateinit var mTtsSpeedSeekbar: SeekBar?
-    private lateinit var mTtsPitchSeekbar: SeekBar?
-    private lateinit var mTtsVolumeSeekbar: SeekBar?
-    private lateinit var mTtsSpeedValue: TextView?
-    private lateinit var mTtsPitchValue: TextView?
-    private lateinit var mTtsVolumeValue: TextView?
-    private lateinit var mBtnTtsTestCloud: Button?
-    private lateinit var mBtnTtsResetDefault: Button?
+    private var mCloudTtsApiSpinner: Spinner? = null
+    private var mCloudTtsVoiceSpinner: Spinner? = null
+    private var mVoiceSelectorContainer: View? = null
+    private var mTtsSpeedSeekbar: SeekBar? = null
+    private var mTtsPitchSeekbar: SeekBar? = null
+    private var mTtsVolumeSeekbar: SeekBar? = null
+    private var mTtsSpeedValue: TextView? = null
+    private var mTtsPitchValue: TextView? = null
+    private var mTtsVolumeValue: TextView? = null
+    private var mBtnTtsTestCloud: Button? = null
+    private var mBtnTtsResetDefault: Button? = null
 
     private val logBuilder = StringBuilder()
 
