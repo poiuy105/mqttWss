@@ -3,6 +3,8 @@ package io.emqx.mqtt
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
