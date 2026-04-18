@@ -22,6 +22,7 @@ class HomeFragment : BaseFragment() {
     private var screenInfoText: TextView? = null
     private var orientationText: TextView? = null
     private var androidVersionText: TextView? = null
+    private var networkTitleText: TextView? = null
 
     private var batteryReceiver: BroadcastReceiver? = null
     private var networkReceiver: BroadcastReceiver? = null
@@ -38,6 +39,7 @@ class HomeFragment : BaseFragment() {
         screenInfoText = view.findViewById(R.id.screen_info)
         orientationText = view.findViewById(R.id.orientation)
         androidVersionText = view.findViewById(R.id.android_version)
+        networkTitleText = view.findViewById(R.id.network_title)
 
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
@@ -77,6 +79,11 @@ class HomeFragment : BaseFragment() {
         updateScreenInfo()
         updateOrientation()
         updateAndroidVersion()
+
+        // 连续点击"Network"文字5次显示Debug Log
+        networkTitleText?.setOnClickListener {
+            (fragmentActivity as? MainActivity)?.onNetworkTextClicked()
+        }
     }
 
     override fun onResume() {

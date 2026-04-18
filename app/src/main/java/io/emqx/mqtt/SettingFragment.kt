@@ -30,15 +30,13 @@ class SettingFragment : BaseFragment() {
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
     private lateinit var mDisconnectButton: Button
-    private lateinit var mLogText: TextView
     private lateinit var mAutoConnect: Switch
     private lateinit var mTtsSwitch: Switch
     private lateinit var mFloatSwitch: Switch
     private lateinit var mVoiceSwitch: Switch
     private lateinit var mAutoStartSwitch: Switch
     private lateinit var mNotificationSwitch: Switch
-    private lateinit var mShowDebugLogSwitch: Switch
-    private lateinit var mDebugLogContainer: View
+    // Debug Log 已移至 MainActivity 主页面
     private lateinit var mAllowUntrustedCheckbox: Switch
     private lateinit var mSslUntrustedContainer: LinearLayout
     private lateinit var mHaAddress: EditText
@@ -67,7 +65,7 @@ class SettingFragment : BaseFragment() {
             if (logBuilder.length > 2000) {
                 logBuilder.setLength(2000)
             }
-            mLogText.text = logBuilder.toString()
+            // 通过回调将日志传递到MainActivity显示（Debug Log容器已在主页面）
             Log.d("SettingFragment", message)
         }
     }
@@ -135,7 +133,6 @@ class SettingFragment : BaseFragment() {
         mTtsSwitch.isChecked = mConfigManager.ttsEnabled
         mFloatSwitch.isChecked = mConfigManager.floatWindowEnabled
         mVoiceSwitch.isChecked = mConfigManager.voiceCaptureEnabled
-        mShowDebugLogSwitch.isChecked = mConfigManager.showDebugLog
 
         appendLog("Loaded saved configuration")
     }
@@ -152,15 +149,12 @@ class SettingFragment : BaseFragment() {
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
         mDisconnectButton = view.findViewById(R.id.btn_disconnect)
-        mLogText = view.findViewById(R.id.log_text)
         mAutoConnect = view.findViewById(R.id.auto_connect_switch)
         mTtsSwitch = view.findViewById(R.id.tts_switch)
         mFloatSwitch = view.findViewById(R.id.float_switch)
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
         mAutoStartSwitch = view.findViewById(R.id.auto_start_switch)
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
-        mShowDebugLogSwitch = view.findViewById(R.id.show_debug_log_switch)
-        mDebugLogContainer = view.findViewById(R.id.debug_log_container)
         mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
         mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
         mHaAddress = view.findViewById(R.id.ha_address)
@@ -326,31 +320,6 @@ class SettingFragment : BaseFragment() {
         mNotificationSwitch.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.persistentNotification = isChecked
             appendLog("Persistent Notification ${if (isChecked) "enabled" else "disabled"}")
-        }
-
-        mShowDebugLogSwitch.setOnCheckedChangeListener { _, isChecked ->
-            mConfigManager.showDebugLog = isChecked
-            mDebugLogContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
-            appendLog("Show Debug Log ${if (isChecked) "enabled" else "disabled"}")
-        }
-
-        // Debug Log 容器内的 Clear 和 Copy 按钮
-        view.findViewById<Button>(R.id.btn_log_clear)?.setOnClickListener {
-            logBuilder.clear()
-            mLogText.text = ""
-            appendLog("Debug log cleared")
-        }
-        view.findViewById<Button>(R.id.btn_log_copy)?.setOnClickListener {
-            val logContent = logBuilder.toString()
-            if (logContent.isNotBlank()) {
-                val clipboard = context?.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("Debug Log", logContent)
-                clipboard?.setPrimaryClip(clip)
-                Toast.makeText(context, "Copied ${logContent.length} chars to clipboard", Toast.LENGTH_SHORT).show()
-                appendLog("Debug log copied to clipboard (${logContent.length} chars)")
-            } else {
-                Toast.makeText(context, "Log is empty", Toast.LENGTH_SHORT).show()
-            }
         }
 
         (activity as? MainActivity)?.let { main ->

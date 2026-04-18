@@ -1,27 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 横屏布局：侧边栏(左) + 内容区(右) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:orientation="horizontal">
 
-    <!-- 自定义垂直导航侧边栏 -->
+    <!-- 横屏：左侧主内容区域占1/2（包含侧边栏导航+ViewPager） -->
     <LinearLayout
-        android:id="@+id/nav_sidebar"
-        android:layout_width="@dimen/sidebar_width"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="?attr/colorPrimary"
-        android:gravity="center_horizontal">
-        <!-- 5个导航按钮通过代码动态添加到此处 -->
-    </LinearLayout>
-
-    <!-- 内容区域 -->
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/view_pager"
+        android:id="@+id/main_content_left"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <!-- 左侧垂直导航栏 -->
+        <LinearLayout
+            android:id="@+id/nav_sidebar"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#2C3E50" />
+
+        <androidx.viewpager.widget.ViewPager
+            android:id="@+id/view_pager"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- 横屏：右侧Debug Log容器占1/2，默认隐藏(GONE) -->
+    <LinearLayout
+        android:id="@+id/debug_log_container"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="#F5F5F5"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Debug Log:"
+                android:textColor="@android:color/black"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_log_clear"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:minWidth="56dp"
+                android:text="Clear"
+                android:textAllCaps="false"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/btn_log_copy"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
+                android:minWidth="56dp"
+                android:text="Copy"
+                android:textAllCaps="false"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/log_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text=""
+                android:textSize="11sp" />
+        </ScrollView>
+    </LinearLayout>
 
 </LinearLayout>

@@ -13,8 +13,10 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.view.ViewGroup
@@ -28,6 +30,9 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity(), MqttCallback {
     var mClient: MqttAsyncClient? = null
@@ -55,6 +60,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     private var mqttStatusListener: ((Boolean) -> Unit)? = null
 
+    // ========== Debug Log 容器（主页面） ==========
+    private var mDebugLogContainer: View? = null
+    private var mDebugLogText: TextView? = null
+    private val logBuilder = StringBuilder()
+    private var networkClickCount = 0
+    private var lastNetworkClickTime = 0L
+
     fun setOnMqttStatusChangedListener(listener: (Boolean) -> Unit) {
         mqttStatusListener = listener
     }
@@ -63,6 +75,26 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        // ========== 初始化Debug Log容器（默认隐藏）==========
+        mDebugLogContainer = findViewById(R.id.debug_log_container)
+        mDebugLogText = findViewById(R.id.log_text)
+        findViewById<Button>(R.id.btn_log_clear)?.setOnClickListener {
+            logBuilder.clear()
+            mDebugLogText?.text = ""
+            appendLog("Debug log cleared")
+        }
+        findViewById<Button>(R.id.btn_log_copy)?.setOnClickListener {
+            val content = logBuilder.toString()
+            if (content.isNotBlank()) {
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Debug Log", content))
+                Toast.makeText(this, "Copied ${content.length} chars", Toast.LENGTH_SHORT).show()
+                appendLog("Debug log copied (${content.length} chars)")
+            } else {
+                Toast.makeText(this, "Log is empty", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         CapturedTextManager.init(this)
 
@@ -381,8 +413,35 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     fun appendLog(message: String) {
         runOnUiThread {
+            // 写入主页面Debug Log容器
+            val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
+            logBuilder.insert(0, "[$timestamp] $message\n")
+            if (logBuilder.length > 2000) {
+                logBuilder.setLength(2000)
+            }
+            mDebugLogText?.text = logBuilder.toString()
+            // 回调通知SettingFragment（保留兼容性，但不再由其显示）
             logCallback?.invoke(message)
             Log.d("MainActivity", message)
+        }
+    }
+
+    /**
+     * Network文字点击计数器 - 连续5次显示Debug Log容器
+     * 由HomeFragment的network_type TextView调用
+     */
+    fun onNetworkTextClicked() {
+        val now = System.currentTimeMillis()
+        if (now - lastNetworkClickTime > 2000) {
+            networkClickCount = 0
+        }
+        lastNetworkClickTime = now
+        networkClickCount++
+        if (networkClickCount >= 5) {
+            networkClickCount = 0
+            mDebugLogContainer?.visibility = View.VISIBLE
+            Toast.makeText(this, "Debug Log shown", Toast.LENGTH_SHORT).show()
+            appendLog("=== Debug Log opened (Network x5) ===")
         }
     }
 
