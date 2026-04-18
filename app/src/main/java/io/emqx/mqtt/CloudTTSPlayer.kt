@@ -4,7 +4,6 @@ import android.media.MediaPlayer
 import android.util.Log
 import java.io.IOException
 import java.net.URLEncoder
-import java.util.Locale
 
 /**
  * 免费云端TTS播放器（无需APIKey、无需注册）
@@ -14,6 +13,8 @@ import java.util.Locale
 class CloudTTSPlayer private constructor() {
 
     companion object {
+        private const val TAG = "CloudTTS"
+
         @Volatile
         private var instance: CloudTTSPlayer? = null
 
@@ -185,7 +186,7 @@ class CloudTTSPlayer private constructor() {
                     try {
                         isPlaying = true
                         mp.start()
-                        Log.d(TAG, "Playback started: $url")
+                        Log.d(TAG, "Playback started")
                     } catch (e: Exception) {
                         Log.e(TAG, "start() exception: ${e.message}")
                     }
@@ -265,9 +266,5 @@ class CloudTTSPlayer private constructor() {
         duckarmySpd = -1
         duckarmyPit = 0
         duckarmyVol = 2
-    }
-
-    companion object {
-        private const val TAG = "CloudTTS"
     }
 }
