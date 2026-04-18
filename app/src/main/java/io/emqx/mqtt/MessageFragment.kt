@@ -6,7 +6,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
-import android.widget.CheckBox
+import android.widget.Switch
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -24,7 +24,7 @@ class MessageFragment : BaseFragment() {
     private var mOnlyCaptureContainer: LinearLayout? = null
     private var mPrefixInput: EditText? = null
     private var mSuffixInput: EditText? = null
-    private var mHaSendCheckbox: CheckBox? = null
+    private var mHaSendCheckbox: Switch? = null
     private val mConfigManager: ConfigManager by lazy { ConfigManager.getInstance(requireContext()) }
 
     private val captureListener: (CapturedText) -> Unit = { captured ->

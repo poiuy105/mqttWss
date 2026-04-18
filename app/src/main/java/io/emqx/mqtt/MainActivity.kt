@@ -97,7 +97,31 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         setupAccessibilityService()
 
-        if (intent.getBooleanExtra("auto_connect", false)) {
+        // 自动检测并申请悬浮窗权限（车机首次启动需要）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Log.d("MainActivity", "No overlay permission, requesting...")
+                window.decorView.postDelayed({
+                    try {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to request overlay permission: ${e.message}")
+                    }
+                }, 1500)
+            }
+        }
+
+        // Auto Connect：无论从哪种方式启动，都检查是否需要自动重连
+        val configManager = ConfigManager.getInstance(this)
+        if (configManager.autoConnect && configManager.hasSavedConfig()) {
+            Log.d("MainActivity", "Auto-connect is ON, will reconnect after delay...")
+            window.decorView.postDelayed({
+                autoConnectIfConfigured()
+            }, 2000)
+        } else if (intent.getBooleanExtra("auto_connect", false)) {
             Log.d("MainActivity", "Auto-connect requested")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()

@@ -39,12 +39,12 @@ class SettingFragment : BaseFragment() {
     private lateinit var mNotificationSwitch: Switch
     private lateinit var mShowDebugLogSwitch: Switch
     private lateinit var mDebugLogContainer: View
-    private lateinit var mAllowUntrustedCheckbox: CheckBox
+    private lateinit var mAllowUntrustedCheckbox: Switch
     private lateinit var mSslUntrustedContainer: LinearLayout
     private lateinit var mHaAddress: EditText
     private lateinit var mHaToken: EditText
     private lateinit var mHaLanguage: EditText
-    private lateinit var mHaHttpsCheckbox: CheckBox
+    private lateinit var mHaHttpsCheckbox: Switch
     private lateinit var mConfigManager: ConfigManager
 
     private val logBuilder = StringBuilder()
@@ -253,6 +253,15 @@ class SettingFragment : BaseFragment() {
             mConfigManager.autoConnect = isChecked
             appendLog("Auto Connect ${if (isChecked) "enabled" else "disabled"}")
         }
+        // 初始状态：根据当前MQTT连接状态决定是否可操作
+        val mainActivity = (activity as? MainActivity)
+        val isConnected = mainActivity?.mClient?.isConnected == true
+        mAutoConnect.isEnabled = isConnected
+        if (!isConnected) {
+            mAutoConnect.alpha = 0.5f
+        } else {
+            mAutoConnect.alpha = 1.0f
+        }
 
         // ========== HA容器控件实时保存 ==========
         mHaAddress.addTextChangedListener(object : TextWatcher {
@@ -362,11 +371,6 @@ class SettingFragment : BaseFragment() {
         view.findViewById<Button>(R.id.test_popup).setOnClickListener {
             appendLog("=== 弹窗测试 ===")
             testPopup()
-        }
-
-        view.findViewById<Button>(R.id.test_overlay_permission).setOnClickListener {
-            appendLog("=== 申请悬浮窗权限 ===")
-            requestOverlayPermission()
         }
 
         mButton.setOnClickListener {
@@ -505,11 +509,17 @@ class SettingFragment : BaseFragment() {
             mButton.text = "Connected"
             mButton.isEnabled = false
             mDisconnectButton.isEnabled = true
+            // MQTT已连接：允许操作Auto Connect开关
+            mAutoConnect.isEnabled = true
+            mAutoConnect.alpha = 1.0f
             updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
         } else {
             mButton.text = getString(R.string.connect)
             mButton.isEnabled = true
             mDisconnectButton.isEnabled = false
+            // MQTT未连接：禁用Auto Connect开关（必须先手动连接成功才能启用）
+            mAutoConnect.isEnabled = false
+            mAutoConnect.alpha = 0.5f
             updateNotificationStatus("MQTT Disconnected", "Not connected")
         }
     }

@@ -78,7 +78,7 @@
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
 
-                <CheckBox
+                <Switch
                     android:id="@+id/allow_untrusted_checkbox"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
@@ -232,16 +232,6 @@
                     android:text="弹窗"
                     android:textAllCaps="false"
                     android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/test_overlay_permission"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:text="悬浮"
-                    android:textAllCaps="false"
-                    android:textSize="14sp" />
             </LinearLayout>
 
             <TextView
@@ -317,7 +307,7 @@
                         android:textColor="@android:color/black"
                         android:textSize="16sp" />
 
-                    <CheckBox
+                    <Switch
                         android:id="@+id/ha_https_checkbox"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
