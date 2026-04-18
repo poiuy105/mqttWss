@@ -619,7 +619,7 @@ object BydLocalCarApi {
             carData.apply {
                 rawJson = bodyStr
                 timestamp = System.currentTimeMillis()
-                dataSource = "HTTP:$port$path"
+                dataSource = "HTTP:${port}${path}"
             }
         } catch (e: Exception) {
             // 不是JSON但可能有文本格式的数据
@@ -660,11 +660,11 @@ object BydLocalCarApi {
                             when {
                                 kLower.contains("speed") -> value.toFloatOrNull()?.let { if (it > 0) data.speed = it }
                                 kLower.contains("soc") || kLower.contains("battery") || kLower.contains("electricity") ->
-                                    value.replace(Regex("[^\\d]")).toIntOrNull()?.let { if (it <= 100) data.soc = it }
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it <= 100) data.soc = it }
                                 kLower.contains("range") || kLower.contains("remain") ->
-                                    value.replace(Regex("[^\\d]")).toIntOrNull()?.let { if (it > 0) data.elecRemain = it }
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it > 0) data.elecRemain = it }
                                 kLower.contains("mileage") || kLower.contains("odometer") ->
-                                    value.replace(Regex("[^\\d]")).toIntOrNull()?.let { if (it > 0) data.mileage = it }
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it > 0) data.mileage = it }
                                 kLower.contains("gear") -> data.gear = value.ifEmpty { "-" }
                                 kLower.contains("mode") || kLower.contains("power") -> data.powerMode = value.ifEmpty { "-" }
                                 kLower.contains("temp") -> value.toFloatOrNull()?.let { if (it > -50 && it < 80) data.outTemp = it }
@@ -858,7 +858,7 @@ object BydLocalCarApi {
 
         // 策略2: 快速shell检测
         val shellStart = System.currentTimeMillis()
-        report.shellResults = mutableListOf()
+        report.shellResults = mutableListOf<String>()
         // 只跑几个快速命令
         val quickCmds = arrayOf(
             "service list 2>&1 | head -30",
@@ -878,7 +878,7 @@ object BydLocalCarApi {
 
         // 策略3: 快速端口扫描（只扫常见端口）
         val httpStart = System.currentTimeMillis()
-        report.httpResults = mutableListOf()
+        report.httpResults = mutableListOf<String>()
         val quickPorts = intArrayOf(8080, 8081, 8082, 9000, 8888, 9999, 80, 443, 5555)
         val quickPaths = arrayOf("/", "/status", "/health", "/ping", "/dilink/realCarData",
             "/car/status", "/vehicle/status", "/api/status", "/info", "/data")
@@ -900,7 +900,7 @@ object BydLocalCarApi {
                         // 非404说明端口开放
                         report.httpResults.add("◐ $url → HTTP ${resp.code} (${elapsed}ms)")
                     }
-                } catch (e: ConnectException) {
+                } catch (e: java.net.ConnectException) {
                     // 端口未开放，静默跳过
                 } catch (e: Exception) {
                     // 其他错误
@@ -912,7 +912,7 @@ object BydLocalCarApi {
 
         // 策略4: CP检测
         val cpStart = System.currentTimeMillis()
-        report.cpResults = mutableListOf()
+        report.cpResults = mutableListOf<String>()
         val ctx = appContext
         if (ctx != null) {
             for (uriStr in CONTENT_URIS) {
