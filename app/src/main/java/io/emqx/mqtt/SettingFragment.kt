@@ -641,7 +641,13 @@ class SettingFragment : BaseFragment() {
             mConfigManager.cloudTtsApiIndex = player.currentApiIndex
             mConfigManager.cloudTtsVoice = player.voice
             mConfigManager.cloudTtsSpeed = player.speed
-            mConfigManager.cloudTtsPitch = player.pitch.toFloat() // pitch是String格式如"+0Hz"，取近似float存储
+            // pitch是String格式如"+0Hz"，解析为近似float存储
+            try {
+                val pitchVal = player.pitch.replace("[^\\-+\\d]".toRegex(), "").toInt()
+                mConfigManager.cloudTtsPitch = (pitchVal / 10f)
+            } catch (e: Exception) {
+                mConfigManager.cloudTtsPitch = 0f
+            }
             mConfigManager.cloudTtsVolume = player.volume
             // 刷新UI
             mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)

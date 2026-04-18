@@ -104,6 +104,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         // ========== 初始化云端TTS（启动即用，无需等待） ==========
         ttsPlayer = CloudTTSPlayer.getInstance()
+        // 设置音频缓存目录（先下载到本地文件再播放）
+        val ttsCacheDir = File(cacheDir, "cloudtts_cache")
+        ttsPlayer?.setCacheDir(ttsCacheDir)
         // 从ConfigManager恢复云TTS设置
         val cfg = ConfigManager.getInstance(this)
         ttsPlayer?.apply {
