@@ -1,6 +1,7 @@
 package io.emqx.mqtt
 
 import android.content.Intent
+import java.io.File
 import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
