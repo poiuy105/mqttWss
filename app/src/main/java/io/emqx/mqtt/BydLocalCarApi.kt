@@ -24,6 +24,14 @@ object BydLocalCarApi {
 
     private const val TAG = "BydLocalCarApi"
 
+    /** 日志回调（由HomeFragment设置，输出到Debug Log容器） */
+    var logCallback: ((String) -> Unit)? = null
+
+    private fun log(msg: String) {
+        Log.d(TAG, msg)
+        try { logCallback?.invoke(msg) } catch (_: Exception) {}
+    }
+
     /** 可用端口列表（按优先级排序） */
     val PORTS = intArrayOf(8081, 8080, 9000)
 
@@ -75,6 +83,15 @@ object BydLocalCarApi {
         fun formatOutTemp(): String = if (outTemp == 0f && !success) "-" else String.format("%.0f℃", outTemp)
         fun formatInTemp(): String = if (inTemp == 0f && !success) "-" else String.format("%.0f℃", inTemp)
         fun formatAcStatus(): String = if (acOn) "$acTemp℃ ON" else "OFF"
+
+        /** 生成一行摘要用于日志输出 */
+        fun toSummary(): String = buildString {
+            append("speed=${formatSpeed()} soc=${soc}% gear=$gear")
+            append(" elec=${elecRemain}km fuel=${fuelRemain}km")
+            append(" out=${formatOutTemp()} in=${formatInTemp()}")
+            append(" ac=${formatAcStatus()} mode=$powerMode")
+            if (mileage > 0) append(" mileage=${mileage}km")
+        }
     }
 
     // ========== 核心请求方法 ==========
@@ -84,17 +101,26 @@ object BydLocalCarApi {
      * 自动尝试所有端口，返回第一个成功的结果
      */
     fun fetchCarData(): CarData {
-        for (port in PORTS) {
+        log("[CarAPI] ===== 开始获取车况数据 =====")
+        for ((index, port) in PORTS.withIndex()) {
+            val startTime = System.currentTimeMillis()
+            log("[CarAPI] 尝试端口 $port (${index + 1}/${PORTS.size})...")
             try {
                 val result = tryPort(port)
+                val elapsed = System.currentTimeMillis() - startTime
                 if (result.success) {
                     currentPort = port
+                    log("[CarAPI] ✓ 端口$port 成功! 耗时${elapsed}ms | ${result.toSummary()}")
                     return result
+                } else {
+                    log("[CarAPI] ✗ 端口$port 失败 (${elapsed}ms): ${result.errorMsg}")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Port $port exception: ${e.message}")
+                val elapsed = System.currentTimeMillis() - startTime
+                log("[CarAPI] ✗ 端口$port 异常 (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}")
             }
         }
+        log("[CarAPI] ===== 所有端口均失败! =====")
         return CarData().apply { success = false; errorMsg = "所有端口均无法连接" }
     }
 
@@ -115,20 +141,23 @@ object BydLocalCarApi {
         val path = PATH_MAP[port] ?: "/dilink/realCarData"
         val url = "http://127.0.0.1:$port$path"
 
-        val request = Request.Builder().url(url).build()
+        log("[CarAPI] 请求: $url")
 
-        Log.d(TAG, "Trying: $url")
+        val request = Request.Builder().url(url).build()
 
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
+            val bodyPreview = (response.body?.string() ?: "").take(200)
+            log("[CarAPI] HTTP ${response.code}: $bodyPreview")
             return CarData().apply {
                 success = false
                 errorMsg = "HTTP ${response.code}"
-                rawJson = response.body?.string() ?: ""
+                rawJson = bodyPreview
             }
         }
 
         val bodyStr = response.body?.string() ?: ""
+        log("[CarAPI] 响应(${bodyStr.length}B): ${bodyStr.take(300)}")
         return parseJson(bodyStr).apply {
             rawJson = bodyStr
             this.timestamp = System.currentTimeMillis()
@@ -162,20 +191,26 @@ object BydLocalCarApi {
                 val acObj = obj.getJSONObject("ac")
                 carData.acTemp = safeGetInt(acObj, "temp", "setTemp", "targetTemp")
                 carData.acOn = acObj.optBoolean("on", acObj.optBoolean("acOn", false))
+                log("[CarAPI] AC对象: temp=${carData.acTemp} on=${carData.acOn}")
             } else {
                 carData.acTemp = safeGetInt(obj, "acTemp", "ac_set_temp")
                 carData.acOn = obj.optBoolean("acOn", obj.optBoolean("ac_on", false))
+                log("[CarAPI] AC扁平: temp=${carData.acTemp} on=${carData.acOn}")
             }
 
             // Door子对象
             if (obj.has("door")) {
-                // 门状态暂存到rawJson中，UI暂不展示
+                log("[CarAPI] 检测到door字段: ${obj.get("door").toString().take(200)}")
             }
+
+            // 记录所有解析到的原始字段名（调试用）
+            val keys = obj.keys().asSequence().toList()
+            log("[CarAPI] JSON字段列表: ${keys.joinToString(", ")}}")
 
             carData
         } catch (e: Exception) {
-            Log.e(TAG, "JSON解析失败: ${e.message}")
-            Log.d(TAG, "Raw response: $json")
+            log("[CarAPI] JSON解析异常! ${e.javaClass.simpleName}: ${e.message}")
+            log("[CarAPI] 原始响应: $json")
             CarData().apply {
                 success = false
                 errorMsg = "解析异常: ${e.javaClass.simpleName}"

@@ -156,6 +156,10 @@ class HomeFragment : BaseFragment() {
 
         // ========== 初始化车况数据显示 ==========
         initCarDataViews(view)
+        // 设置车况API日志回调 -> 输出到Debug Log容器
+        BydLocalCarApi.logCallback = { msg ->
+            appendLocalLog(msg)
+        }
         startCarDataPolling()
     }
 
@@ -197,6 +201,7 @@ class HomeFragment : BaseFragment() {
     private fun startCarDataPolling() {
         if (isCarPollingActive) return
         isCarPollingActive = true
+        appendLocalLog("[CarPoll] 启动车况轮询 (间隔2s)")
 
         carDataRunnable = object : Runnable {
             override fun run() {
@@ -213,6 +218,7 @@ class HomeFragment : BaseFragment() {
         isCarPollingActive = false
         carDataRunnable?.let { carDataHandler.removeCallbacks(it) }
         carDataRunnable = null
+        appendLocalLog("[CarPoll] 停止车况轮询")
     }
 
     /** 获取并显示车况数据（异步，回调在主线程） */
@@ -241,6 +247,7 @@ class HomeFragment : BaseFragment() {
                 carApiStatusText?.text = "OK (端口$port)"
                 carApiStatusText?.setTextColor(0xFF00AA00.toInt())
             } else {
+                appendLocalLog("[CarAPI] UI显示失败: ${data.errorMsg}")
                 carApiStatusText?.text = "失败: ${data.errorMsg}"
                 carApiStatusText?.setTextColor(0xFFFF5500.toInt())
             }
