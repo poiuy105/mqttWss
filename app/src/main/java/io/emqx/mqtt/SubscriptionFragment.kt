@@ -145,6 +145,11 @@ class SubscriptionFragment : BaseFragment() {
 
     fun updateSubscriptionMessage(topic: String, message: String) {
         activity?.runOnUiThread {
+            // 防御性检查: recreate()/方向切换后Fragment可能尚未完成布局初始化
+            if (mAdapter == null) {
+                Log.w("SubscriptionFragment", "updateSubscriptionMessage called but mAdapter is null, skipping")
+                return@runOnUiThread
+            }
             val subscription = mSubscriptionList.find { it.topic == topic }
             if (subscription != null) {
                 subscription.lastMessage = message

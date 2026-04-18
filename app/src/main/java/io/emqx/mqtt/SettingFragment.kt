@@ -542,6 +542,12 @@ class SettingFragment : BaseFragment() {
     }
 
     fun updateButtonText() {
+        // 防御性检查: Fragment View 可能尚未创建或已销毁(如recreate()/横竖屏切换后)
+        // lateinit属性(mButton/mDisconnectButton)在View未inflate前访问会抛UninitializedPropertyAccessException
+        if (!this::mButton.isInitialized) {
+            Log.w("SettingFragment", "updateButtonText called but mButton not initialized, skipping")
+            return
+        }
         if ((fragmentActivity as? MainActivity)?.notConnected(false) == true) {
             mButton.text = getText(R.string.connect)
             mButton.isEnabled = true
