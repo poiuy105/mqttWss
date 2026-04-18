@@ -252,8 +252,10 @@ class SettingFragment : BaseFragment() {
         mAutoConnect.setOnCheckedChangeListener { _, isChecked ->
             mConfigManager.autoConnect = isChecked
             appendLog("Auto Connect ${if (isChecked) "enabled" else "disabled"}")
+            // Auto Connect打开时锁定所有MQTT连接参数（防止修改后无法匹配已保存配置）
+            updateMqttControlsEnabled(!isChecked)
         }
-        // 初始状态：根据当前MQTT连接状态决定是否可操作
+        // 初始状态：根据当前MQTT连接状态和autoConnect值决定控件可用性
         val mainActivity = (activity as? MainActivity)
         val isConnected = mainActivity?.mClient?.isConnected == true
         mAutoConnect.isEnabled = isConnected
@@ -262,6 +264,8 @@ class SettingFragment : BaseFragment() {
         } else {
             mAutoConnect.alpha = 1.0f
         }
+        // 初始化时也应用autoConnect对控件的锁定状态
+        updateMqttControlsEnabled(!mAutoConnect.isChecked)
 
         // ========== HA容器控件实时保存 ==========
         mHaAddress.addTextChangedListener(object : TextWatcher {
@@ -501,6 +505,28 @@ class SettingFragment : BaseFragment() {
 
     private fun getTtsManager(): TTSManager? {
         return (fragmentActivity as? MainActivity)?.ttsManager
+    }
+
+    /**
+     * 统一控制MQTT连接参数区域内所有控件的启用/禁用状态
+     * Auto Connect打开时，所有参数应被锁定（防止修改后无法匹配已保存配置）
+     * @param enabled true=可操作, false=禁用(半透明)
+     */
+    private fun updateMqttControlsEnabled(enabled: Boolean) {
+        val alpha = if (enabled) 1.0f else 0.5f
+        // 协议选择
+        mProtocol.alpha = alpha
+        mProtocol.isEnabled = enabled
+        // SSL选项
+        mAllowUntrustedCheckbox.alpha = alpha
+        mAllowUntrustedCheckbox.isEnabled = enabled
+        // 连接参数输入框
+        mHost.alpha = alpha; mHost.isEnabled = enabled
+        mPort.alpha = alpha; mPort.isEnabled = enabled
+        mPath.alpha = alpha; mPath.isEnabled = enabled
+        mClientId.alpha = alpha; mClientId.isEnabled = enabled
+        mUsername.alpha = alpha; mUsername.isEnabled = enabled
+        mPassword.alpha = alpha; mPassword.isEnabled = enabled
     }
 
     private fun updateConnectionStatus(connected: Boolean) {
