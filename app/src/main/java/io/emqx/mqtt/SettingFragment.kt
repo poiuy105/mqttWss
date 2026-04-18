@@ -592,16 +592,21 @@ class SettingFragment : BaseFragment() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // 4. 音调滑块 (0.5 ~ 2.0)
-        mTtsPitchSeekbar?.setProgress((player.pitch * 100).toInt())
-        mTtsPitchValue?.text = String.format("%.1f", player.pitch)
+        // 4. 音调滑块 (Edge-TTS pitch: -10Hz ~ +10Hz, 映射到 progress 0~200, 中间100=+0Hz)
+        // 解析当前pitch字符串如"+0Hz" -> 0 -> progress = 100
+        val currentPitchVal = try { player.pitch.replace("[^\\-+\\d]".toRegex(), "").toInt() } catch(e: Exception) { 0 }
+        val pitchProgress = (currentPitchVal + 10) * 10 // -10Hz->0, 0Hz->100, +10Hz->200
+        mTtsPitchSeekbar?.setProgress(pitchProgress.coerceIn(0, 200))
+        mTtsPitchValue?.text = player.pitch
         mTtsPitchSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (!fromUser) return
-                val pit = (progress / 100f).coerceIn(0.5f, 2.0f)
-                player.pitch = pit
-                mConfigManager.cloudTtsPitch = pit
-                mTtsPitchValue?.text = String.format("%.1f", pit)
+                // progress 0~200 -> pitchHz -10~+10
+                val pitchHz = (progress / 10f).toInt() - 10
+                val pitchStr = if (pitchHz >= 0) "+${pitchHz}Hz" else "${pitchHz}Hz"
+                player.pitch = pitchStr
+                mConfigManager.cloudTtsPitch = (pitchHz / 10f) // 存储近似float值
+                mTtsPitchValue?.text = pitchStr
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
@@ -657,8 +662,16 @@ class SettingFragment : BaseFragment() {
         val player = getCloudTtsPlayer() ?: return
         mTtsSpeedSeekbar?.progress = (player.speed * 100).toInt()
         mTtsSpeedValue?.text = String.format("%.2f", player.speed)
-        mTtsPitchSeekbar?.progress = (player.pitch * 100).toInt()
-        mTtsPitchValue?.text = String.format("%.1f", player.pitch)
+        // pitch是String格式如"+0Hz"，解析为数值显示
+        try {
+            val pitchVal = player.pitch.replace("[^\\-+\\d]".toRegex(), "").toInt()
+            val pitchProgress = (pitchVal + 10) * 10
+            mTtsPitchSeekbar?.progress = pitchProgress.coerceIn(0, 200)
+            mTtsPitchValue?.text = player.pitch
+        } catch (e: Exception) {
+            mTtsPitchSeekbar?.progress = 100
+            mTtsPitchValue?.text = "+0Hz"
+        }
         mTtsVolumeSeekbar?.progress = (player.volume * 100).toInt()
         mTtsVolumeValue?.text = String.format("%.1f", player.volume)
     }
