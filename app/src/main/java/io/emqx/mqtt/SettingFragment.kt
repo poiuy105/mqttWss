@@ -39,6 +39,7 @@ class SettingFragment : BaseFragment() {
     // Debug Log 已移至 MainActivity 主页面
     private lateinit var mAllowUntrustedCheckbox: Switch
     private lateinit var mSslUntrustedContainer: LinearLayout
+    private lateinit var mPathContainer: LinearLayout  // 横屏时path外层容器
     private lateinit var mHaAddress: EditText
     private lateinit var mHaToken: EditText
     private lateinit var mHaLanguage: EditText
@@ -174,6 +175,7 @@ class SettingFragment : BaseFragment() {
         mNotificationSwitch = view.findViewById(R.id.notification_switch)
         mAllowUntrustedCheckbox = view.findViewById(R.id.allow_untrusted_checkbox)
         mSslUntrustedContainer = view.findViewById(R.id.ssl_untrusted_container)
+        mPathContainer = view.findViewById(R.id.path_container)  // 横屏path外层容器（竖屏时为null）
         mHaAddress = view.findViewById(R.id.ha_address)
         mHaToken = view.findViewById(R.id.ha_token)
         mHaLanguage = view.findViewById(R.id.ha_language)
@@ -220,6 +222,10 @@ class SettingFragment : BaseFragment() {
                 else -> View.GONE
             }
             mPath.visibility = pathVisibility
+            // 横屏模式：path的外层LinearLayout容器也需要同步可见性
+            if (::mPathContainer.isInitialized) {
+                try { mPathContainer.visibility = pathVisibility } catch (e: Exception) {}  // 竖屏布局无此容器，忽略
+            }
 
             val sslUntrustedVisibility = when (checkedId) {
                 R.id.protocol_ssl -> View.VISIBLE

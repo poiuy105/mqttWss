@@ -14,13 +14,13 @@
         android:layout_height="match_parent"
         android:orientation="horizontal">
 
-        <!-- 左侧垂直导航栏 -->
-        <LinearLayout
-            android:id="@+id/nav_sidebar"
-            android:layout_width="48dp"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="#2C3E50" />
+    <!-- 左侧垂直导航栏（宽高由代码动态设为正方形） -->
+    <LinearLayout
+        android:id="@+id/nav_sidebar"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#2C3E50" />
 
         <androidx.viewpager.widget.ViewPager
             android:id="@+id/view_pager"
