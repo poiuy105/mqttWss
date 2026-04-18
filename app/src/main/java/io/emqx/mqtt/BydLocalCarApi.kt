@@ -570,7 +570,7 @@ object BydLocalCarApi {
 
                 try {
                     val url = "http://127.0.0.1:$port$path"
-                    val result = trySingleUrl(url, port)
+                    val result = trySingleUrl(url, port, path)
                     if (result.success) {
                         currentPort = port
                         return result
@@ -584,7 +584,7 @@ object BydLocalCarApi {
         return fail("HTTP扫描全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径)")
     }
 
-    private fun trySingleUrl(url: String, port: Int): CarData {
+    private fun trySingleUrl(url: String, port: Int, path: String): CarData {
         val startTime = System.currentTimeMillis()
 
         val request = Request.Builder().url(url)
@@ -858,7 +858,7 @@ object BydLocalCarApi {
 
         // 策略2: 快速shell检测
         val shellStart = System.currentTimeMillis()
-        report.shellResults = mutableListOf<String>()
+        report.shellResults.clear()
         // 只跑几个快速命令
         val quickCmds = arrayOf(
             "service list 2>&1 | head -30",
@@ -878,7 +878,7 @@ object BydLocalCarApi {
 
         // 策略3: 快速端口扫描（只扫常见端口）
         val httpStart = System.currentTimeMillis()
-        report.httpResults = mutableListOf<String>()
+        report.httpResults.clear()
         val quickPorts = intArrayOf(8080, 8081, 8082, 9000, 8888, 9999, 80, 443, 5555)
         val quickPaths = arrayOf("/", "/status", "/health", "/ping", "/dilink/realCarData",
             "/car/status", "/vehicle/status", "/api/status", "/info", "/data")
@@ -912,7 +912,7 @@ object BydLocalCarApi {
 
         // 策略4: CP检测
         val cpStart = System.currentTimeMillis()
-        report.cpResults = mutableListOf<String>()
+        report.cpResults.clear()
         val ctx = appContext
         if (ctx != null) {
             for (uriStr in CONTENT_URIS) {
@@ -943,11 +943,11 @@ object BydLocalCarApi {
         var timestamp: Long = 0L,
         var sdkResults: List<String> = emptyList(),
         var sdkTime: Long = 0L,
-        var shellResults: List<String> = emptyList(),
+        var shellResults: MutableList<String> = mutableListOf(),
         var shellTime: Long = 0L,
-        var httpResults: List<String> = emptyList(),
+        var httpResults: MutableList<String> = mutableListOf(),
         var httpTime: Long = 0L,
-        var cpResults: List<String> = emptyList(),
+        var cpResults: MutableList<String> = mutableListOf(),
         var cpTime: Long = 0L,
         var totalTime: Long = 0L
     )
