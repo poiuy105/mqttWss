@@ -42,6 +42,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     var ttsManager: TTSManager? = null
     var floatWindowManager: FloatWindowManager? = null
 
+    // ========== 横竖屏切换时保持MQTT连接不断（static holder跨recreate存活）==========
+    companion object {
+        /** 保存MqttAsyncClient实例，在Activity重建时避免断连 */
+        private var sPreservedClient: MqttAsyncClient? = null
+        private var sPreservedConnection: Connection? = null
+    }
+
     var isTTSEnabled = true
         set(value) {
             field = value
@@ -135,6 +142,21 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
 
         setupAccessibilityService()
+
+        // 恢复横竖屏切换前保存的MQTT连接（避免断连重连）
+        if (sPreservedClient != null && sPreservedClient?.isConnected == true) {
+            mClient = sPreservedClient
+            mConnection = sPreservedConnection
+            // 重新将callback指向新的Activity实例（旧的Activity已被销毁）
+            mClient?.setCallback(this@MainActivity)
+            Log.i("MainActivity", "Restored MQTT client from recreate: connected=${mClient?.isConnected}, server=${mConnection?.host}")
+            // 更新UI状态为已连接
+            MqttService.updateConnectionStatus(this, true)
+            notifyMqttStatusChanged(true)
+            appendLog("[MQTT] Connection preserved across orientation change")
+            sPreservedClient = null
+            sPreservedConnection = null
+        }
 
         // 自动检测并申请悬浮窗权限（车机首次启动需要）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -257,6 +279,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        // recreate()前保存MQTT客户端到静态变量，避免Activity重建时断连
+        sPreservedClient = mClient
+        sPreservedConnection = mConnection
+        Log.d("MainActivity", "onConfigurationChanged: preserving MQTT client (connected=${mClient?.isConnected})")
         // configChanges声明后Android不会自动reinflate布局，必须手动recreate()
         // 这样onCreate会被重新调用，系统会根据新方向加载layout或layout-land的资源
         recreate()
