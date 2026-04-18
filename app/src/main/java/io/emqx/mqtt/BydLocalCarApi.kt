@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  *
  * 策略3: 广谱HTTP端口扫描（当前策略的增强版）
  *   - 扩大端口范围：8080-8090, 9000-9010, 8888, 9999, 3000, 5000, 5555
- *   - 多种路径尝试：/dilink/*, /car/*, /vehicle/*, /api/*, /status, /
+ *   - 多种路径尝试：/dilink/path, /car/path, /vehicle/path, /api/path, /status, /
  *   - 增加超时容忍度：连接5秒，读取8秒
  *
  * 策略4: ContentProvider查询（车机内部可能暴露的数据接口）
@@ -99,10 +99,10 @@ object BydLocalCarApi {
         "getprop | grep -i byd",
         "getprop ro.product.model",
         "getprop ro.build.display.id",
-        "cat /data/data/com.byd.dilink/shared_prefs/*.xml 2>/dev/null; cat /data/data/com.bydauto.*/shared_prefs/*.xml 2>/dev/null",
+        "cat /data/data/com.byd.dilink/shared_prefs/*.xml 2>/dev/null; cat '/data/data/com.bydauto.*/shared_prefs/*.xml' 2>/dev/null",
         "settings get system byd_vehicle_info 2>/dev/null",
-        "content query --uri content://com.byd.*/vehicle 2>/dev/null",
-        "content query --uri content://com.bydauto.*/car 2>/dev/null"
+        "content query --uri 'content://com.byd.*/vehicle' 2>/dev/null",
+        "content query --uri 'content://com.bydauto.*/car' 2>/dev/null"
     )
 
     // ========== 策略3: 广谱端口+路径扫描 ==========
@@ -952,5 +952,6 @@ object BydLocalCarApi {
         var totalTime: Long = 0L
     )
 }
-   
+  
+ 
  
