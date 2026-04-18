@@ -379,10 +379,7 @@ class SettingFragment : BaseFragment() {
             }
         }
 
-        view.findViewById<Button>(R.id.test_tts).setOnClickListener {
-            appendLog("=== TTS测试 ===")
-            testTts()
-        }
+        // test_tts 按钮已移除（本地TTS调试区域已替换为云端TTS设置）
 
         view.findViewById<Button>(R.id.test_popup).setOnClickListener {
             appendLog("=== 弹窗测试 ===")
@@ -538,11 +535,13 @@ class SettingFragment : BaseFragment() {
         }
 
         // 1. 接口选择 Spinner（讯飞 / 阿里 / oioweb）
-        mCloudTtsApiSpinner?.adapter = android.widget.ArrayAdapter(
+        val apiAdapter = android.widget.ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
             listOf("讯飞 xiaoai.plus (推荐)", "阿里 DuckArmy", "OIOWEB (兜底)")
-        ).also { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        )
+        apiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        mCloudTtsApiSpinner?.adapter = apiAdapter
 
         mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
         mCloudTtsApiSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -554,16 +553,18 @@ class SettingFragment : BaseFragment() {
                 appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
                 syncTtsUiFromPlayer()
             }
-            override fun NothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         // 2. 音色选择（仅讯飞）
         val voiceNames = CloudTTSPlayer.XIAOAI_VOICES.map {
             CloudTTSPlayer.VOICE_NAMES_XIAOAI[it] ?: it
         }
-        mCloudTtsVoiceSpinner?.adapter = android.widget.ArrayAdapter(
+        val voiceAdapter = android.widget.ArrayAdapter(
             requireContext(), android.R.layout.simple_spinner_item, voiceNames
-        ).also { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        )
+        voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        mCloudTtsVoiceSpinner?.adapter = voiceAdapter
         val voiceIndex = CloudTTSPlayer.XIAOAI_VOICES.indexOf(player.voice).coerceAtLeast(0)
         mCloudTtsVoiceSpinner?.setSelection(voiceIndex)
         mCloudTtsVoiceSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -573,7 +574,7 @@ class SettingFragment : BaseFragment() {
                 appendLog("[CloudTTS] 音色切换: ${player.voice}")
                 syncTtsUiFromPlayer()
             }
-            override fun NothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         // 3. 语速滑块 (0.5 ~ 2.0 -> progress 50~200)

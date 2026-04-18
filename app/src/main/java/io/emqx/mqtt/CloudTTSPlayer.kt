@@ -51,9 +51,6 @@ class CloudTTSPlayer private constructor() {
     }
 
     private var mediaPlayer: MediaPlayer? = null
-    @Volatile
-    private var isPlaying = false
-
     /** 播报防抖间隔：5秒内不重复播报（防止车况轮询刷屏） */
     private var lastSpeakTime = 0L
     private val speakIntervalMs = 5000L
@@ -185,7 +182,6 @@ class CloudTTSPlayer private constructor() {
                 setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
                 setOnPreparedListener { mp ->
                     try {
-                        isPlaying = true
                         mp.start()
                         Log.d(TAG, "Playback started")
                     } catch (e: Exception) {
@@ -193,12 +189,10 @@ class CloudTTSPlayer private constructor() {
                     }
                 }
                 setOnCompletionListener { mp ->
-                    isPlaying = false
                     try { mp.reset() } catch (e: Exception) {}
                 }
                 setOnErrorListener { _, what, extra ->
                     Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
-                    isPlaying = false
                     onFailed?.invoke(true)
                     true
                 }
@@ -206,11 +200,9 @@ class CloudTTSPlayer private constructor() {
             }
         } catch (e: IOException) {
             Log.e(TAG, "playUrl IOException: ${e.message}", e)
-            isPlaying = false
             onFailed?.invoke(true)
         } catch (e: Exception) {
             Log.e(TAG, "playUrl exception: ${e.message}", e)
-            isPlaying = false
             onFailed?.invoke(true)
         }
     }
