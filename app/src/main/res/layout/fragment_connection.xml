@@ -313,6 +313,39 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+
+                <!-- HA Response Delay -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Response Delay (ms):"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp" />
+
+                    <SeekBar
+                        android:id="@+id/ha_response_delay_seekbar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:max="199"
+                        android:progress="0" />
+
+                    <TextView
+                        android:id="@+id/ha_response_delay_value"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:text="10ms"
+                        android:textSize="13sp"
+                        android:gravity="end" />
+                </LinearLayout>
             </LinearLayout>
 
             <TextView

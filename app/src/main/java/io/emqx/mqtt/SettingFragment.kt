@@ -45,6 +45,8 @@ class SettingFragment : BaseFragment() {
     private lateinit var mHaToken: EditText
     private lateinit var mHaLanguage: EditText
     private lateinit var mHaHttpsCheckbox: Switch
+    private lateinit var mHaResponseDelaySeekbar: SeekBar
+    private lateinit var mHaResponseDelayValue: TextView
     private lateinit var mConfigManager: ConfigManager
     // 车机保活按钮
     private lateinit var mAdbGuideButton: Button
@@ -111,7 +113,8 @@ class SettingFragment : BaseFragment() {
             haAddress = mHaAddress.text.toString(),
             haToken = mHaToken.text.toString(),
             haLanguage = mHaLanguage.text.toString(),
-            haHttps = mHaHttpsCheckbox.isChecked
+            haHttps = mHaHttpsCheckbox.isChecked,
+            haResponseDelay = mConfigManager.haResponseDelay
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -140,6 +143,11 @@ class SettingFragment : BaseFragment() {
         mHaToken.setText(mConfigManager.haToken)
         mHaLanguage.setText(mConfigManager.haLanguage)
         mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
+        
+        // 恢复HA响应延迟设置（默认10ms，范围10-2000ms）
+        val delayValue = mConfigManager.haResponseDelay.coerceIn(10, 2000)
+        mHaResponseDelaySeekbar.progress = delayValue - 10  // SeekBar从0开始，对应10ms
+        mHaResponseDelayValue.text = "${delayValue}ms"
 
         // 恢复协议选择
         when (mConfigManager.protocol) {
@@ -182,6 +190,8 @@ class SettingFragment : BaseFragment() {
         mHaToken = view.findViewById(R.id.ha_token)
         mHaLanguage = view.findViewById(R.id.ha_language)
         mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
+        mHaResponseDelaySeekbar = view.findViewById(R.id.ha_response_delay_seekbar)
+        mHaResponseDelayValue = view.findViewById(R.id.ha_response_delay_value)
 
         // ========== 车机保活按钮初始化 ==========
         mAdbGuideButton = view.findViewById(R.id.btn_adb_guide)
@@ -325,6 +335,20 @@ class SettingFragment : BaseFragment() {
             mConfigManager.haHttps = isChecked
             appendLog("HA HTTPS ${if (isChecked) "enabled" else "disabled"}")
         }
+        
+        // HA响应延迟设置 - SeekBar监听器（10ms-2000ms）
+        mHaResponseDelaySeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val delayValue = (progress + 10).coerceIn(10, 2000)
+                mHaResponseDelayValue.text = "${delayValue}ms"
+                if (fromUser) {
+                    mConfigManager.haResponseDelay = delayValue
+                    appendLog("HA Response Delay set to ${delayValue}ms")
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         // ========== 功能开关 - 实时持久化 + 同步MainActivity ==========
 

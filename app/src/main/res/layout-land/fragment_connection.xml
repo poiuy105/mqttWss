@@ -460,6 +460,38 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+
+                <!-- HA Response Delay -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:text="Response Delay (ms):"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <SeekBar
+                        android:id="@+id/ha_response_delay_seekbar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="199"
+                        android:progress="0" />
+
+                    <TextView
+                        android:id="@+id/ha_response_delay_value"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:text="10ms"
+                        android:textSize="12sp"
+                        android:gravity="end" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Features 开关区 -->
