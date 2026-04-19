@@ -739,6 +739,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onDestroy() {
         super.onDestroy()
+        
+        // 停止电池上报
+        HomeAssistantIntegration.stopBatteryReporting()
+        
+        // 断开 MQTT 连接以触发 Last Will
+        if (mClient != null && mClient!!.isConnected) {
+            try {
+                appendLog("App destroying, disconnecting MQTT to trigger Last Will...")
+                mClient?.disconnect()
+                mClient = null
+                mConnection = null
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to disconnect MQTT", e)
+            }
+        }
+        
         // 释放云端TTS资源
         ttsPlayer?.release()
         // 释放浮动窗口资源

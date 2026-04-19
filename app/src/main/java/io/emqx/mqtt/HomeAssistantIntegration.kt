@@ -96,7 +96,6 @@ object HomeAssistantIntegration {
                 "unit_of_measurement" to "%",
                 "device_class" to "battery",
                 "unique_id" to "${deviceId}_battery",
-                "value_template" to "{{ value_json.level }}",
                 "json_attributes_topic" to "byd2ha/$deviceId/sensor/battery/attributes",
                 "device" to mapOf(
                     "identifiers" to listOf(deviceId),
@@ -195,9 +194,10 @@ object HomeAssistantIntegration {
         try {
             val gson = Gson()
             
-            // 发布电池状态
+            // 发布电池状态 - 直接发送数字值（不使用JSON）
             val stateTopic = "byd2ha/$deviceId/sensor/battery/state"
-            val stateMessage = MqttMessage(gson.toJson(mapOf("level" to batteryInfo["level"])).toByteArray(Charsets.UTF_8))
+            val levelValue = batteryInfo["level"].toString()
+            val stateMessage = MqttMessage(levelValue.toByteArray(Charsets.UTF_8))
             stateMessage.qos = 1
             stateMessage.isRetained = false
             mqttClient.publish(stateTopic, stateMessage)
@@ -219,14 +219,14 @@ object HomeAssistantIntegration {
                 // 添加到 publish 历史记录
                 val publish = Publish(
                     topic = stateTopic,
-                    payload = gson.toJson(mapOf("level" to level)),
+                    payload = levelValue,
                     qos = 1,
                     isRetained = false
                 )
                 activity.addPublishHistory(publish)
             }
             
-            Log.d(TAG, "Published battery level: ${batteryInfo["level"]}%")
+            Log.d(TAG, "Published battery level: $levelValue%")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to publish battery level", e)
