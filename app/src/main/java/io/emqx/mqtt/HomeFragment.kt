@@ -32,26 +32,7 @@ class HomeFragment : BaseFragment() {
     private var androidVersionText: TextView? = null
     private var networkTitleText: TextView? = null
 
-    // ========== 车况数据显示（BYD本地接口） ==========
-    private var carStatusTitleText: TextView? = null
-    private var carSpeedText: TextView? = null
-    private var carSocText: TextView? = null
-    private var carGearText: TextView? = null
-    private var carElecRemainText: TextView? = null
-    private var carFuelRemainText: TextView? = null
-    private var carOutTempText: TextView? = null
-    private var carInTempText: TextView? = null
-    private var carAcStatusText: TextView? = null
-    private var carMileageText: TextView? = null
-    private var carPowerModeText: TextView? = null
-    private var carApiStatusText: TextView? = null
-
-    /** 车况数据定时刷新Handler */
-    private val carDataHandler = Handler(Looper.getMainLooper())
-    private var carDataRunnable: Runnable? = null
-    private var isCarPollingActive = false
-
-    // ========== Debug Log（仅在Home页签显示） ==========
+    // ========== Debug Log（仅在Home页签显示）==========
     private var mDebugLogContainer: View? = null
     private var mDebugLogText: TextView? = null
     private val logBuilder = StringBuilder()
@@ -153,107 +134,6 @@ class HomeFragment : BaseFragment() {
         networkTitleText?.setOnClickListener {
             onNetworkClicked()
         }
-
-        // ========== 初始化车况数据显示 ==========
-        initCarDataViews(view)
-        // 设置车况API日志回调 -> 输出到Debug Log容器
-        BydLocalCarApi.logCallback = { msg ->
-            appendLocalLog(msg)
-        }
-        startCarDataPolling()
-    }
-
-    /** 初始化所有车况数据View引用 */
-    private fun initCarDataViews(view: View) {
-        carStatusTitleText = view.findViewById(R.id.car_status_title)
-        carSpeedText = view.findViewById(R.id.car_speed)
-        carSocText = view.findViewById(R.id.car_soc)
-        carGearText = view.findViewById(R.id.car_gear)
-        carElecRemainText = view.findViewById(R.id.car_elec_remain)
-        carFuelRemainText = view.findViewById(R.id.car_fuel_remain)
-        carOutTempText = view.findViewById(R.id.car_out_temp)
-        carInTempText = view.findViewById(R.id.car_in_temp)
-        carAcStatusText = view.findViewById(R.id.car_ac_status)
-        carMileageText = view.findViewById(R.id.car_mileage)
-        carPowerModeText = view.findViewById(R.id.car_power_mode)
-        carApiStatusText = view.findViewById(R.id.car_api_status)
-
-        setDefaultCarDataUI()
-    }
-
-    /** 设置车况数据默认显示 */
-    private fun setDefaultCarDataUI() {
-        carSpeedText?.text = "--"
-        carSocText?.text = "--"
-        carGearText?.text = "-"
-        carElecRemainText?.text = "--"
-        carFuelRemainText?.text = "--"
-        carOutTempText?.text = "--"
-        carInTempText?.text = "--"
-        carAcStatusText?.text = "--"
-        carMileageText?.text = "--"
-        carPowerModeText?.text = "-"
-        carApiStatusText?.text = "等待连接..."
-        carApiStatusText?.setTextColor(0xFF888888.toInt())
-    }
-
-    /** 启动车况数据定时轮询（每2秒） */
-    private fun startCarDataPolling() {
-        if (isCarPollingActive) return
-        isCarPollingActive = true
-        appendLocalLog("[CarPoll] 启动车况轮询 (间隔2s)")
-
-        carDataRunnable = object : Runnable {
-            override fun run() {
-                if (!isAdded || activity == null) return
-                fetchAndDisplayCarData()
-                carDataHandler.postDelayed(this, 2000L)
-            }
-        }
-        carDataHandler.post(carDataRunnable!!)
-    }
-
-    /** 停止车况数据轮询 */
-    private fun stopCarDataPolling() {
-        isCarPollingActive = false
-        carDataRunnable?.let { carDataHandler.removeCallbacks(it) }
-        carDataRunnable = null
-        appendLocalLog("[CarPoll] 停止车况轮询")
-    }
-
-    /** 获取并显示车况数据（异步，回调在主线程） */
-    private fun fetchAndDisplayCarData() {
-        BydLocalCarApi.fetchCarDataAsync { data ->
-            updateCarDataUI(data)
-        }
-    }
-
-    /** 更新车况数据显示到UI */
-    @Suppress("DEPRECATION")
-    private fun updateCarDataUI(data: BydLocalCarApi.CarData) {
-        try {
-            if (data.success) {
-                carSpeedText?.text = data.formatSpeed()
-                carSocText?.text = data.formatSoc()
-                carGearText?.text = data.formatGear()
-                carElecRemainText?.text = data.formatElecRemain()
-                carFuelRemainText?.text = data.formatFuelRemain()
-                carOutTempText?.text = data.formatOutTemp()
-                carInTempText?.text = data.formatInTemp()
-                carAcStatusText?.text = data.formatAcStatus()
-                carMileageText?.text = if (data.mileage > 0) "${data.mileage} km" else "--"
-                carPowerModeText?.text = data.powerMode.ifEmpty { "-" }
-                val port = BydLocalCarApi.getCurrentPort()
-                carApiStatusText?.text = "OK (端口$port)"
-                carApiStatusText?.setTextColor(0xFF00AA00.toInt())
-            } else {
-                appendLocalLog("[CarAPI] UI显示失败: ${data.errorMsg}")
-                carApiStatusText?.text = "失败: ${data.errorMsg}"
-                carApiStatusText?.setTextColor(0xFFFF5500.toInt())
-            }
-        } catch (e: Exception) {
-            appendLocalLog("[CarData] UI更新异常: ${e.message}")
-        }
     }
 
     /**
@@ -304,16 +184,10 @@ class HomeFragment : BaseFragment() {
 
         val networkFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         fragmentActivity?.registerReceiver(networkReceiver, networkFilter)
-
-        // 恢复车况数据轮询
-        startCarDataPolling()
     }
 
     override fun onPause() {
         super.onPause()
-        // 暂停车况数据轮询
-        stopCarDataPolling()
-
         try {
             fragmentActivity?.unregisterReceiver(batteryReceiver)
             fragmentActivity?.unregisterReceiver(networkReceiver)
