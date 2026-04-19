@@ -42,6 +42,10 @@ class Connection(
             options.isAutomaticReconnect = true
             options.connectionTimeout = 30
             options.keepAliveInterval = 60
+            
+            // 配置 Last Will
+            HomeAssistantIntegration.configureLastWill(options)
+            
             if (protocol == "SSL") {
                 try {
                     if (allowUntrusted) {

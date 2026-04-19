@@ -495,6 +495,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     isConnecting = false
                     appendLog("=== CONNECT SUCCESS ===")
                     MqttService.updateConnectionStatus(this@MainActivity, true)
+                    
+                    // 初始化 Home Assistant 集成
+                    HomeAssistantIntegration.init(this@MainActivity)
+                    
+                    // 发布 Home Assistant 自动发现配置
+                    HomeAssistantIntegration.publishDiscoveryConfig(this@MainActivity, mClient)
+                    
+                    // 立即上报一次电池电量
+                    HomeAssistantIntegration.publishBatteryLevel(this@MainActivity, mClient, this@MainActivity)
+                    
+                    // 启动定期电池上报
+                    HomeAssistantIntegration.startBatteryReporting(this@MainActivity, mClient, this@MainActivity)
+                    
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
                         notifyMqttStatusChanged(true)
@@ -532,6 +545,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         if (notConnected(true)) {
             return
         }
+        
+        // 停止电池上报
+        HomeAssistantIntegration.stopBatteryReporting()
+        
         try {
             mClient?.disconnect()
             mClient = null
@@ -631,9 +648,47 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         mqttStatusListeners.forEach { it.invoke(connected) }
     }
 
+    /**
+     * 添加 Publish 历史记录（供 HomeAssistantIntegration 调用）
+     */
+    fun addPublishHistory(publish: Publish) {
+        runOnUiThread {
+            val publishFragment = mFragmentList.getOrNull(3) as? PublishFragment
+            publishFragment?.let {
+                // 通过反射访问私有字段和方法
+                try {
+                    val listField = PublishFragment::class.java.getDeclaredField("mPublishList")
+                    listField.isAccessible = true
+                    val publishList = listField.get(it) as ArrayList<Publish>
+                    
+                    // 添加到列表开头
+                    publishList.add(0, publish)
+                    
+                    // 更新 adapter
+                    val adapterField = PublishFragment::class.java.getDeclaredField("mAdapter")
+                    adapterField.isAccessible = true
+                    val adapter = adapterField.get(it) as? PublishRecyclerViewAdapter
+                    adapter?.notifyItemInserted(0)
+                    
+                    // 保存历史
+                    val saveMethod = PublishFragment::class.java.getDeclaredMethod("savePublishHistory")
+                    saveMethod.isAccessible = true
+                    saveMethod.invoke(it)
+                    
+                } catch (e: Exception) {
+                    Log.w("MainActivity", "Failed to add publish history", e)
+                }
+            }
+        }
+    }
+
     override fun connectionLost(cause: Throwable?) {
         appendLog("Connection lost: $cause")
         isConnecting = false
+        
+        // 停止电池上报
+        HomeAssistantIntegration.stopBatteryReporting()
+        
         MqttService.updateConnectionStatus(this, false)
         notifyMqttStatusChanged(false)
         runOnUiThread {
