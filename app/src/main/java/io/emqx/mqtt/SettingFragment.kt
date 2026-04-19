@@ -586,14 +586,9 @@ class SettingFragment : BaseFragment() {
             mConfigManager.cloudTtsVolume = player.volume
             // 刷新UI
             mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
-            mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
-            syncTtsUiFromPlayer()
             appendLog("[CloudTTS] 已重置为默认配置: ${player.getCurrentApiName()}")
             Toast.makeText(context, "TTS settings reset to defaults", Toast.LENGTH_SHORT).show()
         }
-
-        // 初始同步音色容器可见性
-        mVoiceSelectorContainer?.visibility = if (player.currentApiIndex == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
 
         appendLog("[CloudTTS] 设置已加载: ${player.getCurrentApiName()}")
     }
