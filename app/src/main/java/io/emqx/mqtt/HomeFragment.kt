@@ -17,6 +17,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat.getSystemService
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -129,6 +130,11 @@ class HomeFragment : BaseFragment() {
         updateScreenInfo()
         updateOrientation()
         updateAndroidVersion()
+        
+        // 延迟1秒后获取设备详细信息（确保UI已完全加载）
+        Handler(Looper.getMainLooper()).postDelayed({
+            updateDeviceInfo()
+        }, 1000)
 
         // 连续点击"Network"文字5次显示Debug Log
         networkTitleText?.setOnClickListener {
@@ -255,6 +261,129 @@ class HomeFragment : BaseFragment() {
 
     private fun updateAndroidVersion() {
         androidVersionText?.text = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+    }
+
+    /**
+     * 获取并展示更多设备信息（安全地，不报错）
+     */
+    private fun updateDeviceInfo() {
+        try {
+            val infoBuilder = StringBuilder()
+            
+            // 1. 制造商和型号
+            infoBuilder.append("Manufacturer: ${Build.MANUFACTURER}\n")
+            infoBuilder.append("Model: ${Build.MODEL}\n")
+            infoBuilder.append("Brand: ${Build.BRAND}\n")
+            
+            // 2. 硬件信息
+            infoBuilder.append("Board: ${safeGet { Build.BOARD }}\n")
+            infoBuilder.append("Hardware: ${safeGet { Build.HARDWARE }}\n")
+            infoBuilder.append("Device: ${safeGet { Build.DEVICE }}\n")
+            
+            // 3. CPU/ABI 信息
+            infoBuilder.append("CPU ABI: ${Build.SUPPORTED_ABIS.joinToString(", ")}\n")
+            
+            // 4. 内存信息
+            val activityManager = fragmentActivity?.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            val memInfo = android.app.ActivityManager.MemoryInfo()
+            activityManager?.getMemoryInfo(memInfo)
+            if (memInfo != null) {
+                val totalMem = memInfo.totalMem / (1024 * 1024)
+                val availMem = memInfo.availMem / (1024 * 1024)
+                infoBuilder.append("RAM: ${totalMem}MB (可用: ${availMem}MB)\n")
+            }
+            
+            // 5. 存储空间
+            val dataDir = android.os.Environment.getDataDirectory()
+            val statFs = android.os.StatFs(dataDir.path)
+            val totalSpace = statFs.totalBytes / (1024 * 1024)
+            val freeSpace = statFs.freeBytes / (1024 * 1024)
+            infoBuilder.append("Storage: ${totalSpace}MB (空闲: ${freeSpace}MB)\n")
+            
+            // 6. 屏幕密度
+            val displayMetrics = resources.displayMetrics
+            infoBuilder.append("Density: ${displayMetrics.densityDpi}dpi (${displayMetrics.density})\n")
+            
+            // 7. 系统特性
+            infoBuilder.append("Rooted: ${checkRootMethod1() || checkRootMethod2()}\n")
+            infoBuilder.append("Debuggable: ${isAppDebuggable()}\n")
+            
+            // 8. 电池温度（如果可用）
+            try {
+                val batteryIntent = fragmentActivity?.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                val temp = batteryIntent?.getIntExtra("temperature", -1)
+                if (temp != null && temp > 0) {
+                    infoBuilder.append("Battery Temp: ${temp / 10.0}°C\n")
+                }
+            } catch (e: Exception) {
+                // 忽略电池温度获取失败
+            }
+            
+            // 9. 网络MAC地址（Android 6+可能不可用）
+            try {
+                val wifiManager = fragmentActivity?.applicationContext?.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                val wifiInfo = wifiManager?.connectionInfo
+                val macAddress = wifiInfo?.macAddress
+                if (!macAddress.isNullOrEmpty() && macAddress != "02:00:00:00:00:00") {
+                    infoBuilder.append("WiFi MAC: $macAddress\n")
+                }
+            } catch (e: Exception) {
+                // 忽略MAC地址获取失败
+            }
+            
+            // 将信息显示到 Debug Log
+            appendLocalLog("=== Device Info ===")
+            appendLocalLog(infoBuilder.toString())
+            
+        } catch (e: Exception) {
+            appendLocalLog("[DeviceInfo] Error: ${e.message}")
+        }
+    }
+    
+    /**
+     * 安全地获取 Build 字段，避免某些字段在某些设备上不存在
+     */
+    private fun safeGet(getter: () -> String?): String {
+        return try {
+            getter() ?: "N/A"
+        } catch (e: Exception) {
+            "N/A"
+        }
+    }
+    
+    /**
+     * 检查 Root 方法1
+     */
+    private fun checkRootMethod1(): Boolean {
+        return try {
+            File("/system/bin/su").exists() || File("/system/xbin/su").exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * 检查 Root 方法2
+     */
+    private fun checkRootMethod2(): Boolean {
+        return try {
+            Runtime.getRuntime().exec(arrayOf("which", "su")).waitFor() == 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * 检查应用是否可调试
+     */
+    private fun isAppDebuggable(): Boolean {
+        return try {
+            fragmentActivity?.applicationInfo?.let { 
+                (it.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 
+            } ?: false
+        } catch (e: Exception) {
+            false
+        }
     }
 
     companion object {
