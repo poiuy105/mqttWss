@@ -115,15 +115,16 @@ object HomeAssistantIntegration {
             message.qos = 1
             message.isRetained = true
             
-            mqttClient.publish(batteryTopic, message)
-            Log.d(TAG, "Published discovery config to $batteryTopic")
+            mqttClient.publish(batteryTopic, message, null, null)
+            Log.d(TAG, "Published discovery config to $batteryTopic (QoS=1, Retain=true)")
             
-            // 发布在线状态
+            // 发布在线状态（retained）
             val statusTopic = "byd2ha/$deviceId/status"
             val statusMessage = MqttMessage("online".toByteArray(Charsets.UTF_8))
             statusMessage.qos = 1
             statusMessage.isRetained = true
-            mqttClient.publish(statusTopic, statusMessage)
+            mqttClient.publish(statusTopic, statusMessage, null, null)
+            Log.d(TAG, "Published online status to $statusTopic (QoS=1, Retain=true)")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to publish discovery config", e)
@@ -200,14 +201,14 @@ object HomeAssistantIntegration {
             val stateMessage = MqttMessage(levelValue.toByteArray(Charsets.UTF_8))
             stateMessage.qos = 1
             stateMessage.isRetained = false
-            mqttClient.publish(stateTopic, stateMessage)
+            mqttClient.publish(stateTopic, stateMessage, null, null)
             
             // 发布电池属性
             val attrsTopic = "byd2ha/$deviceId/sensor/battery/attributes"
             val attrsMessage = MqttMessage(gson.toJson(batteryInfo).toByteArray(Charsets.UTF_8))
             attrsMessage.qos = 1
             attrsMessage.isRetained = false
-            mqttClient.publish(attrsTopic, attrsMessage)
+            mqttClient.publish(attrsTopic, attrsMessage, null, null)
             
             // 记录到 publish 历史
             mainActivity?.let { activity ->
@@ -226,7 +227,7 @@ object HomeAssistantIntegration {
                 activity.addPublishHistory(publish)
             }
             
-            Log.d(TAG, "Published battery level: $levelValue%")
+            Log.d(TAG, "Published battery level: $levelValue% (QoS=1, Retain=false)")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to publish battery level", e)
@@ -239,14 +240,18 @@ object HomeAssistantIntegration {
     fun startBatteryReporting(context: Context, mqttClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient?, mainActivity: MainActivity?) {
         stopBatteryReporting()
         
+        // 先立即上报一次
+        publishBatteryLevel(context, mqttClient, mainActivity)
+        
+        // 然后启动定时器，60秒后开始第一次定时上报
         batteryTimer = Timer("BatteryReporter")
         batteryTimer?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 publishBatteryLevel(context, mqttClient, mainActivity)
             }
-        }, 0, BATTERY_REPORT_INTERVAL)
+        }, BATTERY_REPORT_INTERVAL, BATTERY_REPORT_INTERVAL)  // 延迟60秒开始，然后每60秒一次
         
-        Log.d(TAG, "Started battery reporting (interval: ${BATTERY_REPORT_INTERVAL}ms)")
+        Log.d(TAG, "Started battery reporting (interval: ${BATTERY_REPORT_INTERVAL}ms, first report after 60s)")
     }
     
     /**

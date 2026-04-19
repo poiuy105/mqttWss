@@ -502,10 +502,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     // 发布 Home Assistant 自动发现配置
                     HomeAssistantIntegration.publishDiscoveryConfig(this@MainActivity, mClient)
                     
-                    // 立即上报一次电池电量
-                    HomeAssistantIntegration.publishBatteryLevel(this@MainActivity, mClient, this@MainActivity)
-                    
-                    // 启动定期电池上报
+                    // 启动定期电池上报（会自动立即上报一次）
                     HomeAssistantIntegration.startBatteryReporting(this@MainActivity, mClient, this@MainActivity)
                     
                     runOnUiThread {
