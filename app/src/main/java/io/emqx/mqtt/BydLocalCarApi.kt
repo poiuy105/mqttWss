@@ -289,12 +289,20 @@ object BydLocalCarApi {
         val ctx = appContext ?: return fail("appContext未设置")
         val data = CarData().apply { dataSource = "SDK反射" }
 
+        log("[SDK] 开始尝试反射调用BYD官方SDK...")
+        log("[SDK] appContext状态: ${if (ctx != null) "OK" else "NULL"}")
+
         try {
             // 尝试获取车速
+            log("[SDK] --- 尝试获取车速 ---")
+            var speedFound = false
             for (className in SDK_CLASSES["speed"]!!) {
                 try {
+                    log("[SDK] 尝试类: $className")
                     val clazz = Class.forName(className)
+                    log("[SDK]   ✓ 类加载成功")
                     val instance = clazz.getMethod("getInstance", Context::class.java).invoke(null, ctx)
+                    log("[SDK]   ✓ 获取实例成功")
                     val speed = clazz.getMethod("getCurrentSpeed").invoke(instance)
                     val speedVal = when (speed) {
                         is Double -> speed.toFloat()
@@ -304,18 +312,31 @@ object BydLocalCarApi {
                     }
                     if (speedVal > 0 || speed != null) {
                         data.speed = speedVal
-                        log("[CarSDK] $className.getCurrentSpeed() = $speedVal")
+                        speedFound = true
+                        log("[SDK]   ✓ getCurrentSpeed() = $speedVal km/h")
+                    } else {
+                        log("[SDK]   ✗ 返回值为null或0")
                     }
+                } catch (e: ClassNotFoundException) {
+                    log("[SDK]   ✗ 类不存在: $className")
+                } catch (e: NoSuchMethodException) {
+                    log("[SDK]   ✗ 方法不存在: ${e.message}")
                 } catch (e: Exception) {
-                    // 静默跳过不存在的类
+                    log("[SDK]   ✗ 调用异常: ${e.javaClass.simpleName}: ${e.message}")
                 }
             }
+            if (!speedFound) log("[SDK]   ⚠ 所有车速类均失败")
 
             // 尝试获取SOC/电量
+            log("[SDK] --- 尝试获取SOC/电量/续航 ---")
+            var socFound = false
             for (className in SDK_CLASSES["statistic"]!!) {
                 try {
+                    log("[SDK] 尝试类: $className")
                     val clazz = Class.forName(className)
+                    log("[SDK]   ✓ 类加载成功")
                     val instance = clazz.getMethod("getInstance", Context::class.java).invoke(null, ctx)
+                    log("[SDK]   ✓ 获取实例成功")
 
                     // 电量百分比
                     try {
@@ -326,8 +347,15 @@ object BydLocalCarApi {
                             is Number -> soc.toInt()
                             else -> 0
                         }
-                        if (data.soc > 0) log("[CarSDK] $className.getElecPercentageValue() = ${data.soc}%")
-                    } catch (_: Exception) {}
+                        if (data.soc > 0) {
+                            socFound = true
+                            log("[SDK]   ✓ getElecPercentageValue() = ${data.soc}%")
+                        } else {
+                            log("[SDK]   ✗ getElecPercentageValue() 返回0")
+                        }
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getElecPercentageValue() 失败: ${e.javaClass.simpleName}")
+                    }
 
                     // 电续航
                     try {
@@ -337,8 +365,12 @@ object BydLocalCarApi {
                             is Number -> elecRange.toInt()
                             else -> 0
                         }
-                        if (data.elecRemain > 0) log("[CarSDK] $className.getElecDrivingRangeValue() = ${data.elecRemain}km")
-                    } catch (_: Exception) {}
+                        if (data.elecRemain > 0) {
+                            log("[SDK]   ✓ getElecDrivingRangeValue() = ${data.elecRemain}km")
+                        }
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getElecDrivingRangeValue() 失败")
+                    }
 
                     // 燃油续航
                     try {
@@ -348,8 +380,12 @@ object BydLocalCarApi {
                             is Number -> fuelRange.toInt()
                             else -> 0
                         }
-                        if (data.fuelRemain > 0) log("[CarSDK] $className.getFuelDrivingRangeValue() = ${data.fuelRemain}km")
-                    } catch (_: Exception) {}
+                        if (data.fuelRemain > 0) {
+                            log("[SDK]   ✓ getFuelDrivingRangeValue() = ${data.fuelRemain}km")
+                        }
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getFuelDrivingRangeValue() 失败")
+                    }
 
                     // 总里程
                     try {
@@ -359,44 +395,74 @@ object BydLocalCarApi {
                             is Number -> mileage.toInt()
                             else -> 0
                         }
-                        if (data.mileage > 0) log("[CarSDK] $className.getTotalMileageValue() = ${data.mileage}km")
-                    } catch (_: Exception) {}
+                        if (data.mileage > 0) {
+                            log("[SDK]   ✓ getTotalMileageValue() = ${data.mileage}km")
+                        }
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getTotalMileageValue() 失败")
+                    }
+                } catch (e: ClassNotFoundException) {
+                    log("[SDK]   ✗ 类不存在: $className")
                 } catch (e: Exception) {
-                    // 类不存在或方法不可用
+                    log("[SDK]   ✗ 初始化失败: ${e.javaClass.simpleName}")
                 }
             }
+            if (!socFound) log("[SDK]   ⚠ 所有统计类均失败")
 
             // 尝试获取车身状态（档位等）
+            log("[SDK] --- 尝试获取车身状态 ---")
             for (className in SDK_CLASSES["bodywork"]!!) {
                 try {
+                    log("[SDK] 尝试类: $className")
                     val clazz = Class.forName(className)
+                    log("[SDK]   ✓ 类加载成功")
                     val instance = clazz.getMethod("getInstance", Context::class.java).invoke(null, ctx)
+                    log("[SDK]   ✓ 获取实例成功")
 
                     // 整车状态/电源档位
                     try {
                         val state = clazz.getMethod("getAutoSystemState").invoke(instance)
                         data.powerMode = state?.toString() ?: "-"
-                        log("[CarSDK] $className.getAutoSystemState() = $state")
-                    } catch (_: Exception) {}
+                        log("[SDK]   ✓ getAutoSystemState() = $state")
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getAutoSystemState() 失败")
+                    }
 
                     try {
                         val powerLevel = clazz.getMethod("getPowerLevel").invoke(instance)
                         data.gear = powerLevel?.toString() ?: "-"
-                        log("[CarSDK] $className.getPowerLevel() = $powerLevel")
-                    } catch (_: Exception) {}
-                } catch (e: Exception) {}
+                        log("[SDK]   ✓ getPowerLevel() = $powerLevel")
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getPowerLevel() 失败")
+                    }
+                } catch (e: ClassNotFoundException) {
+                    log("[SDK]   ✗ 类不存在: $className")
+                } catch (e: Exception) {
+                    log("[SDK]   ✗ 初始化失败: ${e.javaClass.simpleName}")
+                }
             }
 
             // 尝试获取能量模式
+            log("[SDK] --- 尝试获取能量模式 ---")
             for (className in SDK_CLASSES["energy"]!!) {
                 try {
+                    log("[SDK] 尝试类: $className")
                     val clazz = Class.forName(className)
+                    log("[SDK]   ✓ 类加载成功")
                     val instance = clazz.getMethod("getInstance", Context::class.java).invoke(null, ctx)
+                    log("[SDK]   ✓ 获取实例成功")
                     try {
                         val mode = clazz.getMethod("getEnergyMode").invoke(instance)
                         data.powerMode = "$data.powerMode/$mode"
-                    } catch (_: Exception) {}
-                } catch (_: Exception) {}
+                        log("[SDK]   ✓ getEnergyMode() = $mode")
+                    } catch (e: Exception) {
+                        log("[SDK]   ✗ getEnergyMode() 失败")
+                    }
+                } catch (e: ClassNotFoundException) {
+                    log("[SDK]   ✗ 类不存在: $className")
+                } catch (e: Exception) {
+                    log("[SDK]   ✗ 初始化失败")
+                }
             }
 
             // 判断是否获取到了有效数据
@@ -423,41 +489,72 @@ object BydLocalCarApi {
         val data = CarData().apply { dataSource = "Shell命令" }
         var foundUsefulInfo = false
 
-        for (cmd in SHELL_COMMANDS) {
+        log("[Shell] 开始执行ADB Shell命令探测...")
+        log("[Shell] 共${SHELL_COMMANDS.size}个命令待测试")
+
+        for ((index, cmd) in SHELL_COMMANDS.withIndex()) {
             try {
+                log("[Shell] [$((index+1))/${SHELL_COMMANDS.size}] 执行: $cmd")
                 val output = execShellCommand(cmd)
                 if (output.isNotBlank()) {
-                    log("[CarShell] '$cmd' → 输出${output.length}字符:")
-                    // 只记录前500字符避免刷屏
-                    log("[CarShell] ${output.take(500)}")
+                    log("[Shell]   ✓ 输出${output.length}字符")
+                    // 只记录前300字符避免刷屏
+                    val preview = output.take(300).replace("\n", " ")
+                    log("[Shell]   预览: ${preview}...")
 
                     // 尝试从输出中解析车辆数据
                     val parsed = parseShellOutput(output)
-                    if (parsed.speed > 0 && data.speed == 0f) data.speed = parsed.speed
-                    if (parsed.soc > 0 && data.soc == 0) data.soc = parsed.soc
-                    if (parsed.elecRemain > 0 && data.elecRemain == 0) data.elecRemain = parsed.elecRemain
-                    if (parsed.mileage > 0 && data.mileage == 0) data.mileage = parsed.mileage
-                    if (parsed.gear != "-" && data.gear == "-") data.gear = parsed.gear
-                    if (parsed.powerMode != "-" && data.powerMode == "-") data.powerMode = parsed.powerMode
-
-                    if (parsed.speed > 0 || parsed.soc > 0 || parsed.elecRemain > 0) {
-                        foundUsefulInfo = true
+                    var newDataFound = false
+                    if (parsed.speed > 0 && data.speed == 0f) {
+                        data.speed = parsed.speed
+                        log("[Shell]   ✓ 解析到车速: ${data.speed} km/h")
+                        newDataFound = true
                     }
+                    if (parsed.soc > 0 && data.soc == 0) {
+                        data.soc = parsed.soc
+                        log("[Shell]   ✓ 解析到SOC: ${data.soc}%")
+                        newDataFound = true
+                    }
+                    if (parsed.elecRemain > 0 && data.elecRemain == 0) {
+                        data.elecRemain = parsed.elecRemain
+                        log("[Shell]   ✓ 解析到电续航: ${data.elecRemain}km")
+                        newDataFound = true
+                    }
+                    if (parsed.mileage > 0 && data.mileage == 0) {
+                        data.mileage = parsed.mileage
+                        log("[Shell]   ✓ 解析到里程: ${data.mileage}km")
+                        newDataFound = true
+                    }
+                    if (parsed.gear != "-" && data.gear == "-") {
+                        data.gear = parsed.gear
+                        log("[Shell]   ✓ 解析到档位: ${data.gear}")
+                        newDataFound = true
+                    }
+                    if (parsed.powerMode != "-" && data.powerMode == "-") {
+                        data.powerMode = parsed.powerMode
+                        log("[Shell]   ✓ 解析到电源模式: ${data.powerMode}")
+                        newDataFound = true
+                    }
+
+                    if (newDataFound) foundUsefulInfo = true
+                    if (!newDataFound) log("[Shell]   ✗ 未解析到有效车辆数据")
                 } else {
-                    log("[CarShell] '$cmd' → 无输出")
+                    log("[Shell]   ✗ 无输出")
                 }
             } catch (e: Exception) {
-                log("[CarShell] '$cmd' 异常: ${e.message}")
+                log("[Shell]   ✗ 异常: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
 
         return if (foundUsefulInfo) {
+            log("[Shell] ✓ Shell命令探测成功! 获取到${if (data.speed > 0) "车速 " else ""}${if (data.soc > 0) "SOC " else ""}${if (data.elecRemain > 0) "续航" else ""}")
             data.apply {
                 success = true
                 timestamp = System.currentTimeMillis()
                 rawJson = "shell"
             }
         } else {
+            log("[Shell] ✗ 所有shell命令均未返回车辆数据")
             fail("所有shell命令未返回车辆数据")
         }
     }
@@ -560,11 +657,18 @@ object BydLocalCarApi {
     private fun tryHttpScan(): CarData {
         var attemptCount = 0
         val maxAttempts = 50 // 最多尝试50次组合就放弃（避免太慢）
+        var successPort = -1
+        var successPath = ""
+
+        log("[HTTP] 开始广谱端口扫描...")
+        log("[HTTP] 端口列表: ${SCAN_PORTS.take(10).joinToString(", ")}... (共${SCAN_PORTS.size}个)")
+        log("[HTTP] 路径列表: ${SCAN_PATHS.take(5).joinToString(", ")}... (共${SCAN_PATHS.size}个)")
+        log("[HTTP] 最大尝试次数: $maxAttempts")
 
         for (port in SCAN_PORTS) {
             for (path in SCAN_PATHS) {
                 if (attemptCount++ >= maxAttempts) {
-                    log("[CarHTTP] 达到最大尝试次数($maxAttempts)，停止扫描")
+                    log("[HTTP] 达到最大尝试次数($maxAttempts)，停止扫描")
                     return fail("HTTP扫描达到上限(${maxAttempts}次)无结果")
                 }
 
@@ -572,7 +676,10 @@ object BydLocalCarApi {
                     val url = "http://127.0.0.1:$port$path"
                     val result = trySingleUrl(url, port, path)
                     if (result.success) {
+                        successPort = port
+                        successPath = path
                         currentPort = port
+                        log("[HTTP] ✓ 扫描成功! 端口=$port, 路径=$path")
                         return result
                     }
                 } catch (e: Exception) {
@@ -581,37 +688,39 @@ object BydLocalCarApi {
             }
         }
 
+        log("[HTTP] ✗ 全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径, 实际尝试$maxAttempts次)")
         return fail("HTTP扫描全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径)")
     }
 
     private fun trySingleUrl(url: String, port: Int, path: String): CarData {
         val startTime = System.currentTimeMillis()
-
+    
         val request = Request.Builder().url(url)
             .addHeader("Accept", "*/*")
             .addHeader("User-Agent", "BYDCarClient/1.0")
             .build()
-
+    
         val response = client.newCall(request).execute()
         val elapsed = System.currentTimeMillis() - startTime
-
+    
         if (!response.isSuccessful) {
             if (response.code in 400..499) return fail("HTTP ${response.code}")
             return fail("HTTP ${response.code}") // 继续扫描
         }
-
+    
         val bodyStr = response.body?.string() ?: ""
         val contentType = response.header("Content-Type") ?: ""
-
-        log("[CarHTTP] $url → ${bodyStr.length}B type=$contentType (${elapsed}ms)")
-
+    
+        log("[HTTP]   ✓ $url → ${bodyStr.length}B type=$contentType (${elapsed}ms)")
+    
         // 过滤非JSON响应（HTML页面、图片等）
         if (bodyStr.length < 10 || bodyStr.startsWith("<") || bodyStr.startsWith("%PDF")) {
+            log("[HTTP]   ✗ 非JSON响应(${bodyStr.length}B), 跳过")
             return fail("非JSON响应(${bodyStr.length}B)")
         }
-
-        log("[CarHTTP] 内容预览: ${bodyStr.take(400)}")
-
+    
+        log("[HTTP]   内容预览: ${bodyStr.take(200)}")
+    
         // 尝试解析为JSON
         return try {
             val obj = JSONObject(bodyStr)
@@ -623,11 +732,11 @@ object BydLocalCarApi {
             }
         } catch (e: Exception) {
             // 不是JSON但可能有文本格式的数据
-            log("[CarHTTP] 非JSON响应，尝试文本解析...")
+            log("[HTTP]   ✗ JSON解析失败, 尝试文本解析...")
             parseTextResponse(bodyStr).apply {
                 rawJson = bodyStr
                 timestamp = System.currentTimeMillis()
-                dataSource = "HTTP:$port:path"
+                dataSource = "HTTP:${port}:${path}"
                 if (!success) fail("响应无法解析")
             }
         }
@@ -639,56 +748,111 @@ object BydLocalCarApi {
         val ctx = appContext ?: return fail("appContext未设置")
         val data = CarData().apply { dataSource = "ContentProvider" }
 
-        for (uriStr in CONTENT_URIS) {
+        log("[CP] 开始ContentProvider查询...")
+        log("[CP] 共${CONTENT_URIS.size}个URI待测试")
+
+        for ((index, uriStr) in CONTENT_URIS.withIndex()) {
             try {
+                log("[CP] [$((index+1))/${CONTENT_URIS.size}] 查询: $uriStr")
                 val uri = Uri.parse(uriStr)
                 val cr: ContentResolver = ctx.contentResolver
                 val cursor: Cursor? = cr.query(uri, null, null, null, null)
 
                 cursor?.use {
                     val columnCount = it.columnCount
+                    log("[CP]   ✓ Cursor获取成功, 列数=$columnCount")
                     if (it.moveToFirst()) {
                         val row = mutableMapOf<String, String>()
                         for (i in 0 until columnCount) {
                             row[it.getColumnName(i)] = it.getString(i) ?: ""
                         }
-                        log("[CarCP] $uriStr → 列:${it.columnNames.joinToString(",")} 数据:$row")
+                        log("[CP]   列名: ${it.columnNames.joinToString(", ")}")
+                        log("[CP]   数据: $row")
 
                         // 尝试从cursor中提取数据
+                        var newDataFound = false
                         for ((key, value) in row) {
                             val kLower = key.lowercase()
                             when {
-                                kLower.contains("speed") -> value.toFloatOrNull()?.let { if (it > 0) data.speed = it }
-                                kLower.contains("soc") || kLower.contains("battery") || kLower.contains("electricity") ->
-                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it <= 100) data.soc = it }
-                                kLower.contains("range") || kLower.contains("remain") ->
-                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it > 0) data.elecRemain = it }
-                                kLower.contains("mileage") || kLower.contains("odometer") ->
-                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let { if (it > 0) data.mileage = it }
-                                kLower.contains("gear") -> data.gear = value.ifEmpty { "-" }
-                                kLower.contains("mode") || kLower.contains("power") -> data.powerMode = value.ifEmpty { "-" }
-                                kLower.contains("temp") -> value.toFloatOrNull()?.let { if (it > -50 && it < 80) data.outTemp = it }
+                                kLower.contains("speed") -> {
+                                    value.toFloatOrNull()?.let {
+                                        if (it > 0) {
+                                            data.speed = it
+                                            log("[CP]   ✓ 解析到车速: $it")
+                                            newDataFound = true
+                                        }
+                                    }
+                                }
+                                kLower.contains("soc") || kLower.contains("battery") || kLower.contains("electricity") -> {
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let {
+                                        if (it <= 100) {
+                                            data.soc = it
+                                            log("[CP]   ✓ 解析到SOC: $it%")
+                                            newDataFound = true
+                                        }
+                                    }
+                                }
+                                kLower.contains("range") || kLower.contains("remain") -> {
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let {
+                                        if (it > 0) {
+                                            data.elecRemain = it
+                                            log("[CP]   ✓ 解析到续航: ${it}km")
+                                            newDataFound = true
+                                        }
+                                    }
+                                }
+                                kLower.contains("mileage") || kLower.contains("odometer") -> {
+                                    value.replace(Regex("[^\\d]"), "").toIntOrNull()?.let {
+                                        if (it > 0) {
+                                            data.mileage = it
+                                            log("[CP]   ✓ 解析到里程: ${it}km")
+                                            newDataFound = true
+                                        }
+                                    }
+                                }
+                                kLower.contains("gear") -> {
+                                    data.gear = value.ifEmpty { "-" }
+                                    log("[CP]   ✓ 解析到档位: ${data.gear}")
+                                    newDataFound = true
+                                }
+                                kLower.contains("mode") || kLower.contains("power") -> {
+                                    data.powerMode = value.ifEmpty { "-" }
+                                    log("[CP]   ✓ 解析到模式: ${data.powerMode}")
+                                    newDataFound = true
+                                }
+                                kLower.contains("temp") -> {
+                                    value.toFloatOrNull()?.let {
+                                        if (it > -50 && it < 80) {
+                                            data.outTemp = it
+                                            log("[CP]   ✓ 解析到温度: ${it}℃")
+                                            newDataFound = true
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         if (data.speed > 0 || data.soc > 0 || data.elecRemain > 0) {
+                            log("[CP] ✓ ContentProvider查询成功!")
                             data.success = true
                             data.timestamp = System.currentTimeMillis()
                             return data
                         }
+                        if (!newDataFound) log("[CP]   ✗ 未解析到有效车辆数据")
                     } else {
-                        log("[CarCP] $uriStr → 无数据行")
+                        log("[CP]   ✗ 无数据行")
                     }
                 } ?: run {
-                    log("[CarCP] $uriStr → cursor为null(CP可能不存在)")
+                    log("[CP]   ✗ cursor为null(CP可能不存在或权限不足)")
                 }
             } catch (e: SecurityException) {
-                log("[CarCP] $uriStr → 权限不足: ${e.message}")
+                log("[CP]   ✗ 权限不足: ${e.message}")
             } catch (e: Exception) {
-                log("[CarCP] $uriStr → 异常: ${e.javaClass.simpleName}: ${e.message}")
+                log("[CP]   ✗ 异常: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
 
+        log("[CP] ✗ 所有ContentProvider均无数据或不可用")
         return fail("所有ContentProvider均无数据或不可用")
     }
 
