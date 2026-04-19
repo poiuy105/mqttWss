@@ -688,7 +688,7 @@ object BydLocalCarApi {
             }
         }
 
-        log("[HTTP] ✗ 全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径, 实际尝试$maxAttempts次)")
+        log("[HTTP] ✗ 全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径, 实际尝试${maxAttempts}次)")
         return fail("HTTP扫描全部端口/路径均无响应 (${SCAN_PORTS.size}端口 x ${SCAN_PATHS.size}路径)")
     }
 
