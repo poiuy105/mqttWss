@@ -56,14 +56,6 @@ class SettingFragment : BaseFragment() {
 
     // ========== 云端TTS设置控件 ==========
     private var mCloudTtsApiSpinner: Spinner? = null
-    private var mCloudTtsVoiceSpinner: Spinner? = null
-    private var mVoiceSelectorContainer: View? = null
-    private var mTtsSpeedSeekbar: SeekBar? = null
-    private var mTtsPitchSeekbar: SeekBar? = null
-    private var mTtsVolumeSeekbar: SeekBar? = null
-    private var mTtsSpeedValue: TextView? = null
-    private var mTtsPitchValue: TextView? = null
-    private var mTtsVolumeValue: TextView? = null
     private var mBtnTtsTestCloud: Button? = null
     private var mBtnTtsResetDefault: Button? = null
 
@@ -201,14 +193,6 @@ class SettingFragment : BaseFragment() {
 
         // ========== 云端TTS设置控件初始化 ==========
         mCloudTtsApiSpinner = view.findViewById(R.id.cloud_tts_api_spinner)
-        mCloudTtsVoiceSpinner = view.findViewById(R.id.cloud_tts_voice_spinner)
-        mVoiceSelectorContainer = view.findViewById(R.id.voice_selector_container)
-        mTtsSpeedSeekbar = view.findViewById(R.id.tts_speed_seekbar)
-        mTtsPitchSeekbar = view.findViewById(R.id.tts_pitch_seekbar)
-        mTtsVolumeSeekbar = view.findViewById(R.id.tts_volume_seekbar)
-        mTtsSpeedValue = view.findViewById(R.id.tts_speed_value)
-        mTtsPitchValue = view.findViewById(R.id.tts_pitch_value)
-        mTtsVolumeValue = view.findViewById(R.id.tts_volume_value)
         mBtnTtsTestCloud = view.findViewById(R.id.btn_tts_test_cloud)
         mBtnTtsResetDefault = view.findViewById(R.id.btn_tts_reset_default)
 
@@ -573,85 +557,12 @@ class SettingFragment : BaseFragment() {
                 player.currentApiIndex = position
                 mConfigManager.cloudTtsApiIndex = position
                 // 仅Edge-TTS才显示音色选择（百度/有道不支持选音色）
-                mVoiceSelectorContainer?.visibility = if (position == CloudTTSPlayer.API_EDGETTS) View.VISIBLE else View.GONE
                 appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
-                syncTtsUiFromPlayer()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // 2. 音色选择（仅Edge-TTS支持）
-        val voiceNames = CloudTTSPlayer.EDGETTS_VOICES.map {
-            CloudTTSPlayer.EDGETTS_VOICE_NAMES[it] ?: it
-        }
-        val voiceAdapter = android.widget.ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item, voiceNames
-        )
-        voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        mCloudTtsVoiceSpinner?.adapter = voiceAdapter
-        val voiceIndex = CloudTTSPlayer.EDGETTS_VOICES.indexOf(player.voice).coerceAtLeast(0)
-        mCloudTtsVoiceSpinner?.setSelection(voiceIndex)
-        mCloudTtsVoiceSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                player.voice = CloudTTSPlayer.EDGETTS_VOICES[position]
-                mConfigManager.cloudTtsVoice = player.voice
-                appendLog("[CloudTTS] 音色切换: ${player.voice}")
-                syncTtsUiFromPlayer()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        // 3. 语速滑块 (0.5 ~ 2.0 -> progress 50~200)
-        mTtsSpeedSeekbar?.setProgress((player.speed * 100).toInt())
-        mTtsSpeedValue?.text = String.format("%.2f", player.speed)
-        mTtsSpeedSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (!fromUser) return
-                val spd = (progress / 100f).coerceIn(0.5f, 2.0f)
-                player.speed = spd
-                mConfigManager.cloudTtsSpeed = spd
-                mTtsSpeedValue?.text = String.format("%.2f", spd)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        // 4. 音调滑块 (Edge-TTS pitch: -10Hz ~ +10Hz, 映射到 progress 0~200, 中间100=+0Hz)
-        // 解析当前pitch字符串如"+0Hz" -> 0 -> progress = 100
-        val currentPitchVal = try { player.pitch.replace("[^\\-+\\d]".toRegex(), "").toInt() } catch(e: Exception) { 0 }
-        val pitchProgress = (currentPitchVal + 10) * 10 // -10Hz->0, 0Hz->100, +10Hz->200
-        mTtsPitchSeekbar?.setProgress(pitchProgress.coerceIn(0, 200))
-        mTtsPitchValue?.text = player.pitch
-        mTtsPitchSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (!fromUser) return
-                // progress 0~200 -> pitchHz -10~+10
-                val pitchHz = (progress / 10f).toInt() - 10
-                val pitchStr = if (pitchHz >= 0) "+${pitchHz}Hz" else "${pitchHz}Hz"
-                player.pitch = pitchStr
-                mConfigManager.cloudTtsPitch = (pitchHz / 10f) // 存储近似float值
-                mTtsPitchValue?.text = pitchStr
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        // 5. 音量滑块 (0.1 ~ 1.0)
-        mTtsVolumeSeekbar?.setProgress((player.volume * 100).toInt())
-        mTtsVolumeValue?.text = String.format("%.1f", player.volume)
-        mTtsVolumeSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (!fromUser) return
-                val vol = (progress / 100f).coerceIn(0.1f, 1.0f)
-                player.volume = vol
-                mConfigManager.cloudTtsVolume = vol
-                mTtsVolumeValue?.text = String.format("%.1f", vol)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        // 6. 测试按钮
+        // 测试按钮
         mBtnTtsTestCloud?.setOnClickListener {
             val testText = "你好，这是云端语音合成测试。当前车速35公里，电量75%。"
             appendLog("[CloudTTS] 测试播报...")
@@ -688,24 +599,6 @@ class SettingFragment : BaseFragment() {
     }
 
     /** 从CloudTTSPlayer同步滑块值到UI显示 */
-    private fun syncTtsUiFromPlayer() {
-        val player = getCloudTtsPlayer() ?: return
-        mTtsSpeedSeekbar?.progress = (player.speed * 100).toInt()
-        mTtsSpeedValue?.text = String.format("%.2f", player.speed)
-        // pitch是String格式如"+0Hz"，解析为数值显示
-        try {
-            val pitchVal = player.pitch.replace("[^\\-+\\d]".toRegex(), "").toInt()
-            val pitchProgress = (pitchVal + 10) * 10
-            mTtsPitchSeekbar?.progress = pitchProgress.coerceIn(0, 200)
-            mTtsPitchValue?.text = player.pitch
-        } catch (e: Exception) {
-            mTtsPitchSeekbar?.progress = 100
-            mTtsPitchValue?.text = "+0Hz"
-        }
-        mTtsVolumeSeekbar?.progress = (player.volume * 100).toInt()
-        mTtsVolumeValue?.text = String.format("%.1f", player.volume)
-    }
-
     /**
      * 统一控制MQTT连接参数区域内所有控件的启用/禁用状态
      * Auto Connect打开时，所有参数应被锁定（防止修改后无法匹配已保存配置）
