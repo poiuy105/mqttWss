@@ -81,7 +81,8 @@ class ConnectionFragment : BaseFragment() {
             haAddress = mHaAddress.text.toString(),
             haToken = mHaToken.text.toString(),
             haLanguage = mHaLanguage.text.toString(),
-            haHttps = mHaHttpsCheckbox.isChecked
+            haHttps = mHaHttpsCheckbox.isChecked,
+            haResponseDelay = mConfigManager.haResponseDelay
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
