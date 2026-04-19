@@ -152,7 +152,7 @@ object HomeAssistantIntegration {
             val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || 
                            status == BatteryManager.BATTERY_STATUS_FULL
             
-            mapOf(
+            mapOf<String, Any>(
                 "level" to batteryPct,
                 "status" to when (status) {
                     BatteryManager.BATTERY_STATUS_CHARGING -> "charging"
@@ -170,8 +170,8 @@ object HomeAssistantIntegration {
                     BatteryManager.BATTERY_HEALTH_COLD -> "cold"
                     else -> "unknown"
                 },
-                "temperature" to if (temperature > 0) temperature / 10.0 else null,
-                "voltage" to if (voltage > 0) voltage else null,
+                "temperature" to (if (temperature > 0) temperature / 10.0 else 0.0),
+                "voltage" to (if (voltage > 0) voltage else 0),
                 "is_charging" to isCharging,
                 "timestamp" to System.currentTimeMillis()
             )
@@ -221,7 +221,7 @@ object HomeAssistantIntegration {
                     topic = stateTopic,
                     payload = gson.toJson(mapOf("level" to level)),
                     qos = 1,
-                    retained = false
+                    isRetained = false
                 )
                 activity.addPublishHistory(publish)
             }
