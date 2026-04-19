@@ -32,6 +32,7 @@ class HomeFragment : BaseFragment() {
     private var orientationText: TextView? = null
     private var androidVersionText: TextView? = null
     private var networkTitleText: TextView? = null
+    private var deviceDetailsText: TextView? = null
 
     // ========== Debug Log（仅在Home页签显示）==========
     private var mDebugLogContainer: View? = null
@@ -56,6 +57,7 @@ class HomeFragment : BaseFragment() {
         orientationText = view.findViewById(R.id.orientation)
         androidVersionText = view.findViewById(R.id.android_version)
         networkTitleText = view.findViewById(R.id.network_title)
+        deviceDetailsText = view.findViewById(R.id.device_details)
 
         // ========== 初始化 Debug Log 容器 ==========
         mDebugLogContainer = view.findViewById(R.id.debug_log_container)
@@ -335,8 +337,12 @@ class HomeFragment : BaseFragment() {
             appendLocalLog("=== Device Info ===")
             appendLocalLog(infoBuilder.toString())
             
+            // 同时显示到 UI TextView
+            deviceDetailsText?.text = infoBuilder.toString()
+            
         } catch (e: Exception) {
             appendLocalLog("[DeviceInfo] Error: ${e.message}")
+            deviceDetailsText?.text = "Failed to load device info"
         }
     }
     
