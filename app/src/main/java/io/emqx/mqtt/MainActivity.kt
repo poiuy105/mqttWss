@@ -269,16 +269,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         // Auto Connect：无论从哪种方式启动，都检查是否需要自动重连
         val configManager = ConfigManager.getInstance(this)
+        val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
+        
         if (configManager.autoConnect && configManager.hasSavedConfig()) {
+            // Auto Connect 开关开启：延迟2秒后自动连接
             Log.d("MainActivity", "Auto-connect is ON, will reconnect after delay...")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()
             }, 2000)
-        } else if (intent.getBooleanExtra("auto_connect", false)) {
-            Log.d("MainActivity", "Auto-connect requested")
+        } else if (autoConnectFromBoot) {
+            // 从 BootReceiver/通知栏启动：延迟1秒后自动连接
+            Log.d("MainActivity", "Auto-connect requested from boot/notification")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()
             }, 1000)
+        } else {
+            Log.d("MainActivity", "No auto-connect configured")
         }
     }
 
@@ -416,9 +422,18 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // 处理auto_connect参数（BootReceiver场景）
-        if (intent?.getBooleanExtra("auto_connect", false) == true) {
-            window.decorView.postDelayed({ autoConnectIfConfigured() }, 1000)
+        
+        // 处理auto_connect参数（BootReceiver/通知栏场景）
+        val autoConnectFromBoot = intent?.getBooleanExtra("auto_connect", false) == true
+        val configManager = ConfigManager.getInstance(this)
+        
+        if (autoConnectFromBoot || (configManager.autoConnect && configManager.hasSavedConfig())) {
+            Log.d("MainActivity", "onNewIntent: Auto-connect triggered")
+            window.decorView.postDelayed({ 
+                autoConnectIfConfigured() 
+            }, 1000)
+        } else {
+            Log.d("MainActivity", "onNewIntent: No auto-connect needed")
         }
     }
 

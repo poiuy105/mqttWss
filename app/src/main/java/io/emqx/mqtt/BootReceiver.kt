@@ -38,10 +38,13 @@ class BootReceiver : BroadcastReceiver() {
         if (configManager.autoStart && configManager.hasSavedConfig()) {
             Log.d("BootReceiver", "Auto-start enabled, launching MainActivity...")
             val launchIntent = Intent(context, MainActivity::class.java).apply {
+                // 重要：添加 FLAG_ACTIVITY_NEW_TASK 以从后台启动
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // 传递 auto_connect 参数，触发自动重连
                 putExtra("auto_connect", true)
             }
             context.startActivity(launchIntent)
+            Log.d("BootReceiver", "MainActivity launched with auto_connect=true")
         } else {
             Log.d("BootReceiver", "Auto-start disabled or no saved config")
         }
