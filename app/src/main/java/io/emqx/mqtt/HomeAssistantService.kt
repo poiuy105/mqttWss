@@ -73,13 +73,22 @@ object HomeAssistantService {
                 appendLog(context, "HTTP Response received - Status: ${response.code}")
                 val responseBody = response.body?.string()
                 appendLog(context, "Response Body: $responseBody")
-                
+                            
                 // 应用响应延迟（模拟系统返回延迟）
                 if (responseDelay > 0) {
                     appendLog(context, "Applying response delay: ${responseDelay}ms")
                     Thread.sleep(responseDelay.toLong())
                 }
-                
+                            
+                // 如果启用了"单击替代返回"功能，在延时后模拟点击（无论成功失败）
+                val configManager = ConfigManager.getInstance(context)
+                if (configManager.haClickBackEnabled) {
+                    appendLog(context, "Click back enabled, simulating click after delay...")
+                    (context as? MainActivity)?.let { activity ->
+                        MainActivity.simulateClickBack(activity)
+                    }
+                }
+                            
                 if (response.isSuccessful && responseBody != null) {
                     try {
                         val jsonResponse = JSONObject(responseBody)
@@ -88,16 +97,6 @@ object HomeAssistantService {
                             ?.optJSONObject("plain")
                             ?.optString("speech")
                         appendLog(context, "Parsed speech response: $speech")
-                        
-                        // 如果启用了“单击替代返回”功能，在POST成功后模拟点击
-                        val configManager = ConfigManager.getInstance(context)
-                        if (configManager.haClickBackEnabled) {
-                            appendLog(context, "Click back enabled, simulating click...")
-                            (context as? MainActivity)?.let { activity ->
-                                MainActivity.simulateClickBack(activity)
-                            }
-                        }
-                        
                         callback(true, speech)
                     } catch (e: Exception) {
                         appendLog(context, "JSON Parse FAILED: ${e.message}")
