@@ -38,6 +38,7 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mHaToken: EditText
     private lateinit var mHaLanguage: EditText
     private lateinit var mHaHttpsCheckbox: CheckBox
+    private lateinit var mHaClickBackCheckbox: CheckBox
     private lateinit var mConfigManager: ConfigManager
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -82,7 +83,8 @@ class ConnectionFragment : BaseFragment() {
             haToken = mHaToken.text.toString(),
             haLanguage = mHaLanguage.text.toString(),
             haHttps = mHaHttpsCheckbox.isChecked,
-            haResponseDelay = mConfigManager.haResponseDelay
+            haResponseDelay = mConfigManager.haResponseDelay,
+            haClickBackEnabled = mHaClickBackCheckbox.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -105,6 +107,7 @@ class ConnectionFragment : BaseFragment() {
             mHaToken.setText(mConfigManager.haToken)
             mHaLanguage.setText(mConfigManager.haLanguage)
             mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
+            mHaClickBackCheckbox.isChecked = mConfigManager.haClickBackEnabled
 
             when (mConfigManager.protocol) {
                 "TCP" -> mProtocol.check(R.id.protocol_tcp)
@@ -143,6 +146,7 @@ class ConnectionFragment : BaseFragment() {
         mHaToken = view.findViewById(R.id.ha_token)
         mHaLanguage = view.findViewById(R.id.ha_language)
         mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
+        mHaClickBackCheckbox = view.findViewById(R.id.ha_click_back_switch)
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             val port = when (checkedId) {
