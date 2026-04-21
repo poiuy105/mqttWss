@@ -175,6 +175,13 @@ class CloudTTSPlayer private constructor() {
         val info = urlBuilder(text)
         Log.d(TAG, "Downloading [fallback=$fallbackCount]: ${info.url.take(100)}")
 
+        // 在主线程立即显示Toast提示，在下载开始前就给用户反馈
+        appContext?.let { ctx ->
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         currentDownload = downloadExecutor.submit {
             try {
                 val audioFile = downloadAudio(info)
@@ -229,13 +236,6 @@ class CloudTTSPlayer private constructor() {
      * @return 下载成功返回File对象，失败返回null
      */
     private fun downloadAudio(info: TtsRequestInfo): File? {
-        // 在主线程显示Toast提示
-        appContext?.let { ctx ->
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
         var conn: HttpURLConnection? = null
         try {
             val url = URL(info.url)
