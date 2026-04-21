@@ -346,6 +346,17 @@
                         android:textSize="13sp"
                         android:gravity="end" />
                 </LinearLayout>
+
+                <!-- 单击替代返回开关 -->
+                <Switch
+                    android:id="@+id/ha_click_back_switch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="单击替代返回"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp"
+                    android:checked="true" />
             </LinearLayout>
 
             <TextView

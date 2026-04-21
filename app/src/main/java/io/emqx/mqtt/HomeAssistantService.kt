@@ -88,6 +88,16 @@ object HomeAssistantService {
                             ?.optJSONObject("plain")
                             ?.optString("speech")
                         appendLog(context, "Parsed speech response: $speech")
+                        
+                        // 如果启用了“单击替代返回”功能，在POST成功后模拟点击
+                        val configManager = ConfigManager.getInstance(context)
+                        if (configManager.haClickBackEnabled) {
+                            appendLog(context, "Click back enabled, simulating click...")
+                            (context as? MainActivity)?.let { activity ->
+                                MainActivity.simulateClickBack(activity)
+                            }
+                        }
+                        
                         callback(true, speech)
                     } catch (e: Exception) {
                         appendLog(context, "JSON Parse FAILED: ${e.message}")

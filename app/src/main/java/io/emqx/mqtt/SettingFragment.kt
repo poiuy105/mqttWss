@@ -47,6 +47,7 @@ class SettingFragment : BaseFragment() {
     private lateinit var mHaHttpsCheckbox: Switch
     private lateinit var mHaResponseDelaySeekbar: SeekBar
     private lateinit var mHaResponseDelayValue: TextView
+    private lateinit var mHaClickBackSwitch: Switch
     private lateinit var mConfigManager: ConfigManager
     // 车机保活按钮
     private lateinit var mAdbGuideButton: Button
@@ -106,7 +107,8 @@ class SettingFragment : BaseFragment() {
             haToken = mHaToken.text.toString(),
             haLanguage = mHaLanguage.text.toString(),
             haHttps = mHaHttpsCheckbox.isChecked,
-            haResponseDelay = mConfigManager.haResponseDelay
+            haResponseDelay = mConfigManager.haResponseDelay,
+            haClickBackEnabled = mHaClickBackSwitch.isChecked
         )
         mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
@@ -140,6 +142,9 @@ class SettingFragment : BaseFragment() {
         val delayValue = mConfigManager.haResponseDelay.coerceIn(10, 2000)
         mHaResponseDelaySeekbar.progress = delayValue - 10  // SeekBar从0开始，对应10ms
         mHaResponseDelayValue.text = "${delayValue}ms"
+        
+        // 恢复HA单击替代返回开关
+        mHaClickBackSwitch.isChecked = mConfigManager.haClickBackEnabled
 
         // 恢复协议选择
         when (mConfigManager.protocol) {
@@ -184,6 +189,7 @@ class SettingFragment : BaseFragment() {
         mHaHttpsCheckbox = view.findViewById(R.id.ha_https_checkbox)
         mHaResponseDelaySeekbar = view.findViewById(R.id.ha_response_delay_seekbar)
         mHaResponseDelayValue = view.findViewById(R.id.ha_response_delay_value)
+        mHaClickBackSwitch = view.findViewById(R.id.ha_click_back_switch)
 
         // ========== 车机保活按钮初始化 ==========
         mAdbGuideButton = view.findViewById(R.id.btn_adb_guide)
@@ -333,6 +339,12 @@ class SettingFragment : BaseFragment() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+        
+        // HA单击替代返回开关
+        mHaClickBackSwitch.setOnCheckedChangeListener { _, isChecked ->
+            mConfigManager.haClickBackEnabled = isChecked
+            appendLog("HA Click Back ${if (isChecked) "enabled" else "disabled"}")
+        }
 
         // ========== 功能开关 - 实时持久化 + 同步MainActivity ==========
 

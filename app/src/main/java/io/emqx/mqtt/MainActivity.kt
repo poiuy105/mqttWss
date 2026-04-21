@@ -47,6 +47,56 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         /** 保存MqttAsyncClient实例，在Activity重建时避免断连 */
         private var sPreservedClient: MqttAsyncClient? = null
         private var sPreservedConnection: Connection? = null
+        
+        /**
+         * 模拟系统级点击屏幕右侧1/4宽度、1/2高度区域
+         * 用于替代返回键功能
+         */
+        fun simulateClickBack(activity: MainActivity) {
+            try {
+                val displayMetrics = activity.resources.displayMetrics
+                val screenWidth = displayMetrics.widthPixels
+                val screenHeight = displayMetrics.heightPixels
+                
+                // 计算点击位置：右侧1/4宽度，中间1/2高度
+                val clickX = (screenWidth * 0.875).toInt()  // 右侧7/8位置（右侧1/4的中心）
+                val clickY = (screenHeight * 0.5).toInt()   // 垂直居中
+                
+                Log.d("MainActivity", "Simulating click at ($clickX, $clickY) for back action")
+                
+                // 使用Instrumentation模拟点击
+                val instrumentation = android.app.Instrumentation()
+                Thread {
+                    try {
+                        instrumentation.sendPointerSync(
+                            android.view.MotionEvent.obtain(
+                                android.os.SystemClock.uptimeMillis(),
+                                android.os.SystemClock.uptimeMillis(),
+                                android.view.MotionEvent.ACTION_DOWN,
+                                clickX.toFloat(),
+                                clickY.toFloat(),
+                                0
+                            )
+                        )
+                        instrumentation.sendPointerSync(
+                            android.view.MotionEvent.obtain(
+                                android.os.SystemClock.uptimeMillis(),
+                                android.os.SystemClock.uptimeMillis(),
+                                android.view.MotionEvent.ACTION_UP,
+                                clickX.toFloat(),
+                                clickY.toFloat(),
+                                0
+                            )
+                        )
+                        Log.d("MainActivity", "Click simulation completed")
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to simulate click: ${e.message}")
+                    }
+                }.start()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error in simulateClickBack: ${e.message}")
+            }
+        }
     }
 
     var isTTSEnabled = true
@@ -231,7 +281,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private val sidebarNavViews = mutableListOf<View>()
 
     private fun setupLandscapeSidebar(sidebar: LinearLayout, viewPager: ViewPager, adapter: SectionsPagerAdapter) {
-        val iconSize = resources.getDimensionPixelSize(R.dimen.sidebar_icon_size)
         val textSize = resources.getDimension(R.dimen.sidebar_text_size)
         val padding = resources.getDimensionPixelSize(R.dimen.sidebar_item_padding)
 
@@ -256,7 +305,18 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             val imageView = ImageView(this).apply {
                 setImageResource(adapter.getPageIcon(i))
                 setColorFilter(Color.WHITE)
-                layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+                // 动态设置图标尺寸：使用weight让图标和文字按比例分配空间
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    0.7f  // 图标占70%高度
+                ).apply {
+                    // 设置最小尺寸，确保图标不会太小
+                    minimumWidth = resources.getDimensionPixelSize(R.dimen.sidebar_icon_size)
+                    minimumHeight = resources.getDimensionPixelSize(R.dimen.sidebar_icon_size)
+                }
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                adjustViewBounds = true
             }
 
             val textView = TextView(this).apply {
@@ -266,9 +326,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 isSingleLine = true
                 gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = padding }
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    0.3f  // 文字占30%高度
+                ).apply {
+                    topMargin = padding / 2
+                }
             }
 
             navItem.addView(imageView)

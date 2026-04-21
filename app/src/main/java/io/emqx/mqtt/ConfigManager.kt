@@ -36,6 +36,7 @@ class ConfigManager(context: Context) {
         private const val KEY_HA_LANGUAGE = "ha_language"
         private const val KEY_HA_HTTPS = "ha_https"
         private const val KEY_HA_RESPONSE_DELAY = "ha_response_delay"
+        private const val KEY_HA_CLICK_BACK = "ha_click_back"
         private const val KEY_TTS_ENABLED = "tts_enabled"
         private const val KEY_FLOAT_WINDOW_ENABLED = "float_window_enabled"
         private const val KEY_VOICE_CAPTURE_ENABLED = "voice_capture_enabled"
@@ -174,6 +175,10 @@ class ConfigManager(context: Context) {
         get() = prefs.getInt(KEY_HA_RESPONSE_DELAY, 10)
         set(value) = prefs.edit().putInt(KEY_HA_RESPONSE_DELAY, value).apply()
 
+    var haClickBackEnabled: Boolean
+        get() = prefs.getBoolean(KEY_HA_CLICK_BACK, true)
+        set(value) = prefs.edit().putBoolean(KEY_HA_CLICK_BACK, value).apply()
+
     var ttsEnabled: Boolean
         get() = prefs.getBoolean(KEY_TTS_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_TTS_ENABLED, value).apply()
@@ -244,7 +249,8 @@ class ConfigManager(context: Context) {
         haToken: String,
         haLanguage: String,
         haHttps: Boolean,
-        haResponseDelay: Int
+        haResponseDelay: Int,
+        haClickBackEnabled: Boolean
     ) {
         prefs.edit().apply {
             putString(KEY_HOST, host)
@@ -260,6 +266,7 @@ class ConfigManager(context: Context) {
             putString(KEY_HA_LANGUAGE, haLanguage)
             putBoolean(KEY_HA_HTTPS, haHttps)
             putInt(KEY_HA_RESPONSE_DELAY, haResponseDelay)
+            putBoolean(KEY_HA_CLICK_BACK, haClickBackEnabled)
             putLong(KEY_LAST_CONNECTED, System.currentTimeMillis())
             apply()
         }
