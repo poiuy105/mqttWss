@@ -40,8 +40,11 @@ class Connection(
             val options = MqttConnectOptions()
             options.isCleanSession = false
             options.isAutomaticReconnect = true
-            options.connectionTimeout = 30
-            options.keepAliveInterval = 60
+            options.connectionTimeout = 10  // 缩短连接超时到10秒，快速失败
+            options.keepAliveInterval = 30  // 缩短心跳间隔到30秒，更频繁保活
+            
+            // 启用 MQTT 3.1.1 的增强特性
+            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1)
             
             // 配置 Last Will
             HomeAssistantIntegration.configureLastWill(options)

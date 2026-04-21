@@ -38,6 +38,11 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     private var isConnecting = false
     private var logCallback: ((String) -> Unit)? = null
+    
+    // ========== MQTT 连接监控 ==========
+    private val mqttCheckHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var mqttCheckRunnable: Runnable? = null
+    private val MQTT_CHECK_INTERVAL = 15000L  // 每15秒检查一次连接状态
 
     var ttsPlayer: CloudTTSPlayer? = null
     var floatWindowManager: FloatWindowManager? = null
@@ -570,6 +575,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     // 启动定期电池上报（会自动立即上报一次）
                     HomeAssistantIntegration.startBatteryReporting(this@MainActivity, mClient, this@MainActivity)
                     
+                    // 启动MQTT连接状态监控
+                    startMqttConnectionMonitor()
+                    
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
                         notifyMqttStatusChanged(true)
@@ -752,6 +760,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         appendLog("Connection lost: $cause")
         isConnecting = false
         
+        // 停止MQTT连接监控（避免重复重连）
+        stopMqttConnectionMonitor()
+        
         // 停止电池上报
         HomeAssistantIntegration.stopBatteryReporting()
         
@@ -798,6 +809,73 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun deliveryComplete(token: IMqttDeliveryToken) {}
 
+    // ========== MQTT 连接状态监控 ==========
+    
+    /**
+     * 启动MQTT连接状态监控
+     */
+    private fun startMqttConnectionMonitor() {
+        // 先停止之前的监控
+        stopMqttConnectionMonitor()
+        
+        mqttCheckRunnable = Runnable {
+            checkMqttConnection()
+            // 循环执行
+            mqttCheckHandler.postDelayed(mqttCheckRunnable!!, MQTT_CHECK_INTERVAL)
+        }
+        
+        // 立即执行第一次检查，然后每隔15秒检查一次
+        mqttCheckHandler.postDelayed(mqttCheckRunnable!!, MQTT_CHECK_INTERVAL)
+        Log.d("MainActivity", "MQTT connection monitor started (interval: ${MQTT_CHECK_INTERVAL}ms)")
+    }
+    
+    /**
+     * 停止MQTT连接状态监控
+     */
+    private fun stopMqttConnectionMonitor() {
+        mqttCheckRunnable?.let {
+            mqttCheckHandler.removeCallbacks(it)
+            mqttCheckRunnable = null
+            Log.d("MainActivity", "MQTT connection monitor stopped")
+        }
+    }
+    
+    /**
+     * 检查MQTT连接状态，如果断开则尝试重连
+     */
+    private fun checkMqttConnection() {
+        val client = mClient
+        val connection = mConnection
+        
+        if (client == null || connection == null) {
+            Log.d("MainActivity", "MQTT client or connection is null, skip check")
+            return
+        }
+        
+        val isConnected = client.isConnected
+        Log.d("MainActivity", "MQTT connection check: isConnected=$isConnected")
+        
+        if (!isConnected && !isConnecting) {
+            appendLog("⚠️ MQTT connection lost detected by monitor, attempting reconnect...")
+            Log.w("MainActivity", "MQTT disconnected, auto-reconnecting...")
+            
+            // 尝试重连
+            runOnUiThread {
+                connect(connection, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        appendLog("✅ Auto-reconnect successful")
+                        Log.d("MainActivity", "Auto-reconnect successful")
+                    }
+                    
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        appendLog("❌ Auto-reconnect failed: ${exception?.message}")
+                        Log.e("MainActivity", "Auto-reconnect failed", exception)
+                    }
+                })
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         // 云端TTS不需要onActivityResult处理
@@ -805,6 +883,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onDestroy() {
         super.onDestroy()
+        
+        // 停止MQTT连接监控
+        stopMqttConnectionMonitor()
         
         // 停止电池上报
         HomeAssistantIntegration.stopBatteryReporting()
