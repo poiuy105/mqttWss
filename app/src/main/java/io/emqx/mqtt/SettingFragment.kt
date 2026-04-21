@@ -706,50 +706,70 @@ class SettingFragment : BaseFragment() {
             setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
         }
         
-        // 添加说明文本
-        val textView = TextView(context).apply {
-            text = message
-            textSize = 13f
-            setTextColor(android.graphics.Color.parseColor("#333333"))
-            setTypeface(null, android.graphics.Typeface.NORMAL)
-        }
-        contentLayout.addView(textView)
-        
-        // 解析并添加可点击的ADB命令
-        val adbCommands = extractAdbCommands(commands)
-        if (adbCommands.isNotEmpty()) {
-            val hintView = TextView(context).apply {
-                text = "\n💡 单击下方任意命令即可复制："
-                textSize = 12f
-                setTextColor(android.graphics.Color.parseColor("#666666"))
-                setPadding(0, dpToPx(8), 0, dpToPx(4))
-            }
-            contentLayout.addView(hintView)
+        // 智能解析message，将ADB命令行为可点击项，普通文本为说明
+        val lines = message.lines()
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i]
             
-            adbCommands.forEach { command ->
-                if (command.isNotBlank() && !command.startsWith("#")) {
-                    val cmdView = TextView(context).apply {
-                        text = command
-                        textSize = 12f
-                        setTextColor(android.graphics.Color.parseColor("#0066CC"))
-                        setTypeface(null, android.graphics.Typeface.BOLD)
-                        setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
-                        background = context.getDrawable(android.R.drawable.editbox_background)
-                        isClickable = true
-                        isFocusable = true
-                        
-                        // 添加点击事件
-                        setOnClickListener {
-                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("ADB Command", command)
-                            clipboard?.setPrimaryClip(clip)
-                            Toast.makeText(context, "已复制: ${command.take(30)}${if (command.length > 30) "..." else ""}", Toast.LENGTH_SHORT).show()
-                            appendLog("已复制ADB命令: $command")
+            // 检查是否是ADB命令行（以adb开头）
+            if (line.trim().startsWith("adb ")) {
+                // 创建可点击的命令TextView
+                val cmdView = TextView(context).apply {
+                    text = line.trim()
+                    textSize = 12f
+                    setTextColor(android.graphics.Color.parseColor("#0066CC"))
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
+                    background = context.getDrawable(android.R.drawable.editbox_background)
+                    isClickable = true
+                    isFocusable = true
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        topMargin = dpToPx(2)
+                        bottomMargin = dpToPx(2)
+                    }
+                    
+                    // 添加点击事件
+                    setOnClickListener {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("ADB Command", text.toString())
+                        clipboard?.setPrimaryClip(clip)
+                        Toast.makeText(context, "已复制: ${text.toString().take(30)}${if (text.toString().length > 30) "..." else ""}", Toast.LENGTH_SHORT).show()
+                        appendLog("已复制ADB命令: $text")
+                    }
+                }
+                contentLayout.addView(cmdView)
+            } else {
+                // 普通说明文本
+                if (line.isNotBlank()) {
+                    val textView = TextView(context).apply {
+                        text = line
+                        textSize = 13f
+                        setTextColor(android.graphics.Color.parseColor("#333333"))
+                        setTypeface(null, android.graphics.Typeface.NORMAL)
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            topMargin = if (line.startsWith("【") || line.startsWith("①") || line.startsWith("②") || line.startsWith("③") || line.startsWith("★")) dpToPx(8) else dpToPx(2)
                         }
                     }
-                    contentLayout.addView(cmdView)
+                    contentLayout.addView(textView)
+                } else {
+                    // 空行，添加小间距
+                    val spacer = View(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            dpToPx(4)
+                        )
+                    }
+                    contentLayout.addView(spacer)
                 }
             }
+            i++
         }
         
         scrollView.addView(contentLayout)
@@ -776,16 +796,6 @@ class SettingFragment : BaseFragment() {
             context.resources.getColor(android.R.color.holo_blue_dark, null)
         )
     }
-    
-    /**
-     * 从commands字符串中提取独立的ADB命令
-     */
-    private fun extractAdbCommands(commands: String): List<String> {
-        return commands.lines()
-            .map { it.trim() }
-            .filter { it.startsWith("adb ") || it.startsWith("# ") }
-    }
-
     /** Android 10 (API 29) 指南 */
     private fun buildApi29Guide(): Triple<String, String, String> {
         val title = "ADB 无障碍锁定 (Android 10)"
