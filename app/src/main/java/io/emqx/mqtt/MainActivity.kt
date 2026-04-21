@@ -760,9 +760,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         appendLog("Connection lost: $cause")
         isConnecting = false
         
-        // 停止MQTT连接监控（避免重复重连）
-        stopMqttConnectionMonitor()
-        
         // 停止电池上报
         HomeAssistantIntegration.stopBatteryReporting()
         
@@ -770,6 +767,45 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         notifyMqttStatusChanged(false)
         runOnUiThread {
             (mFragmentList[1] as? SettingFragment)?.updateButtonText()
+        }
+        
+        // ========== Auto Connect: 如果开启则自动重连 ==========
+        val configManager = ConfigManager.getInstance(this)
+        if (configManager.autoConnect && configManager.hasSavedConfig()) {
+            appendLog("🔄 Auto Connect enabled, will attempt reconnect in 3 seconds...")
+            Log.d("MainActivity", "Auto Connect enabled, scheduling reconnect...")
+            
+            // 延迟3秒后尝试重连（避免频繁重连）
+            window.decorView.postDelayed({
+                if (configManager.autoConnect && !isConnecting && (mClient?.isConnected != true)) {
+                    appendLog("🔄 Attempting auto-reconnect...")
+                    val connection = Connection(
+                        this@MainActivity,
+                        configManager.host,
+                        configManager.port,
+                        configManager.clientId,
+                        configManager.username,
+                        configManager.password,
+                        configManager.protocol,
+                        configManager.path
+                    )
+                    connect(connection, object : IMqttActionListener {
+                        override fun onSuccess(asyncActionToken: IMqttToken?) {
+                            appendLog("✅ Auto-reconnect successful")
+                            Log.d("MainActivity", "Auto-reconnect success after connectionLost")
+                        }
+                        
+                        override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                            appendLog("❌ Auto-reconnect failed: ${exception?.message}")
+                            Log.e("MainActivity", "Auto-reconnect failed", exception)
+                            // 如果失败，继续尝试重连（最多重试5次）
+                            scheduleReconnectIfNeeded(configManager, retryCount = 1)
+                        }
+                    })
+                }
+            }, 3000)
+        } else {
+            Log.d("MainActivity", "Auto Connect disabled, no auto-reconnect")
         }
     }
 
@@ -874,6 +910,58 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 })
             }
         }
+    }
+    
+    /**
+     * 调度自动重连（带重试机制）
+     * @param configManager 配置管理器
+     * @param retryCount 当前重试次数
+     * @param maxRetries 最大重试次数
+     */
+    private fun scheduleReconnectIfNeeded(configManager: ConfigManager, retryCount: Int = 0, maxRetries: Int = 5) {
+        if (retryCount >= maxRetries) {
+            appendLog("⛔ Max reconnect retries ($maxRetries) reached, giving up")
+            Log.w("MainActivity", "Max reconnect retries reached")
+            return
+        }
+        
+        if (!configManager.autoConnect) {
+            Log.d("MainActivity", "Auto Connect disabled, stop retrying")
+            return
+        }
+        
+        // 指数退避：3s, 6s, 12s, 24s, 48s
+        val delay = 3000L * (1 shl retryCount) // 3s * 2^retryCount
+        appendLog("🔄 Scheduling reconnect attempt ${retryCount + 1}/$maxRetries in ${delay/1000}s...")
+        
+        window.decorView.postDelayed({
+            if (configManager.autoConnect && !isConnecting && (mClient?.isConnected != true)) {
+                appendLog("🔄 Reconnect attempt ${retryCount + 1}/$maxRetries...")
+                val connection = Connection(
+                    this,
+                    configManager.host,
+                    configManager.port,
+                    configManager.clientId,
+                    configManager.username,
+                    configManager.password,
+                    configManager.protocol,
+                    configManager.path
+                )
+                connect(connection, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        appendLog("✅ Reconnect successful on attempt ${retryCount + 1}")
+                        Log.d("MainActivity", "Reconnect success on attempt ${retryCount + 1}")
+                    }
+                    
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        appendLog("❌ Reconnect failed on attempt ${retryCount + 1}: ${exception?.message}")
+                        Log.e("MainActivity", "Reconnect failed on attempt ${retryCount + 1}", exception)
+                        // 继续下一次重试
+                        scheduleReconnectIfNeeded(configManager, retryCount + 1, maxRetries)
+                    }
+                })
+            }
+        }, delay)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
