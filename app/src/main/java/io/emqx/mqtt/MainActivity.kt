@@ -105,6 +105,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         // ========== 初始化云端TTS（启动即用，无需等待） ==========
         ttsPlayer = CloudTTSPlayer.getInstance()
+        // 设置Context（用于显示Toast）
+        ttsPlayer?.setContext(this)
         // 设置音频缓存目录（先下载到本地文件再播放）
         val ttsCacheDir = File(cacheDir, "cloudtts_cache")
         ttsPlayer?.setCacheDir(ttsCacheDir)
@@ -508,6 +510,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
                         notifyMqttStatusChanged(true)
+                        // TTS播报MQTT连接状态
+                        ttsPlayer?.speak("MQTT已连接", force = true)
                     }
                 }
 
@@ -520,6 +524,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
                         notifyMqttStatusChanged(false)
+                        // TTS播报MQTT连接状态
+                        ttsPlayer?.speak("MQTT未连接", force = true)
                     }
                 }
             })

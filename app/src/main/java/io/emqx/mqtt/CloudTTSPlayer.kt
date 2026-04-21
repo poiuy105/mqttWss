@@ -1,7 +1,11 @@
 package io.emqx.mqtt
 
+import android.content.Context
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -64,6 +68,8 @@ class CloudTTSPlayer private constructor() {
     private var currentDownload: Future<*>? = null
     /** 临时文件缓存目录 */
     private var cacheDir: File? = null
+    /** Context引用，用于显示Toast */
+    private var appContext: Context? = null
 
     // ========== 可配置参数（从Setting页面设置） ==========
     var currentApiIndex: Int = API_EDGETTS
@@ -78,6 +84,13 @@ class CloudTTSPlayer private constructor() {
     fun setCacheDir(dir: File) {
         cacheDir = dir
         if (!cacheDir!!.exists()) cacheDir!!.mkdirs()
+    }
+
+    /**
+     * 设置Context（用于显示Toast）
+     */
+    fun setContext(context: Context) {
+        appContext = context.applicationContext
     }
 
     // ========== 固定接口地址（已验证可用 2026-04-18）==========
@@ -216,6 +229,13 @@ class CloudTTSPlayer private constructor() {
      * @return 下载成功返回File对象，失败返回null
      */
     private fun downloadAudio(info: TtsRequestInfo): File? {
+        // 在主线程显示Toast提示
+        appContext?.let { ctx ->
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
         var conn: HttpURLConnection? = null
         try {
             val url = URL(info.url)
