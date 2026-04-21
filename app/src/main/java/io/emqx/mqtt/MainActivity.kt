@@ -897,6 +897,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 mClient?.disconnect()
                 mClient = null
                 mConnection = null
+                // 重要：同步更新 MqttService 的连接状态，避免 UI 显示不一致
+                MqttService.updateConnectionStatus(this, false)
+                notifyMqttStatusChanged(false)
             } catch (e: Exception) {
                 Log.e("MainActivity", "Failed to disconnect MQTT", e)
             }
