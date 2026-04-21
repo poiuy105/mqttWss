@@ -699,17 +699,62 @@ class SettingFragment : BaseFragment() {
                 dpToPx(350)
             )
         }
+        
+        // 使用垂直LinearLayout来组织内容
+        val contentLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+        }
+        
+        // 添加说明文本
         val textView = TextView(context).apply {
             text = message
             textSize = 13f
             setTextColor(android.graphics.Color.parseColor("#333333"))
             setTypeface(null, android.graphics.Typeface.NORMAL)
-            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
-            setTextIsSelectable(true) // 允许用户长按选择文字
         }
-        scrollView.addView(textView)
+        contentLayout.addView(textView)
+        
+        // 解析并添加可点击的ADB命令
+        val adbCommands = extractAdbCommands(commands)
+        if (adbCommands.isNotEmpty()) {
+            val hintView = TextView(context).apply {
+                text = "\n💡 单击下方任意命令即可复制："
+                textSize = 12f
+                setTextColor(android.graphics.Color.parseColor("#666666"))
+                setPadding(0, dpToPx(8), 0, dpToPx(4))
+            }
+            contentLayout.addView(hintView)
+            
+            adbCommands.forEach { command ->
+                if (command.isNotBlank() && !command.startsWith("#")) {
+                    val cmdView = TextView(context).apply {
+                        text = command
+                        textSize = 12f
+                        setTextColor(android.graphics.Color.parseColor("#0066CC"))
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                        setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+                        background = context.getDrawable(android.R.drawable.editbox_background)
+                        isClickable = true
+                        isFocusable = true
+                        
+                        // 添加点击事件
+                        setOnClickListener {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("ADB Command", command)
+                            clipboard?.setPrimaryClip(clip)
+                            Toast.makeText(context, "已复制: ${command.take(30)}${if (command.length > 30) "..." else ""}", Toast.LENGTH_SHORT).show()
+                            appendLog("已复制ADB命令: $command")
+                        }
+                    }
+                    contentLayout.addView(cmdView)
+                }
+            }
+        }
+        
+        scrollView.addView(contentLayout)
 
-        // 使用AlertDialog构建弹窗
+        // 使用AlertDialog构建弹窗（删除了中性按钮-超链接）
         val dialog = android.app.AlertDialog.Builder(context)
             .setTitle(title)
             .setView(scrollView)
@@ -722,16 +767,6 @@ class SettingFragment : BaseFragment() {
                 appendLog("已复制ADB命令到剪贴板")
             }
             .setNegativeButton("关闭", null)
-            .setNeutralButton("🔗 打开完整文档") { _, _ ->
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse("https://github.com")
-                    }
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
-                }
-            }
             .create()
 
         dialog.show()
@@ -740,6 +775,15 @@ class SettingFragment : BaseFragment() {
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
             context.resources.getColor(android.R.color.holo_blue_dark, null)
         )
+    }
+    
+    /**
+     * 从commands字符串中提取独立的ADB命令
+     */
+    private fun extractAdbCommands(commands: String): List<String> {
+        return commands.lines()
+            .map { it.trim() }
+            .filter { it.startsWith("adb ") || it.startsWith("# ") }
     }
 
     /** Android 10 (API 29) 指南 */
