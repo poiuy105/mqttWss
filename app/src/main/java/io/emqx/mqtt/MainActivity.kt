@@ -266,17 +266,17 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
         
         if (configManager.hasSavedConfig()) {
-            // 有保存的配置：延迟2秒后自动连接
-            Log.d("MainActivity", "Saved config exists, will auto-connect after delay...")
+            // 有保存的配置：延迟3秒后自动连接（避免启动卡顿时任务被阻塞）
+            Log.d("MainActivity", "Saved config exists, will auto-connect after 3s delay...")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()
-            }, 2000)
+            }, 3000)
         } else if (autoConnectFromBoot) {
-            // 从 BootReceiver/通知栏启动：延迟1秒后自动连接
+            // 从 BootReceiver/通知栏启动：延迟2秒后自动连接
             Log.d("MainActivity", "Auto-connect requested from boot/notification")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()
-            }, 1000)
+            }, 2000)
         } else {
             Log.d("MainActivity", "No saved config, no auto-connect")
         }
