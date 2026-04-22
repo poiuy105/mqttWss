@@ -803,7 +803,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 }
             }, 3000)
         } else {
-            Log.d("MainActivity", "Auto Connect disabled, no auto-reconnect")
+            Log.d("MainActivity", "No saved config, no auto-reconnect")
         }
     }
 
@@ -923,8 +923,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         
-        if (!configManager.autoConnect) {
-            Log.d("MainActivity", "Auto Connect disabled, stop retrying")
+        // 只要有配置就尝试重连（已移除 Auto Connect 开关检查）
+        if (!configManager.hasSavedConfig()) {
+            Log.d("MainActivity", "No saved config, stop retrying")
             return
         }
         
@@ -933,7 +934,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         appendLog("🔄 Scheduling reconnect attempt ${retryCount + 1}/$maxRetries in ${delay/1000}s...")
         
         window.decorView.postDelayed({
-            if (configManager.autoConnect && !isConnecting && (mClient?.isConnected != true)) {
+            if (configManager.hasSavedConfig() && !isConnecting && (mClient?.isConnected != true)) {
                 appendLog("🔄 Reconnect attempt ${retryCount + 1}/$maxRetries...")
                 val connection = Connection(
                     this,
