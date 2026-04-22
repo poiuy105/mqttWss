@@ -577,7 +577,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     startMqttConnectionMonitor()
                     
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Connected!", Toast.LENGTH_SHORT).show()
+                        ToastUtils.showShort(this@MainActivity, "Connected!")
                         notifyMqttStatusChanged(true)
                         // TTS播报MQTT连接状态
                         ttsPlayer?.speak("MQTT已连接", force = true)
@@ -591,7 +591,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     MqttService.updateConnectionStatus(this@MainActivity, false)
                     exception?.printStackTrace()
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Connect failed: ${exception?.message}", Toast.LENGTH_LONG).show()
+                        ToastUtils.showLong(this@MainActivity, "Connect failed: ${exception?.message}")
                         notifyMqttStatusChanged(false)
                         // TTS播报MQTT连接状态
                         ttsPlayer?.speak("MQTT未连接", force = true)
@@ -681,7 +681,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     fun notConnected(showNotify: Boolean): Boolean {
         if (mClient == null || !mClient!!.isConnected) {
             if (showNotify) {
-                Toast.makeText(this, "Client is not connected", Toast.LENGTH_SHORT).show()
+                ToastUtils.showShort(this, "Client is not connected")
             }
             return true
         }
@@ -692,7 +692,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "showFloatMessage called: title=$title, isFloatWindowEnabled=$isFloatWindowEnabled")
         if (isFloatWindowEnabled) {
             if (floatWindowManager?.canDrawOverlays() == false) {
-                Toast.makeText(this, "Please grant overlay permission for float window", Toast.LENGTH_LONG).show()
+                ToastUtils.showLong(this, "Please grant overlay permission for float window")
                 floatWindowManager?.requestOverlayPermission()
                 return
             }
