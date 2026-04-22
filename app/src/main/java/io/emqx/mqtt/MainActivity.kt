@@ -767,15 +767,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             (mFragmentList[1] as? SettingFragment)?.updateButtonText()
         }
         
-        // ========== Auto Connect: 如果开启则自动重连 ==========
+        // ========== Auto Connect: 只要有配置就自动重连 ==========
         val configManager = ConfigManager.getInstance(this)
-        if (configManager.autoConnect && configManager.hasSavedConfig()) {
-            appendLog("🔄 Auto Connect enabled, will attempt reconnect in 3 seconds...")
-            Log.d("MainActivity", "Auto Connect enabled, scheduling reconnect...")
+        if (configManager.hasSavedConfig()) {
+            appendLog("🔄 Config exists, will attempt reconnect in 3 seconds...")
+            Log.d("MainActivity", "Saved config found, scheduling reconnect...")
             
             // 延迟3秒后尝试重连（避免频繁重连）
             window.decorView.postDelayed({
-                if (configManager.autoConnect && !isConnecting && (mClient?.isConnected != true)) {
+                if (configManager.hasSavedConfig() && !isConnecting && (mClient?.isConnected != true)) {
                     appendLog("🔄 Attempting auto-reconnect...")
                     val connection = Connection(
                         this@MainActivity,
