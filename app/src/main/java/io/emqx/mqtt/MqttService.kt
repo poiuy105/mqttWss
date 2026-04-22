@@ -60,7 +60,19 @@ class MqttService : Service() {
                 action = ACTION_UPDATE_CONNECTION
                 putExtra("connected", connected)
             }
-            context.startService(intent)
+            try {
+                // Android 12+ 限制后台启动服务，如果 App 在后台可能会抛出异常
+                // 这种情况下，我们依赖已有的前台服务继续运行即可
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                // 如果服务已经在运行且 App 在后台，更新通知可能会失败
+                // 这不影响 MQTT 连接的正常运行
+                android.util.Log.w("MqttService", "Failed to update connection status (App in background): ${e.message}")
+            }
         }
     }
 

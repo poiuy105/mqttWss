@@ -968,6 +968,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         moveTaskToBack(true)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 当 App 回到前台时，重新启动 MQTT 连接监控
+        startMqttConnectionMonitor()
+        Log.d("MainActivity", "App resumed, MQTT connection monitor started")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 当 App 进入后台时，停止 MQTT 连接监控，避免后台启动服务导致崩溃
+        stopMqttConnectionMonitor()
+        Log.d("MainActivity", "App stopped, MQTT connection monitor stopped")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         
