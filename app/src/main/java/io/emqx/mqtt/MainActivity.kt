@@ -253,13 +253,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             }
         }
 
-        // Auto Connect：无论从哪种方式启动，都检查是否需要自动重连
+        // Auto Connect：只要有配置就自动连接（已移除 Auto Connect 开关）
         val configManager = ConfigManager.getInstance(this)
         val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
         
-        if (configManager.autoConnect && configManager.hasSavedConfig()) {
-            // Auto Connect 开关开启：延迟2秒后自动连接
-            Log.d("MainActivity", "Auto-connect is ON, will reconnect after delay...")
+        if (configManager.hasSavedConfig()) {
+            // 有保存的配置：延迟2秒后自动连接
+            Log.d("MainActivity", "Saved config exists, will auto-connect after delay...")
             window.decorView.postDelayed({
                 autoConnectIfConfigured()
             }, 2000)
@@ -270,7 +270,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 autoConnectIfConfigured()
             }, 1000)
         } else {
-            Log.d("MainActivity", "No auto-connect configured")
+            Log.d("MainActivity", "No saved config, no auto-connect")
         }
     }
 
