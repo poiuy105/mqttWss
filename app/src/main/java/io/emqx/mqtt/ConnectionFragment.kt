@@ -26,7 +26,6 @@ class ConnectionFragment : BaseFragment() {
     private lateinit var mButton: Button
     private lateinit var mDisconnectButton: Button
     private lateinit var mLogText: TextView
-    private lateinit var mAutoConnect: Switch
     private lateinit var mTtsSwitch: Switch
     private lateinit var mFloatSwitch: Switch
     private lateinit var mVoiceSwitch: Switch
@@ -86,7 +85,6 @@ class ConnectionFragment : BaseFragment() {
             haResponseDelay = mConfigManager.haResponseDelay,
             haClickBackEnabled = mHaClickBackCheckbox.isChecked
         )
-        mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
         mConfigManager.persistentNotification = mNotificationSwitch.isChecked
     }
@@ -99,7 +97,6 @@ class ConnectionFragment : BaseFragment() {
             mClientId.setText(mConfigManager.clientId)
             mUsername.setText(mConfigManager.username)
             mPassword.setText(mConfigManager.password)
-            mAutoConnect.isChecked = mConfigManager.autoConnect
             mAutoStartSwitch.isChecked = mConfigManager.autoStart
             mNotificationSwitch.isChecked = mConfigManager.persistentNotification
             mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
@@ -134,7 +131,6 @@ class ConnectionFragment : BaseFragment() {
         mButton = view.findViewById(R.id.btn_connect)
         mDisconnectButton = view.findViewById(R.id.btn_disconnect)
         mLogText = view.findViewById(R.id.log_text)
-        mAutoConnect = view.findViewById(R.id.auto_connect_switch)
         mTtsSwitch = view.findViewById(R.id.tts_switch)
         mFloatSwitch = view.findViewById(R.id.float_switch)
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
