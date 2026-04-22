@@ -2,14 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:background="@android:color/white">
 
-    <!-- 主内容区域：系统状态信息 -->
+    <!-- 左半：系统状态信息（使用与竖屏相同的View ID确保HomeFragment兼容） -->
     <ScrollView
         android:id="@+id/main_scroll"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1">
 
         <LinearLayout
@@ -26,10 +26,11 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
+            <!-- Battery（与竖屏相同ID） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -38,7 +39,7 @@
                     android:layout_weight="1"
                     android:text="Battery Level:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/battery_level"
@@ -46,14 +47,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -62,7 +63,7 @@
                     android:layout_weight="1"
                     android:text="Battery Status:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/battery_status"
@@ -70,14 +71,15 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- MQTT Status（与竖屏相同ID） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -86,7 +88,7 @@
                     android:layout_weight="1"
                     android:text="MQTT Status:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/mqtt_status"
@@ -94,24 +96,25 @@
                     android:layout_height="wrap_content"
                     android:text="Disconnected"
                     android:textColor="#FF0000"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Network（与竖屏相同ID） -->
             <TextView
                 android:id="@+id/network_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text="Network"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -120,7 +123,7 @@
                     android:layout_weight="1"
                     android:text="Network Type:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/network_type"
@@ -128,14 +131,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -144,7 +147,7 @@
                     android:layout_weight="1"
                     android:text="WiFi Name:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/wifi_name"
@@ -152,23 +155,24 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Device Info（与竖屏相同ID） -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text="Device"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -177,7 +181,7 @@
                     android:layout_weight="1"
                     android:text="Screen:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/screen_info"
@@ -185,14 +189,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -201,7 +205,7 @@
                     android:layout_weight="1"
                     android:text="Orientation:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/orientation"
@@ -209,14 +213,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -225,7 +229,7 @@
                     android:layout_weight="1"
                     android:text="Android Version:"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/android_version"
@@ -233,46 +237,47 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- ========== 设备详细信息 ========== -->
+            <!-- ========== 设备详细信息（横屏） ========== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:text="Device Details"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:maxHeight="300dp">
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="8dp"
+                android:maxHeight="200dp">
 
                 <TextView
                     android:id="@+id/device_details"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="#F5F5F5"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:text="Loading device info..."
                     android:textColor="#333333"
-                    android:textSize="13sp"
-                    android:lineSpacingExtra="4dp" />
+                    android:textSize="11sp"
+                    android:lineSpacingExtra="2dp" />
             </ScrollView>
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- Debug Log容器：竖屏时占屏幕下方1/2，默认隐藏(GONE) -->
+    <!-- 右半：Debug Log 容器（默认隐藏GONE）—— 与竖屏相同ID -->
     <LinearLayout
         android:id="@+id/debug_log_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:orientation="vertical"
         android:padding="12dp"

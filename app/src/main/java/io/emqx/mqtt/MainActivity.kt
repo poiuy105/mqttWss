@@ -197,36 +197,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         viewPager.offscreenPageLimit = 4
         viewPager.adapter = sectionsPagerAdapter
 
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        if (isLandscape) {
-            // 横屏模式：使用自定义垂直侧边栏替代TabLayout
-            val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
-            setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
-            // 侧边栏宽度 = 屏幕高度/5（正方形图标区域）
-            navSidebar.post {
-                val sideSize = navSidebar.height / 5
-                if (sideSize > 0) {
-                    val params = navSidebar.layoutParams as LinearLayout.LayoutParams
-                    params.width = sideSize
-                    navSidebar.layoutParams = params
-                }
-            }
-        } else {
-            // 竖屏模式：使用标准底部TabLayout
-            val tabs = findViewById<TabLayout>(R.id.tabs)
-            tabs.setupWithViewPager(viewPager)
-            for (i in 0 until tabs.tabCount) {
-                val tab = tabs.getTabAt(i)
-                tab?.setIcon(sectionsPagerAdapter.getPageIcon(i))
-            }
-            // TabLayout高度 = 宽度/5（正方形图标）
-            tabs.post {
-                val tabBarHeight = tabs.width / 5
-                if (tabBarHeight > 0) {
-                    val params = tabs.layoutParams as LinearLayout.LayoutParams
-                    params.height = tabBarHeight
-                    tabs.layoutParams = params
-                }
+        // 横屏模式：使用自定义垂直侧边栏替代TabLayout
+        val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
+        setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
+        
+        // 动态设置侧边栏宽度 = min(屏幕高度, 屏幕宽度) / 5
+        navSidebar.post {
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+            val sideSize = Math.min(screenWidth, screenHeight) / 5
+            
+            if (sideSize > 0) {
+                val params = navSidebar.layoutParams as LinearLayout.LayoutParams
+                params.width = sideSize
+                navSidebar.layoutParams = params
+                Log.d("MainActivity", "Sidebar width set to: $sideSize px (min($screenWidth, $screenHeight) / 5)")
             }
         }
 
@@ -386,17 +372,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 }
             }
         }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        // recreate()前保存MQTT客户端到静态变量，避免Activity重建时断连
-        sPreservedClient = mClient
-        sPreservedConnection = mConnection
-        Log.d("MainActivity", "onConfigurationChanged: preserving MQTT client (connected=${mClient?.isConnected})")
-        // configChanges声明后Android不会自动reinflate布局，必须手动recreate()
-        // 这样onCreate会被重新调用，系统会根据新方向加载layout或layout-land的资源
-        recreate()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

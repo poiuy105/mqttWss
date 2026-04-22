@@ -15,68 +15,80 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- MQTT 标题 + 协议选择 同行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="@string/protocol"
-                android:textColor="@android:color/black"
-                android:textSize="18sp" />
-
-            <RadioGroup
-                android:id="@+id/protocol"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <RadioButton
-                    android:id="@+id/protocol_tcp"
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="TCP"
-                    android:textSize="16sp" />
+                    android:text="@string/protocol"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-                <RadioButton
-                    android:id="@+id/protocol_ssl"
+                <RadioGroup
+                    android:id="@+id/protocol"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SSL"
-                    android:textSize="16sp" />
+                    android:layout_marginStart="16dp"
+                    android:orientation="horizontal">
 
-                <RadioButton
-                    android:id="@+id/protocol_ws"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="WS"
-                    android:textSize="16sp" />
+                    <RadioButton
+                        android:id="@+id/protocol_tcp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="TCP"
+                        android:textSize="13sp" />
 
-                <RadioButton
-                    android:id="@+id/protocol_wss"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="WSS"
-                    android:textSize="16sp" />
-            </RadioGroup>
+                    <RadioButton
+                        android:id="@+id/protocol_ssl"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="SSL"
+                        android:textSize="13sp" />
 
+                    <RadioButton
+                        android:id="@+id/protocol_ws"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="WS"
+                        android:textSize="13sp" />
+
+                    <RadioButton
+                        android:id="@+id/protocol_wss"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="WSS"
+                        android:textSize="13sp" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <!-- SSL untrusted 证书 -->
             <LinearLayout
                 android:id="@+id/ssl_untrusted_container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Allow untrusted certificates"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:text="Untrusted"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/allow_untrusted_checkbox"
@@ -84,228 +96,363 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp">
-
-                <EditText
-                    android:id="@+id/host"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/host"
-                    android:inputType="text"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/port"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/port"
-                    android:inputType="number"
-                    android:text="1883"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/path"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/path"
-                    android:inputType="text"
-                    android:text="/mqtt"
-                    android:visibility="gone"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/clientid"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/client_id"
-                    android:inputType="text"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/username"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/username"
-                    android:inputType="text"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/password"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/password"
-                    android:imeOptions="actionDone"
-                    android:inputType="text"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
+            <!-- 横屏输入框：纯EditText(不用TextInputLayout)，Label左80dp + 输入框右填充 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
+                    android:text="@string/host"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/host"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/host"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/port"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/port"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/port"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:text="1883"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/path_container"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/path"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/path"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/path"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:text="/mqtt"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/client_id"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/clientid"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/client_id"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/username"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/username"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/username"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/password"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/password"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/edit_text"
+                    android:hint="@string/password"
+                    android:imeOptions="actionDone"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Auto Connect + 按钮 行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
                     android:text="Auto Connect"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/auto_connect_switch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
-            </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal">
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
 
                 <Button
                     android:id="@+id/btn_connect"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="34dp"
                     android:layout_weight="1"
                     android:text="@string/connect"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
 
                 <Button
                     android:id="@+id/btn_disconnect"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
                     android:text="Disconnect"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
 
                 <Button
                     android:id="@+id/test_tts"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
                     android:text="TTS"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
 
                 <Button
                     android:id="@+id/test_popup"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
                     android:text="弹窗"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
+            <!-- Home Assistant 区域 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="14dp"
                 android:text="Home Assistant"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/homeassistant_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:orientation="vertical">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/ha_address"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="HA Address"
-                        android:inputType="text"
-                        android:text="homeassistant.local"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/ha_token"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Long-lived Token"
-                        android:inputType="text"
-                        android:text="abcdefg"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/ha_language"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Language"
-                        android:inputType="text"
-                        android:text="zh"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_height="36dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
+                        android:text="HA Address"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/ha_address"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
+                        android:background="@android:drawable/edit_text"
+                        android:hint="HA Address"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:singleLine="true"
+                        android:text="homeassistant.local"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:text="HA Token"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/ha_token"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@android:drawable/edit_text"
+                        android:hint="Long-lived Token"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:singleLine="true"
+                        android:text="abcdefg"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:text="Language"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/ha_language"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@android:drawable/edit_text"
+                        android:hint="Language"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:singleLine="true"
+                        android:text="zh"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
                         android:text="HTTPS"
-                        android:textColor="@android:color/black"
-                        android:textSize="16sp" />
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
 
                     <Switch
                         android:id="@+id/ha_https_checkbox"
@@ -317,24 +464,23 @@
                 <!-- HA Response Delay -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="4dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="Response Delay (ms):"
-                        android:textColor="@android:color/black"
-                        android:textSize="14sp" />
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
 
                     <SeekBar
                         android:id="@+id/ha_response_delay_seekbar"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="2"
+                        android:layout_weight="1"
                         android:max="199"
                         android:progress="0" />
 
@@ -343,7 +489,7 @@
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
                         android:text="10ms"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="end" />
                 </LinearLayout>
 
@@ -355,33 +501,33 @@
                     android:layout_marginTop="12dp"
                     android:text="单击替代返回"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:checked="true" />
             </LinearLayout>
 
+            <!-- Features 开关区 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="14dp"
                 android:text="Features"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="TTS (Text-to-Speech)"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/tts_switch"
@@ -392,17 +538,16 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="36dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Float Window"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/float_switch"
@@ -413,18 +558,16 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="36dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Auto Capture Voice"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/voice_switch"
@@ -434,18 +577,16 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="36dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Auto Start (Reboot)"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/auto_start_switch"
@@ -455,18 +596,16 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="36dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Persistent Notification"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:textSize="12sp" />
 
                 <Switch
                     android:id="@+id/notification_switch"
@@ -479,45 +618,19 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="14dp"
                 android:text="车机保活设置 (BYD)"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="点击查看ADB命令，实现重启后无障碍不失效"
                 android:textColor="#666666"
-                android:textSize="12sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_adb_guide"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:text="📋 ADB说明"
-                    android:textAllCaps="false"
-                    android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/btn_byd_whitelist"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:text="⚡ 极速白名单"
-                    android:textAllCaps="false"
-                    android:textSize="14sp" />
-            </LinearLayout>
+                android:textSize="11sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -526,83 +639,95 @@
                 android:orientation="horizontal">
 
                 <Button
+                    android:id="@+id/btn_adb_guide"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_weight="1"
+                    android:text="ADB说明"
+                    android:textAllCaps="false"
+                    android:textSize="11sp" />
+
+                <Button
+                    android:id="@+id/btn_byd_whitelist"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
+                    android:layout_weight="1"
+                    android:text="极速白名单"
+                    android:textAllCaps="false"
+                    android:textSize="11sp" />
+
+                <Button
                     android:id="@+id/btn_battery_opt"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
-                    android:text="🔋 电池优化"
+                    android:text="电池优化"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
 
                 <Button
                     android:id="@+id/btn_autostart"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
-                    android:text="🔄 自启动"
+                    android:text="自启动"
                     android:textAllCaps="false"
-                    android:textSize="14sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
-            <!-- ========== 云端TTS设置（免费在线接口） ========== -->
+
+            <!-- ========== 云端TTS设置（横屏紧凑版） ========== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="Cloud TTS Settings (Free)"
+                android:layout_marginTop="12dp"
+                android:text="Cloud TTS Settings"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <!-- 接口选择 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="TTS Interface:"
-                    android:textColor="#333333"
-                    android:textSize="14sp" />
+                    android:layout_weight="0.8"
+                    android:text="API:"
+                    android:textSize="12sp" />
 
                 <Spinner
                     android:id="@+id/cloud_tts_api_spinner"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="32dp"
                     android:layout_weight="1.5" />
-            </LinearLayout>
-
-            <!-- 测试按钮行 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/btn_tts_test_cloud"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="4dp"
                     android:layout_weight="1"
-                    android:text="Test TTS"
+                    android:text="Test"
                     android:textAllCaps="false"
-                    android:textSize="12sp" />
+                    android:textSize="10sp" />
 
                 <Button
                     android:id="@+id/btn_tts_reset_default"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="3dp"
                     android:layout_weight="1"
-                    android:text="Reset Default"
+                    android:text="Reset"
                     android:textAllCaps="false"
-                    android:textSize="12sp" />
+                    android:textSize="10sp" />
             </LinearLayout>
 
         </LinearLayout>

@@ -5,23 +5,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:orientation="vertical">
+    android:orientation="horizontal">
 
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/view_pager"
+    <!-- 横屏：左侧主内容区域（包含侧边栏导航+ViewPager） -->
+    <LinearLayout
+        android:id="@+id/main_content_left"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabs"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:background="?attr/colorPrimary"
-        app:tabGravity="fill"
-        app:tabIndicatorColor="@android:color/white"
-        app:tabIndicatorFullWidth="false"
-        app:tabMode="fixed"
-        app:tabTextAppearance="@style/TabLayoutTextStyle" />
+    <!-- 左侧垂直导航栏（宽高由代码动态设为正方形） -->
+    <LinearLayout
+        android:id="@+id/nav_sidebar"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#2C3E50" />
+
+        <androidx.viewpager.widget.ViewPager
+            android:id="@+id/view_pager"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+    </LinearLayout>
 
 </LinearLayout>

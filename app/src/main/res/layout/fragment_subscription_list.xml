@@ -5,40 +5,43 @@
     android:name="io.emqx.mqtt.SubscriptionFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp"
+    android:orientation="horizontal"
+    android:padding="10dp"
     tools:context=".SubscriptionFragment"
     tools:listitem="@layout/item_subscription">
 
+    <!-- 左侧：标题+按钮 -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:paddingEnd="10dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/subscription"
             android:textColor="@android:color/black"
-            android:textSize="18sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <Button
             android:id="@+id/btn_add_subscription"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="6dp"
             android:text="+"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textAllCaps="false" />
     </LinearLayout>
 
+    <!-- 右侧：RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/subscription_list"
         android:name="io.emqx.mqtt.SubscriptionFragment"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         app:layoutManager="LinearLayoutManager" />
 

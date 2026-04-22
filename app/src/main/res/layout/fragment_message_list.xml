@@ -8,21 +8,93 @@
     android:padding="8dp"
     tools:context=".MessageFragment">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Screen Text Capture Log"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal">
 
-    <TextView
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Screen Text Capture Log"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/excluded_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Excluded: 0"
+            android:textColor="#999999"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btn_clear_log"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginStart="6dp"
+            android:text="Clear"
+            android:textAllCaps="false"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- 横屏：Prefix/Suffix 输入框左右结构 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Tap app name to exclude it from capture filter"
-        android:textColor="#666666"
-        android:textSize="12sp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="Prefix"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <EditText
+                android:id="@+id/prefix_input"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:hint="Prefix"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Suffix"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <EditText
+                android:id="@+id/suffix_input"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:hint="Suffix"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
     <HorizontalScrollView
         android:layout_width="match_parent"
@@ -40,14 +112,14 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:text="Only Capture Frame (Long press to delete)"
         android:textColor="#666666"
-        android:textSize="12sp" />
+        android:textSize="11sp" />
 
     <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="40dp"
         android:layout_marginTop="2dp"
         android:scrollbars="horizontal">
 
@@ -58,46 +130,11 @@
             android:orientation="horizontal" />
     </HorizontalScrollView>
 
+    <!-- Send to HA 开关 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:orientation="horizontal">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/prefix_input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Prefix"
-                android:inputType="text"
-                android:textSize="12sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/suffix_input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Suffix"
-                android:inputType="text"
-                android:textSize="12sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -107,7 +144,7 @@
             android:layout_weight="1"
             android:text="Send to Home Assistant"
             android:textColor="@android:color/black"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
         <Switch
             android:id="@+id/ha_send_checkbox"
@@ -115,35 +152,12 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/excluded_count"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Excluded: 0"
-            android:textColor="#999999"
-            android:textSize="12sp" />
-
-        <Button
-            android:id="@+id/btn_clear_log"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clear Log"
-            android:textAllCaps="false" />
-    </LinearLayout>
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/message_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         app:layoutManager="LinearLayoutManager"
         tools:listitem="@layout/item_captured_text" />
 
