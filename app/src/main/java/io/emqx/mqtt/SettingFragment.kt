@@ -327,7 +327,8 @@ class SettingFragment : BaseFragment() {
 
         // ========== 功能开关 - 实时持久化 + 同步MainActivity ==========
 
-        // 恢复后立即同步到MainActivity运行时状态（复用上面已声明的mainActivity变量）
+        val mainActivity = (activity as? MainActivity)
+        // 恢复后立即同步到MainActivity运行时状态
         mainActivity?.let {
             it.isTTSEnabled = mTtsSwitch.isChecked
             it.isFloatWindowEnabled = mFloatSwitch.isChecked
