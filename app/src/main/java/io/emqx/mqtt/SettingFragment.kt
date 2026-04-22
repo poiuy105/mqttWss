@@ -31,7 +31,6 @@ class SettingFragment : BaseFragment() {
     private lateinit var mProtocol: RadioGroup
     private lateinit var mButton: Button
     private lateinit var mDisconnectButton: Button
-    private lateinit var mAutoConnect: Switch
     private lateinit var mTtsSwitch: Switch
     private lateinit var mFloatSwitch: Switch
     private lateinit var mVoiceSwitch: Switch
@@ -110,7 +109,6 @@ class SettingFragment : BaseFragment() {
             haResponseDelay = mConfigManager.haResponseDelay,
             haClickBackEnabled = mHaClickBackSwitch.isChecked
         )
-        mConfigManager.autoConnect = mAutoConnect.isChecked
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
         mConfigManager.persistentNotification = mNotificationSwitch.isChecked
     }
@@ -127,7 +125,6 @@ class SettingFragment : BaseFragment() {
         }
         
         // 恢复所有开关和选项（即使没有完整配置也要恢复）
-        mAutoConnect.isChecked = mConfigManager.autoConnect
         mAutoStartSwitch.isChecked = mConfigManager.autoStart
         mNotificationSwitch.isChecked = mConfigManager.persistentNotification
         mAllowUntrustedCheckbox.isChecked = mConfigManager.allowUntrusted
@@ -174,7 +171,6 @@ class SettingFragment : BaseFragment() {
         mProtocol = view.findViewById(R.id.protocol)
         mButton = view.findViewById(R.id.btn_connect)
         mDisconnectButton = view.findViewById(R.id.btn_disconnect)
-        mAutoConnect = view.findViewById(R.id.auto_connect_switch)
         mTtsSwitch = view.findViewById(R.id.tts_switch)
         mFloatSwitch = view.findViewById(R.id.float_switch)
         mVoiceSwitch = view.findViewById(R.id.voice_switch)
@@ -287,23 +283,6 @@ class SettingFragment : BaseFragment() {
             mConfigManager.allowUntrusted = isChecked
             appendLog("Allow Untrusted ${if (isChecked) "enabled" else "disabled"}")
         }
-        mAutoConnect.setOnCheckedChangeListener { _, isChecked ->
-            mConfigManager.autoConnect = isChecked
-            appendLog("Auto Connect ${if (isChecked) "enabled" else "disabled"}")
-            // Auto Connect打开时锁定所有MQTT连接参数（防止修改后无法匹配已保存配置）
-            updateMqttControlsEnabled(!isChecked)
-        }
-        // 初始状态：根据当前MQTT连接状态和autoConnect值决定控件可用性
-        val mainActivity = (activity as? MainActivity)
-        val isConnected = mainActivity?.mClient?.isConnected == true
-        mAutoConnect.isEnabled = isConnected
-        if (!isConnected) {
-            mAutoConnect.alpha = 0.5f
-        } else {
-            mAutoConnect.alpha = 1.0f
-        }
-        // 初始化时也应用autoConnect对控件的锁定状态
-        updateMqttControlsEnabled(!mAutoConnect.isChecked)
 
         // ========== HA容器控件实时保存 ==========
         mHaAddress.addTextChangedListener(object : TextWatcher {
@@ -633,17 +612,11 @@ class SettingFragment : BaseFragment() {
             mButton.text = "Connected"
             mButton.isEnabled = false
             mDisconnectButton.isEnabled = true
-            // MQTT已连接：允许操作Auto Connect开关
-            mAutoConnect.isEnabled = true
-            mAutoConnect.alpha = 1.0f
             updateNotificationStatus("MQTT Connected", "${mConfigManager.host}:${mConfigManager.port}")
         } else {
             mButton.text = getString(R.string.connect)
             mButton.isEnabled = true
             mDisconnectButton.isEnabled = false
-            // MQTT未连接：禁用Auto Connect开关（必须先手动连接成功才能启用）
-            mAutoConnect.isEnabled = false
-            mAutoConnect.alpha = 0.5f
             updateNotificationStatus("MQTT Disconnected", "Not connected")
         }
     }
