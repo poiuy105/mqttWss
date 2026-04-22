@@ -200,6 +200,29 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // 使用自定义垂直侧边栏替代TabLayout
         val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
         setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
+        
+        // 动态设置侧边栏宽度（根据屏幕方向）
+        navSidebar.post {
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+            val isLandscape = screenWidth > screenHeight
+            
+            // 竖屏：宽度 = 屏幕宽度的 1/10
+            // 横屏：宽度 = min(高,宽) / 5
+            val sideSize = if (isLandscape) {
+                Math.min(screenWidth, screenHeight) / 5
+            } else {
+                screenWidth / 10
+            }
+            
+            if (sideSize > 0) {
+                val params = navSidebar.layoutParams as LinearLayout.LayoutParams
+                params.width = sideSize
+                navSidebar.layoutParams = params
+                Log.d("MainActivity", "Sidebar width: $sideSize px (${if (isLandscape) "landscape" else "portrait"})")
+            }
+        }
 
         setupAccessibilityService()
 
@@ -965,6 +988,32 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // 当 App 进入后台时，停止 MQTT 连接监控，避免后台启动服务导致崩溃
         stopMqttConnectionMonitor()
         Log.d("MainActivity", "App stopped, MQTT connection monitor stopped")
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        
+        // 屏幕旋转时重新计算侧边栏宽度
+        val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
+        navSidebar.post {
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+            val isLandscape = screenWidth > screenHeight
+            
+            val sideSize = if (isLandscape) {
+                Math.min(screenWidth, screenHeight) / 5
+            } else {
+                screenWidth / 10
+            }
+            
+            if (sideSize > 0) {
+                val params = navSidebar.layoutParams as LinearLayout.LayoutParams
+                params.width = sideSize
+                navSidebar.layoutParams = params
+                Log.d("MainActivity", "Sidebar resized: $sideSize px (${if (isLandscape) "landscape" else "portrait"})")
+            }
+        }
     }
 
     override fun onDestroy() {

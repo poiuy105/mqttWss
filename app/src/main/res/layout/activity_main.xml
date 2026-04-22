@@ -14,12 +14,11 @@
         android:layout_height="match_parent"
         android:orientation="horizontal">
 
-    <!-- 左侧垂直导航栏（使用layout_weight自适应） -->
+    <!-- 左侧垂直导航栏（宽度由代码动态设置） -->
     <LinearLayout
         android:id="@+id/nav_sidebar"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"
         android:orientation="vertical"
         android:background="#2C3E50" />
 
@@ -27,7 +26,7 @@
             android:id="@+id/view_pager"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="4" />
+            android:layout_weight="1" />
     </LinearLayout>
 
 </LinearLayout>
