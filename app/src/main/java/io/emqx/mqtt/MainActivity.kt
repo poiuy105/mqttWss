@@ -197,24 +197,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         viewPager.offscreenPageLimit = 4
         viewPager.adapter = sectionsPagerAdapter
 
-        // 横屏模式：使用自定义垂直侧边栏替代TabLayout
+        // 使用自定义垂直侧边栏替代TabLayout
         val navSidebar = findViewById<LinearLayout>(R.id.nav_sidebar)
         setupLandscapeSidebar(navSidebar, viewPager, sectionsPagerAdapter)
-        
-        // 动态设置侧边栏宽度 = min(屏幕高度, 屏幕宽度) / 5
-        navSidebar.post {
-            val displayMetrics = resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val screenHeight = displayMetrics.heightPixels
-            val sideSize = Math.min(screenWidth, screenHeight) / 5
-            
-            if (sideSize > 0) {
-                val params = navSidebar.layoutParams as LinearLayout.LayoutParams
-                params.width = sideSize
-                navSidebar.layoutParams = params
-                Log.d("MainActivity", "Sidebar width set to: $sideSize px (min($screenWidth, $screenHeight) / 5)")
-            }
-        }
 
         setupAccessibilityService()
 
