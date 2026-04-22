@@ -266,17 +266,31 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
         
         if (configManager.hasSavedConfig()) {
-            // 有保存的配置：延迟3秒后自动连接（避免启动卡顿时任务被阻塞）
-            Log.d("MainActivity", "Saved config exists, will auto-connect after 3s delay...")
-            window.decorView.postDelayed({
-                autoConnectIfConfigured()
-            }, 3000)
+            // 有保存的配置：使用后台线程延迟3秒后自动连接（避免主线程卡死导致任务不执行）
+            Log.d("MainActivity", "Saved config exists, will auto-connect after 3s delay (background thread)...")
+            Thread {
+                try {
+                    Thread.sleep(3000)
+                    runOnUiThread {
+                        autoConnectIfConfigured()
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Auto-connect delayed task failed: ${e.message}")
+                }
+            }.start()
         } else if (autoConnectFromBoot) {
-            // 从 BootReceiver/通知栏启动：延迟2秒后自动连接
-            Log.d("MainActivity", "Auto-connect requested from boot/notification")
-            window.decorView.postDelayed({
-                autoConnectIfConfigured()
-            }, 2000)
+            // 从 BootReceiver/通知栏启动：使用后台线程延迟2秒后自动连接
+            Log.d("MainActivity", "Auto-connect requested from boot/notification (background thread)")
+            Thread {
+                try {
+                    Thread.sleep(2000)
+                    runOnUiThread {
+                        autoConnectIfConfigured()
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Auto-connect delayed task failed: ${e.message}")
+                }
+            }.start()
         } else {
             Log.d("MainActivity", "No saved config, no auto-connect")
         }
