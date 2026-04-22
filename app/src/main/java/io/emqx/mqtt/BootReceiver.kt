@@ -30,12 +30,16 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private fun handleBootOrPowerOn(context: Context) {
+        Log.d("BootReceiver", "Handling boot/power on event")
+
         // ========== 1. 无障碍状态自检 ==========
         checkAndRestoreAccessibility(context)
 
         // ========== 2. MQTT自动连接（原有逻辑）==========
         val configManager = ConfigManager.getInstance(context)
-        if (configManager.autoStart && configManager.hasSavedConfig()) {
+        
+        // 检查是否有保存的配置，不再依赖 autoStart 标志
+        if (configManager.hasSavedConfig()) {
             Log.d("BootReceiver", "Auto-start enabled, launching MainActivity...")
             val launchIntent = Intent(context, MainActivity::class.java).apply {
                 // 重要：添加 FLAG_ACTIVITY_NEW_TASK 以从后台启动
@@ -46,7 +50,7 @@ class BootReceiver : BroadcastReceiver() {
             context.startActivity(launchIntent)
             Log.d("BootReceiver", "MainActivity launched with auto_connect=true")
         } else {
-            Log.d("BootReceiver", "Auto-start disabled or no saved config")
+            Log.d("BootReceiver", "No saved config found, skipping auto-start")
         }
     }
 

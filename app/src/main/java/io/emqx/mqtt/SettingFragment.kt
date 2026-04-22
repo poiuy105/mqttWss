@@ -464,7 +464,8 @@ class SettingFragment : BaseFragment() {
         }
         mAutostartButton.setOnClickListener {
             appendLog("跳转自启动管理")
-            BydPermitUtils.jumpToAutoStart(requireContext())
+            // 使用新的BootUtils工具类
+            BootUtils.openAutoStartSettings(requireContext())
         }
 
         // ========== 云端TTS设置 ==========
