@@ -959,6 +959,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // 云端TTS不需要onActivityResult处理
     }
 
+    /**
+     * 拦截返回键，将应用移至后台而不是退出
+     * 这样可以让 MqttService 继续在后台运行，保持 MQTT 连接和 TTS 能力
+     */
+    override fun onBackPressed() {
+        // 移动到后台，就像按了 Home 键一样
+        moveTaskToBack(true)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         
