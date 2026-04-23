@@ -436,8 +436,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     private fun autoConnectIfConfigured() {
         val configManager = ConfigManager.getInstance(this)
-        if (configManager.autoConnect && configManager.hasSavedConfig()) {
+        
+        // 只要有保存的配置就自动连接（已移除 autoConnect 开关依赖）
+        if (configManager.hasSavedConfig()) {
             Log.d("MainActivity", "Auto-connecting with saved config...")
+            Log.d("MainActivity", "Host: ${configManager.host}, Port: ${configManager.port}, Protocol: ${configManager.protocol}")
+            
             val connection = Connection(
                 this,
                 configManager.host,
@@ -448,21 +452,24 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 configManager.protocol,
                 configManager.path
             )
+            
             connect(connection, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     Log.d("MainActivity", "Auto-connect success")
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Auto-connected", Toast.LENGTH_SHORT).show()
+                        ToastUtils.showShort(this@MainActivity, "Auto-connected")
                     }
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
-                    Log.e("MainActivity", "Auto-connect failed: ${exception?.message}")
+                    Log.e("MainActivity", "Auto-connect failed: ${exception?.message}", exception)
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Auto-connect failed", Toast.LENGTH_SHORT).show()
+                        ToastUtils.showShort(this@MainActivity, "Auto-connect failed: ${exception?.message}")
                     }
                 }
             })
+        } else {
+            Log.w("MainActivity", "No saved config found, skipping auto-connect")
         }
     }
 
