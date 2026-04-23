@@ -20,11 +20,18 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
+        Log.d("BootReceiver", "========================================")
         Log.d("BootReceiver", "Received broadcast: $action")
+        Log.d("BootReceiver", "Package: ${context.packageName}")
+        Log.d("BootReceiver", "Time: ${System.currentTimeMillis()}")
+        Log.d("BootReceiver", "========================================")
 
         when (action) {
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_POWER_CONNECTED -> {
                 handleBootOrPowerOn(context)
+            }
+            else -> {
+                Log.w("BootReceiver", "Unknown action: $action")
             }
         }
     }
