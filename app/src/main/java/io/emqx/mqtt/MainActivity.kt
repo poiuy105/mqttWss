@@ -450,7 +450,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 configManager.username,
                 configManager.password,
                 configManager.protocol,
-                configManager.path
+                configManager.path,
+                configManager.allowUntrusted  // 添加 allowUntrusted 参数
             )
             
             connect(connection, object : IMqttActionListener {
