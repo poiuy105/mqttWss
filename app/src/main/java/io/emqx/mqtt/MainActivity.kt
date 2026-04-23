@@ -1007,9 +1007,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onStop() {
         super.onStop()
-        // 当 App 进入后台时，停止 MQTT 连接监控，避免后台启动服务导致崩溃
-        stopMqttConnectionMonitor()
-        Log.d("MainActivity", "App stopped, MQTT connection monitor stopped")
+        // 注意：不在 onStop 时停止 MQTT 监控器
+        // MQTT 需要在后台持续发送心跳以保持连接
+        // 如果停止监控器，服务器会在 Keep Alive 超时后断开连接（约60-70秒）
+        Log.d("MainActivity", "App stopped, but MQTT monitor continues running")
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
