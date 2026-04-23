@@ -41,14 +41,22 @@ class BootReceiver : BroadcastReceiver() {
         // 检查是否有保存的配置，不再依赖 autoStart 标志
         if (configManager.hasSavedConfig()) {
             Log.d("BootReceiver", "Auto-start enabled, launching MainActivity...")
-            val launchIntent = Intent(context, MainActivity::class.java).apply {
-                // 重要：添加 FLAG_ACTIVITY_NEW_TASK 以从后台启动
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // 传递 auto_connect 参数，触发自动重连
-                putExtra("auto_connect", true)
+            
+            // 尝试直接启动 Activity
+            try {
+                val launchIntent = Intent(context, MainActivity::class.java).apply {
+                    // 重要：添加 FLAG_ACTIVITY_NEW_TASK 以从后台启动
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // 传递 auto_connect 参数，触发自动重连
+                    putExtra("auto_connect", true)
+                }
+                context.startActivity(launchIntent)
+                Log.d("BootReceiver", "MainActivity launched successfully with auto_connect=true")
+            } catch (e: Exception) {
+                // Android 10+ 可能阻止后台启动 Activity，显示通知作为备选方案
+                Log.w("BootReceiver", "Failed to start Activity directly: ${e.message}, showing notification instead")
+                showAutoStartNotification(context)
             }
-            context.startActivity(launchIntent)
-            Log.d("BootReceiver", "MainActivity launched with auto_connect=true")
         } else {
             Log.d("BootReceiver", "No saved config found, skipping auto-start")
         }
@@ -102,6 +110,54 @@ class BootReceiver : BroadcastReceiver() {
             Log.d("BootReceiver", "Foreground service start requested")
         } catch (e: Exception) {
             Log.e("BootReceiver", "Failed to start foreground service: ${e.message}")
+        }
+    }
+
+    /**
+     * 显示自动启动通知（当无法直接启动 Activity 时）
+     */
+    private fun showAutoStartNotification(context: Context) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            
+            // 创建通知渠道（Android 8.0+）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = android.app.NotificationChannel(
+                    "auto_start_channel",
+                    "自启动提醒",
+                    android.app.NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.description = "应用开机自启动提醒"
+                notificationManager.createNotificationChannel(channel)
+            }
+            
+            // 创建点击通知后启动的 Intent
+            val intent = Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("auto_connect", true)
+            }
+            
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // 构建通知
+            val notification = android.app.NotificationCompat.Builder(context, "auto_start_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("MQTT 客户端")
+                .setContentText("点击启动并自动连接 MQTT")
+                .setPriority(android.app.NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            
+            notificationManager.notify(1001, notification)
+            Log.d("BootReceiver", "Auto-start notification shown")
+        } catch (e: Exception) {
+            Log.e("BootReceiver", "Failed to show notification: ${e.message}", e)
         }
     }
 }

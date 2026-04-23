@@ -315,3 +315,213 @@ C:\Users\HP\Downloads\adbgongjuxiang>adb logcat --pid=18363
 04-23 11:08:33.498 18363 18399 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
 04-23 11:08:33.506 18363 18363 D MainActivity: MQTT connection monitor stopped
 04-23 11:08:33.506 18363 18363 D MainActivity: App stopped, MQTT connection monitor stopped
+04-23 11:16:19.073 18363 18384 D AppScoutStateMachine: 18363-ScoutStateMachinecreated
+04-23 11:16:19.075 18363 18399 D ContentCatcher_injector: Interceptor : notifyActivityStart: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:16:19.075 18363 18399 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:16:19.082 18363 18399 D ContentCatcher_injector: Interceptor : notifyActivityResume: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:16:19.082 18363 18399 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:16:19.106 18363 18363 D MainActivity: MQTT connection monitor started (interval: 15000ms)
+04-23 11:16:19.106 18363 18363 D MainActivity: App resumed, MQTT connection monitor started
+04-23 11:16:19.187 18363 18363 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+04-23 11:16:19.189 18363 18396 E OpenGLRenderer: Unable to match the desired swap behavior.
+04-23 11:16:19.190 18363 18363 D VRI[MainActivity]: vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4360 android.view.ViewRootImpl.doTraversal:2989 android.view.ViewRootImpl$TraversalRunnable.run:10304 android.view.Choreographer$CallbackRecord.run:1594 android.view.Choreographer$CallbackRecord.run:1603
+04-23 11:16:19.190 18363 18363 D VRI[MainActivity]: vri.Setup new sync=wmsSync-VRI[MainActivity]#2
+04-23 11:16:19.239 18363 18363 D VRI[MainActivity]: vri.reportDrawFinished
+04-23 11:16:19.274 18363 18363 D CompatibilityChangeReporter: Compat change id reported: 163400105; UID 10395; state: DISABLED
+04-23 11:16:19.288 18363 18363 I AssistStructure: Flattened final assist data: 15800 bytes, containing 1 windows, 116 views
+04-23 11:16:19.330 18363 18363 I HandWritingStubImpl: refreshLastKeyboardType: 1
+04-23 11:16:19.330 18363 18363 I HandWritingStubImpl: getCurrentKeyboardType: 1
+04-23 11:16:21.150 18363 18399 D ContentCatcher_injector: Interceptor : notifyActivityPause: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:16:21.151 18363 18399 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:16:21.163 18363 18399 D ContentCatcher_injector: Interceptor : notifyActivityStop: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:16:21.163 18363 18399 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:16:21.169 18363 18363 D MainActivity: MQTT connection monitor stopped
+04-23 11:16:21.169 18363 18363 D MainActivity: App stopped, MQTT connection monitor stopped
+^C
+C:\Users\HP\Downloads\adbgongjuxiang>adb shell am force-stop io.emqx.mqtt
+
+C:\Users\HP\Downloads\adbgongjuxiang>adb shell am start -n io.emqx.mqtt/io.emqx.mqtt.MainActivity
+Starting: Intent { cmp=io.emqx.mqtt/.MainActivity }
+
+C:\Users\HP\Downloads\adbgongjuxiang>adb shell pidof io.emqx.mqtt
+20308
+
+C:\Users\HP\Downloads\adbgongjuxiang>adb logcat --pid=20208
+^C
+C:\Users\HP\Downloads\adbgongjuxiang>adb logcat --pid=20308
+--------- beginning of main
+04-23 11:17:57.752 20308 20308 E Zygote  : process_name_ptr:20308 io.emqx.mqtt
+04-23 11:17:57.753 20308 20308 I libc    : SetHeapTaggingLevel: tag level set to 0
+04-23 11:17:57.760 20308 20308 I io.emqx.mqtt: Late-enabling -Xcheck:jni
+04-23 11:17:57.773 20308 20308 I io.emqx.mqtt: Using CollectorTypeCC GC.
+04-23 11:17:57.781 20308 20308 I MessageMonitor: Load libmiui_runtime
+04-23 11:17:57.798 20308 20308 D MiuiMonitorThread: Shared singleton Thread for stability monitor start
+04-23 11:17:57.801 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10396; state: DISABLED
+04-23 11:17:57.801 20308 20354 D AppScoutStateMachine: 20308-ScoutStateMachinecreated
+04-23 11:17:57.802 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 242716250; UID 10396; state: DISABLED
+04-23 11:17:57.818 20308 20308 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar
+04-23 11:17:57.820 20308 20308 D nativeloader: Configuring clns-4 for other apk /data/app/~~XCuLNP_NSAD_5vBPK-Zfcg==/io.emqx.mqtt-537_-7W4KOQL09ONCo7agg==/base.apk. target_sdk_version=29, uses_libraries=, library_path=/data/app/~~XCuLNP_NSAD_5vBPK-Zfcg==/io.emqx.mqtt-537_-7W4KOQL09ONCo7agg==/lib/arm64, permitted_path=/data:/mnt/expand:/data/user/0/io.emqx.mqtt
+04-23 11:17:57.820 20308 20308 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+04-23 11:17:57.827 20308 20308 I Perf    : Connecting to perf service.
+04-23 11:17:57.831 20308 20308 V GraphicsEnvironment: Currently set values for:
+04-23 11:17:57.832 20308 20308 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+04-23 11:17:57.832 20308 20308 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+04-23 11:17:57.832 20308 20308 V GraphicsEnvironment: ANGLE GameManagerService for io.emqx.mqtt: false
+04-23 11:17:57.832 20308 20308 V GraphicsEnvironment: io.emqx.mqtt is not listed in per-application setting
+04-23 11:17:57.832 20308 20308 V GraphicsEnvironment: App is not on the allowlist for updatable production driver.
+04-23 11:17:57.836 20308 20308 I ForceDarkHelperStubImpl: initialize for io.emqx.mqtt , ForceDarkOrigin
+04-23 11:17:57.838 20308 20308 D OpenGLRenderer: JNI_OnLoad success
+04-23 11:17:57.838 20308 20308 I MiuiForceDarkConfig: setConfig density:2.750000, mainRule:0, secondaryRule:0, tertiaryRule:0
+04-23 11:17:57.859 20308 20406 W libc    : Access denied finding property "vendor.migl.debug"
+04-23 11:17:57.859 20308 20406 I libMiGL : EnableDR: 0
+04-23 11:17:57.859 20308 20406 D libMiGL : mDFIInterval: -1
+04-23 11:17:57.865 20308 20308 D AppCompatDelegate: Checking for metadata for AppLocalesMetadataHolderService : Service not found
+04-23 11:17:57.882 20308 20308 W libc    : Access denied finding property "ro.vendor.df.effect.conflict"
+04-23 11:17:57.878 20308 20308 W io.emqx.mqtt: type=1400 audit(0.0:44099): avc:  denied  { read } for  name="u:object_r:vendor_displayfeature_prop:s0" dev="tmpfs" ino=15502 scontext=u:r:untrusted_app_29:s0:c140,c257,c512,c768 tcontext=u:object_r:vendor_displayfeature_prop:s0 tclass=file permissive=0 app=io.emqx.mqtt
+04-23 11:17:57.893 20308 20308 D DecorView[]: getWindowModeFromSystem  windowmode is 1
+04-23 11:17:57.894 20308 20411 D nativeloader: Configuring clns-5 for other apk /system_ext/app/miuisystem/miuisystem.apk. target_sdk_version=33, uses_libraries=ALL, library_path=/product/app/MiuiContentCatcherMIUI15/lib/arm64:/product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk!/lib/arm64-v8a:/system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk!/lib/arm64-v8a:/system_ext/app/miuisystem/miuisystem.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+04-23 11:17:57.894 20308 20411 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+04-23 11:17:57.899 20308 20411 D nativeloader: Configuring clns-6 for other apk /system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk. target_sdk_version=33, uses_libraries=ALL, library_path=/product/app/MiuiContentCatcherMIUI15/lib/arm64:/product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk!/lib/arm64-v8a:/system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk!/lib/arm64-v8a:/system_ext/app/miuisystem/miuisystem.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+04-23 11:17:57.899 20308 20411 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+04-23 11:17:57.904 20308 20411 D nativeloader: Configuring clns-7 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=33, uses_libraries=ALL, library_path=/product/app/MiuiContentCatcherMIUI15/lib/arm64:/product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk!/lib/arm64-v8a:/system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk!/lib/arm64-v8a:/system_ext/app/miuisystem/miuisystem.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+04-23 11:17:57.904 20308 20411 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+04-23 11:17:57.905 20308 20308 W io.emqx.mqtt: Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (unsupported, reflection, allowed)
+04-23 11:17:57.905 20308 20308 W io.emqx.mqtt: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+04-23 11:17:57.908 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 171228096; UID 10396; state: ENABLED
+04-23 11:17:57.909 20308 20411 D nativeloader: InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-aarch64-android.so:libclang_rt.asan-arm-android.so:libclang_rt.hwasan-aarch64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libselinux.so:libsync.so:libvndksupport.so:libvulkan.so
+04-23 11:17:57.909 20308 20411 D nativeloader: Configuring product-clns-8 for unbundled product apk /product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk. target_sdk_version=33, uses_libraries=, library_path=/product/app/MiuiContentCatcherMIUI15/lib/arm64:/product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk!/lib/arm64-v8a:/system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk!/lib/arm64-v8a:/system_ext/app/miuisystem/miuisystem.apk!/lib/arm64-v8a:/product/lib64:/system/product/lib64, permitted_path=/data:/mnt/expand:/product/lib64:/system/product/lib64
+04-23 11:17:57.910 20308 20411 D nativeloader: InitVndkspLibrariesProduct: android.hardware.common-V2-ndk.so:android.hardware.common-V2-ndk_platform.so:android.hardware.common.fmq-V1-ndk.so:android.hardware.common.fmq-V1-ndk_platform.so:android.hardware.graphics.allocator-V2-ndk.so:android.hardware.graphics.allocator-V2-ndk_platform.so:android.hardware.graphics.common-V4-ndk.so:android.hardware.graphics.common-V4-ndk_platform.so:android.hardware.graphics.common@1.0.so:android.hardware.graphics.common@1.1.so:android.hardware.graphics.common@1.2.so:android.hardware.graphics.composer3-V1-ndk.so:android.hardware.graphics.composer3-V1-ndk_platform.so:android.hardware.graphics.mapper@2.0.so:android.hardware.graphics.mapper@2.1.so:android.hardware.graphics.mapper@3.0.so:android.hardware.graphics.mapper@4.0.so:android.hardware.renderscript@1.0.so:android.hidl.memory.token@1.0.so:android.hidl.memory@1.0-impl.so:android.hidl.memory@1.0.so:android.hidl.safe_union@1.0.so:libRSCpuRef.so:libRSDriver.so:libRS_internal.so:libbase.so:libbcinfo.so:libblas.so:libc++.so:lib
+04-23 11:17:57.912 20308 20411 D ContentCatcher_injector: Interceptor : Init Interceptor for Activity io.emqx.mqtt.MainActivity@337a137
+04-23 11:17:57.914 20308 20411 D ViewContentFactory: initViewContentFetcherClass
+04-23 11:17:57.914 20308 20411 D ViewContentFactory: getInterceptorPackageInfo
+04-23 11:17:57.914 20308 20411 D ViewContentFactory: getInitialApplication took 0ms
+04-23 11:17:57.914 20308 20411 D ViewContentFactory: packageInfo.packageName: com.miui.contentcatcher
+04-23 11:17:57.915 20308 20411 D ViewContentFactory: initViewContentFetcherClass took 1ms
+04-23 11:17:57.915 20308 20411 I ContentCatcher: ViewContentFetcher : ViewContentFetcher
+04-23 11:17:57.915 20308 20411 D ViewContentFactory: createInterceptor took 2ms
+04-23 11:17:57.915 20308 20411 D ContentCatcher_injector: Interceptor : notifyActivityCreate: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+--------- beginning of system
+04-23 11:17:57.916 20308 20411 E ContentCatcherManager: failed to get ContentCatcherService.
+04-23 11:17:57.916 20308 20411 E ContentCatcherManager: failed to get ContentCatcherService.
+04-23 11:17:57.916 20308 20411 D ContentCatcher_injector: Interceptor : NOT interest in this page: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:17:57.916 20308 20411 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:17:57.921 20308 20308 D MainActivity: [CloudTTS] 已初始化: 微软Edge-TTS (晓晓-甜美女声)
+04-23 11:17:57.926 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 210923482; UID 10396; state: DISABLED
+04-23 11:17:57.926 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 37756858; UID 10396; state: ENABLED
+04-23 11:17:57.943 20308 20308 D MainActivity: A11y startup check: needsFix=false, currentlyEnabled=false
+04-23 11:17:57.944 20308 20308 D MainActivity: Saved config exists, will auto-connect after 3s delay (background thread)...
+04-23 11:17:57.949 20308 20411 D ContentCatcher_injector: Interceptor : notifyActivityStart: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:17:57.949 20308 20411 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:17:57.952 20308 20411 D ContentCatcher_injector: Interceptor : notifyActivityResume: io.emqx.mqtt@io.emqx.mqtt.MainActivity@53977399
+04-23 11:17:57.952 20308 20411 D ContentCatcher_catcher: CatcherHolder : mCatcherList size: 0
+04-23 11:17:57.956 20308 20308 D MainActivity: MQTT connection monitor started (interval: 15000ms)
+04-23 11:17:57.956 20308 20308 D MainActivity: App resumed, MQTT connection monitor started
+04-23 11:17:57.963 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 237531167; UID 10396; state: DISABLED
+04-23 11:17:57.964 20308 20308 D FramePredict: FramePredict init: false
+04-23 11:17:57.964 20308 20308 D FramePredict: init success
+04-23 11:17:57.966 20308 20436 E FramePredict: registerContentObserver fail
+04-23 11:17:57.996 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.038 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.057 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.072 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.282 20308 20308 D SettingFragment: === MQTT Setting ===
+04-23 11:17:58.284 20308 20308 D SettingFragment: Fragment initialized
+04-23 11:17:58.291 20308 20308 D SettingFragment: Loaded saved configuration
+04-23 11:17:58.291 20308 20308 D MainActivity: isTTSEnabled changed to: true
+04-23 11:17:58.291 20308 20308 D MainActivity: isFloatWindowEnabled changed to: true
+04-23 11:17:58.296 20308 20308 D SettingFragment: [CloudTTS] 设置已加载: 微软Edge-TTS (晓晓-甜美女声)
+04-23 11:17:58.322 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.332 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.371 20308 20308 I TextInputLayout: EditText added is not a TextInputEditText. Please switch to using that class instead.
+04-23 11:17:58.387 20308 20308 I TextInputLayout: EditText added is not a TextInputEditText. Please switch to using that class instead.
+04-23 11:17:58.389 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.392 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.396 20308 20308 D ScrollerOptimizationManager: registerConfigChangedListener
+04-23 11:17:58.648 20308 20308 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: QUALCOMM build                   : db3d445dbc, Ia06b22fa1a
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Build Date                       : 10/04/21
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: EV031.32.02.16
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Local Branch                     :
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Remote Branch                    :
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Remote Branch                    :
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Reconstruct Branch               :
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Build Config                     : S P 10.0.7 AArch64
+04-23 11:17:58.649 20308 20401 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+04-23 11:17:58.651 20308 20401 I AdrenoGLES-0: PFP: 0x016dd093, ME: 0x00000000
+04-23 11:17:58.662 20308 20401 I io.emqx.mqtt: Support FEAS product munch_cn:
+04-23 11:17:58.662 20308 20401 E OpenGLRenderer: Unable to match the desired swap behavior.
+04-23 11:17:58.788 20308 20308 D VRI[MainActivity]: vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4360 android.view.ViewRootImpl.doTraversal:2989 android.view.ViewRootImpl$TraversalRunnable.run:10304 android.view.Choreographer$CallbackRecord.run:1594 android.view.Choreographer$CallbackRecord.run:1603
+04-23 11:17:58.793 20308 20308 D VRI[MainActivity]: vri.Setup new sync=wmsSync-VRI[MainActivity]#0
+04-23 11:17:58.833 20308 20401 D OpenGLRenderer: makeCurrent grContext:0x7abd711320 reset mTextureAvailable
+04-23 11:17:58.834 20308 20401 D io.emqx.mqtt: MiuiProcessManagerServiceStub setSchedFifo
+04-23 11:17:58.834 20308 20401 I MiuiProcessManagerImpl: setSchedFifo pid:20308, mode:3
+04-23 11:17:58.838 20308 20401 E LB      : fail to open node: No such file or directory
+04-23 11:17:58.839 20308 20308 D VRI[MainActivity]: vri.reportDrawFinished
+04-23 11:17:58.839 20308 20308 W Looper  : PerfMonitor doFrame : time=860ms vsyncFrame=72915 latency=0ms procState=-1 historyMsgCount=2
+04-23 11:17:58.842 20308 20308 D MainActivity: Sidebar width: 108 px (portrait)
+04-23 11:17:58.844 20308 20308 I Choreographer: Skipped 93 frames!  The application may be doing too much work on its main thread.
+04-23 11:17:58.847 20308 20354 I OpenGLRenderer: Davey! duration=859ms; Flags=1, FrameTimelineVsyncId=806303, IntendedVsync=43447366367311, Vsync=43447366367311, InputEventId=0, HandleInputStart=43447367344726, AnimationStart=43447367348841, PerformTraversalsStart=43447367351653, DrawStart=43448181495195, FrameDeadline=43447378033978, FrameInterval=43447367026028, FrameStartTime=8261002, SyncQueued=43448220128372, SyncStart=43448220307226, IssueDrawCommandsStart=43448221639257, SwapBuffers=43448224855663, FrameCompleted=43448225825924, DequeueBufferDuration=8698, QueueBufferDuration=231823, GpuCompleted=43448225825924, SwapBuffersCompleted=43448225598319, DisplayPresentTime=0, CommandSubmissionCompleted=43448224855663,
+04-23 11:17:58.932 20308 20308 W Looper  : PerfMonitor doFrame : time=89ms vsyncFrame=72926 latency=773ms procState=-1 historyMsgCount=51 (msgIndex=1 wall=860ms seq=8 running=833ms runnable=7ms h=android.view.Choreographer$FrameHandler c=android.view.Choreographer$FrameDisplayEventReceiver)
+04-23 11:17:58.941 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 160794467; UID 10396; state: DISABLED
+04-23 11:17:58.943 20308 20308 W EpFrameworkFactory: activated: false jar exist: false
+04-23 11:17:58.960 20308 20308 D SettingFragment: [CloudTTS] 接口切换: 微软Edge-TTS (晓晓-甜美女声)
+04-23 11:17:58.963 20308 20354 I OpenGLRenderer: Davey! duration=880ms; Flags=0, FrameTimelineVsyncId=806454, IntendedVsync=43447457190534, Vsync=43448225297436, InputEventId=0, HandleInputStart=43448231094778, AnimationStart=43448231099153, PerformTraversalsStart=43448234089622, DrawStart=43448297004517, FrameDeadline=43448245439188, FrameInterval=43448230724726, FrameStartTime=8259214, SyncQueued=43448313911913, SyncStart=43448314015767, IssueDrawCommandsStart=43448318638267, SwapBuffers=43448331240663, FrameCompleted=43448337605247, DequeueBufferDuration=43073, QueueBufferDuration=554167, GpuCompleted=43448337605247, SwapBuffersCompleted=43448332440142, DisplayPresentTime=0, CommandSubmissionCompleted=43448331240663,
+04-23 11:17:59.011 20308 20308 I HandWritingStubImpl: refreshLastKeyboardType: 1
+04-23 11:17:59.011 20308 20308 I HandWritingStubImpl: getCurrentKeyboardType: 1
+04-23 11:17:59.037 20308 20308 I HandWritingStubImpl: getCurrentKeyboardType: 1
+04-23 11:18:00.947 20308 20308 D MainActivity: Auto-connecting with saved config...
+04-23 11:18:00.948 20308 20308 D MainActivity: Host: 10.35.62.83, Port: 1883, Protocol: TCP
+04-23 11:18:01.206 20308 20308 D SettingFragment: Calling connect()...
+04-23 11:18:01.206 20308 20308 D MainActivity: Calling connect()...
+04-23 11:18:01.208 20308 20308 D HA_Integration: Configured Last Will: topic=byd2ha/byd2ha_bridge/status, message=offline
+04-23 11:18:01.213 20308 20468 D TrafficStats: tagSocket(166) with statsTag=0xffffffff, statsUid=-1
+04-23 11:18:01.566 20308 20308 D SettingFragment: === CONNECT SUCCESS ===
+04-23 11:18:01.567 20308 20308 D MainActivity: === CONNECT SUCCESS ===
+04-23 11:18:01.595 20308 20474 D HA_Integration: Published discovery config to homeassistant/sensor/byd2ha_a94a29da/battery/config (QoS=1, Retain=true)
+04-23 11:18:01.596 20308 20474 D HA_Integration: Published online status to byd2ha/byd2ha_a94a29da/status (QoS=1, Retain=true)
+04-23 11:18:01.596 20308 20474 D HA_Integration: Stopped battery reporting
+04-23 11:18:01.598 20308 20474 D HA_Integration: Published battery level: 98% (QoS=1, Retain=false)
+04-23 11:18:01.599 20308 20474 D HA_Integration: Started battery reporting (interval: 60000ms, first report after 60s)
+04-23 11:18:01.599 20308 20474 D MainActivity: MQTT connection monitor stopped
+04-23 11:18:01.599 20308 20474 D MainActivity: MQTT connection monitor started (interval: 15000ms)
+04-23 11:18:01.611 20308 20308 D SettingFragment: [Auto] Battery: 98% (discharging)
+04-23 11:18:01.611 20308 20308 D MainActivity: [Auto] Battery: 98% (discharging)
+04-23 11:18:01.617 20308 20308 D CompatibilityChangeReporter: Compat change id reported: 147798919; UID 10396; state: DISABLED
+04-23 11:18:01.632 20308 20308 D CloudTTS: Downloading [fallback=0]: https://tts.mzzsfy.eu.org/api/tts?text=MQTT%E5%B7%B2%E8%BF%9E%E6%8E%A5&lang=zh-CN&voice=zh-CN-Xiaoxi
+04-23 11:18:01.646 20308 20479 I DpmTcmClient: RegisterTcmMonitor from: $Proxy3
+04-23 11:18:01.664 20308 20479 D TrafficStats: tagSocket(168) with statsTag=0xffffffff, statsUid=-1
+04-23 11:18:01.740 20308 20308 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+04-23 11:18:01.734 20308 20308 W io.emqx.mqtt: type=1400 audit(0.0:44251): avc:  denied  { read } for  name="u:object_r:vendor_display_prop:s0" dev="tmpfs" ino=15501 scontext=u:r:untrusted_app_29:s0:c140,c257,c512,c768 tcontext=u:object_r:vendor_display_prop:s0 tclass=file permissive=0 app=io.emqx.mqtt
+04-23 11:18:01.742 20308 20401 E OpenGLRenderer: Unable to match the desired swap behavior.
+04-23 11:18:01.743 20308 20308 D VRI[Toast]: vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4360 android.view.ViewRootImpl.doTraversal:2989 android.view.ViewRootImpl$TraversalRunnable.run:10304 android.view.Choreographer$CallbackRecord.run:1594 android.view.Choreographer$CallbackRecord.run:1603
+04-23 11:18:01.743 20308 20308 D VRI[Toast]: vri.Setup new sync=wmsSync-VRI[Toast]#2
+04-23 11:18:01.746 20308 20401 D OpenGLRenderer: makeCurrent grContext:0x7abd711320 reset mTextureAvailable
+04-23 11:18:01.755 20308 20308 D VRI[Toast]: vri.reportDrawFinished
+04-23 11:18:03.572 20308 20479 D CloudTTS: Response: 200 type=audio/mp3 size=-1
+04-23 11:18:03.596 20308 20479 D CloudTTS: Downloaded: /data/user/0/io.emqx.mqtt/cache/cloudtts_cache/tts_1776914283573.mp3 (13536B)
+04-23 11:18:03.638 20308 20308 W MediaPlayer: Use of stream types is deprecated for operations other than volume control
+04-23 11:18:03.639 20308 20308 W MediaPlayer: See the documentation of setAudioStreamType() for what to use instead with android.media.AudioAttributes to qualify your playback use case
+04-23 11:18:03.657 20308 20308 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda21@e1630ba
+04-23 11:18:03.721 20308 20308 D CloudTTS: Playback started: tts_1776914283573.mp3 (13536B)
+04-23 11:18:03.757 20308 20308 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+04-23 11:18:03.754 20308 20308 W io.emqx.mqtt: type=1400 audit(0.0:44252): avc:  denied  { read } for  name="u:object_r:vendor_display_prop:s0" dev="tmpfs" ino=15501 scontext=u:r:untrusted_app_29:s0:c140,c257,c512,c768 tcontext=u:object_r:vendor_display_prop:s0 tclass=file permissive=0 app=io.emqx.mqtt
+04-23 11:18:03.763 20308 20401 E OpenGLRenderer: Unable to match the desired swap behavior.
+04-23 11:18:03.766 20308 20308 D VRI[Toast]: vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4360 android.view.ViewRootImpl.doTraversal:2989 android.view.ViewRootImpl$TraversalRunnable.run:10304 android.view.Choreographer$CallbackRecord.run:1594 android.view.Choreographer$CallbackRecord.run:1603
+04-23 11:18:03.767 20308 20308 D VRI[Toast]: vri.Setup new sync=wmsSync-VRI[Toast]#4
+04-23 11:18:03.772 20308 20401 D OpenGLRenderer: makeCurrent grContext:0x7abd711320 reset mTextureAvailable
+04-23 11:18:03.780 20308 20308 D VRI[Toast]: vri.reportDrawFinished
+04-23 11:18:03.833 20308 20308 W AidlConversionCppNdk: aidl2legacy_AudioChannelLayout_audio_channel_mask_t: no legacy output audio_channel_mask_t found for AudioChannelLayout{layoutMask: 16}
+04-23 11:18:05.637 20308 20308 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda21@257d7e6
+04-23 11:18:06.290 20308 20308 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+04-23 11:18:06.290 20308 20308 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+04-23 11:18:09.709 20308 20331 I io.emqx.mqtt: This is non sticky GC, maxfree is 33554432 minfree is 8388608
+04-23 11:18:09.747 20308 20349 W io.emqx.mqtt: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/MiuiContentCatcherMIUI15/MiuiContentCatcherMIUI15.apk' with 1 weak references
+04-23 11:18:09.748 20308 20349 W io.emqx.mqtt: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/RtMiCloudSDK/RtMiCloudSDK.apk' with 1 weak references
+04-23 11:18:09.748 20308 20349 W io.emqx.mqtt: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/miuisystem/miuisystem.apk' with 1 weak references
+04-23 11:18:16.614 20308 20308 D MainActivity: MQTT connection check: isConnected=true
+04-23 11:18:31.623 20308 20308 D MainActivity: MQTT connection check: isConnected=true
+04-23 11:18:46.643 20308 20308 D MainActivity: MQTT connection check: isConnected=true
+04-23 11:19:01.633 20308 20477 D HA_Integration: Published battery level: 98% (QoS=1, Retain=false)
+04-23 11:19:01.652 20308 20308 D SettingFragment: [Auto] Battery: 98% (discharging)
+04-23 11:19:01.652 20308 20308 D MainActivity: [Auto] Battery: 98% (discharging)
+04-23 11:19:01.653 20308 20308 D MainActivity: MQTT connection check: isConnected=true
