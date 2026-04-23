@@ -59,6 +59,9 @@ class SettingFragment : BaseFragment() {
     private var mBtnTtsTestCloud: Button? = null
     private var mBtnTtsResetDefault: Button? = null
 
+    // 标志位：区分是用户手动切换协议还是加载配置
+    private var isInitializing = true
+
     private val logBuilder = StringBuilder()
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -157,6 +160,9 @@ class SettingFragment : BaseFragment() {
         mVoiceSwitch.isChecked = mConfigManager.voiceCaptureEnabled
 
         appendLog("Loaded saved configuration")
+        
+        // 配置加载完成，允许用户手动切换协议时自动设置端口
+        isInitializing = false
     }
 
     override fun setUpView(view: View) {
@@ -210,14 +216,17 @@ class SettingFragment : BaseFragment() {
         appendLog("Fragment initialized")
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
-            val port = when (checkedId) {
-                R.id.protocol_tcp -> 1883
-                R.id.protocol_ssl -> 8883
-                R.id.protocol_ws -> 8083
-                R.id.protocol_wss -> 443
-                else -> 1883
+            // 只在用户手动切换协议时才自动设置默认端口
+            if (!isInitializing) {
+                val port = when (checkedId) {
+                    R.id.protocol_tcp -> 1883
+                    R.id.protocol_ssl -> 8883
+                    R.id.protocol_ws -> 8083
+                    R.id.protocol_wss -> 443
+                    else -> 1883
+                }
+                mPort.setText(port.toString())
             }
-            mPort.setText(port.toString())
 
             // Path输入框：WS/WSS时显示，TCP/SSL时隐藏
             val pathVisibility = when (checkedId) {
