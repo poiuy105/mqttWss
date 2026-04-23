@@ -1,5 +1,9 @@
 package io.emqx.mqtt
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -7,7 +11,6 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.core.app.NotificationCompat
 
 /**
  * 比亚迪车机开机/上电广播接收器
@@ -126,14 +129,14 @@ class BootReceiver : BroadcastReceiver() {
      */
     private fun showAutoStartNotification(context: Context) {
         try {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             
             // 创建通知渠道（Android 8.0+）
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = android.app.NotificationChannel(
+                val channel = NotificationChannel(
                     "auto_start_channel",
                     "自启动提醒",
-                    android.app.NotificationManager.IMPORTANCE_HIGH
+                    NotificationManager.IMPORTANCE_HIGH
                 )
                 channel.description = "应用开机自启动提醒"
                 notificationManager.createNotificationChannel(channel)
@@ -145,22 +148,34 @@ class BootReceiver : BroadcastReceiver() {
                 putExtra("auto_connect", true)
             }
             
-            val pendingIntent = android.app.PendingIntent.getActivity(
+            val pendingIntent = PendingIntent.getActivity(
                 context,
                 0,
                 intent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             
-            // 构建通知
-            val notification = android.app.NotificationCompat.Builder(context, "auto_start_channel")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("MQTT 客户端")
-                .setContentText("点击启动并自动连接 MQTT")
-                .setPriority(android.app.NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
+            // 构建通知（使用原生 Builder）
+            val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, "auto_start_channel")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("MQTT 客户端")
+                    .setContentText("点击启动并自动连接 MQTT")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(context)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("MQTT 客户端")
+                    .setContentText("点击启动并自动连接 MQTT")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            }
             
             notificationManager.notify(1001, notification)
             Log.d("BootReceiver", "Auto-start notification shown")
