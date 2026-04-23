@@ -217,6 +217,7 @@ class SettingFragment : BaseFragment() {
 
         mProtocol.setOnCheckedChangeListener { _, checkedId ->
             // 只在用户手动切换协议时才自动设置默认端口
+            // 加载配置时不覆盖用户已保存的自定义端口
             if (!isInitializing) {
                 val port = when (checkedId) {
                     R.id.protocol_tcp -> 1883
@@ -229,6 +230,7 @@ class SettingFragment : BaseFragment() {
             }
 
             // Path输入框：WS/WSS时显示，TCP/SSL时隐藏
+            // 注意：只改变可见性，不会清除已保存的Path值
             val pathVisibility = when (checkedId) {
                 R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
                 else -> View.GONE
@@ -240,6 +242,7 @@ class SettingFragment : BaseFragment() {
             }
 
             // Untrusted开关：仅SSL时显示
+            // 注意：只改变可见性，不会清除已保存的Untrusted值
             val sslUntrustedVisibility = when (checkedId) {
                 R.id.protocol_ssl -> View.VISIBLE
                 else -> View.GONE
