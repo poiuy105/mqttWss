@@ -219,6 +219,7 @@ class SettingFragment : BaseFragment() {
             }
             mPort.setText(port.toString())
 
+            // Path输入框：WS/WSS时显示，TCP/SSL时隐藏
             val pathVisibility = when (checkedId) {
                 R.id.protocol_ws, R.id.protocol_wss -> View.VISIBLE
                 else -> View.GONE
@@ -229,6 +230,7 @@ class SettingFragment : BaseFragment() {
                 try { mPathContainer.visibility = pathVisibility } catch (e: Exception) {}  // 竖屏布局无此容器，忽略
             }
 
+            // Untrusted开关：仅SSL时显示
             val sslUntrustedVisibility = when (checkedId) {
                 R.id.protocol_ssl -> View.VISIBLE
                 else -> View.GONE
@@ -244,6 +246,8 @@ class SettingFragment : BaseFragment() {
                 else -> "TCP"
             }
             mConfigManager.protocol = protoName
+            
+            appendLog("Protocol changed to: $protoName")
         }
 
         loadSavedConfig()
