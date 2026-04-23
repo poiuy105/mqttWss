@@ -118,6 +118,11 @@ class PublishFragment : BaseFragment() {
     }
 
     private fun savePublishHistory() {
+        // 防御性检查：确保 mConfigManager 已初始化
+        if (!this::mConfigManager.isInitialized) {
+            android.util.Log.w("PublishFragment", "savePublishHistory skipped: mConfigManager not initialized")
+            return
+        }
         val history = mPublishList.joinToString(";") { "${it.topic},${it.payload},${it.qos},${it.isRetained}" }
         mConfigManager.publishHistory = history
     }
