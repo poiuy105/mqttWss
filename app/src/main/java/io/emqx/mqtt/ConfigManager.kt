@@ -37,6 +37,7 @@ class ConfigManager(context: Context) {
         private const val KEY_HA_HTTPS = "ha_https"
         private const val KEY_HA_RESPONSE_DELAY = "ha_response_delay"
         private const val KEY_HA_CLICK_BACK = "ha_click_back"
+        private const val KEY_HA_CLICK_COUNT = "ha_click_count"
         private const val KEY_TTS_ENABLED = "tts_enabled"
         private const val KEY_FLOAT_WINDOW_ENABLED = "float_window_enabled"
         private const val KEY_VOICE_CAPTURE_ENABLED = "voice_capture_enabled"
@@ -160,7 +161,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_HA_ADDRESS, value).apply()
 
     var haToken: String
-        get() = prefs.getString(KEY_HA_TOKEN, "abcdefg") ?: "abcdefg"
+        get() = prefs.getString(KEY_HA_TOKEN, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0OTNhOWFmZmY2OTk0MWQzOTU2Nzk0Y2Q4NGZmNjRkOSIsImlhdCI6MTc3NjI5OTYzOCwiZXhwIjoyMDkxNjU5NjM4fQ.dialeqLgCrgW0iNiRflpA-4AE4GOjUZITA9m5ekCutE") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0OTNhOWFmZmY2OTk0MWQzOTU2Nzk0Y2Q4NGZmNjRkOSIsImlhdCI6MTc3NjI5OTYzOCwiZXhwIjoyMDkxNjU5NjM4fQ.dialeqLgCrgW0iNiRflpA-4AE4GOjUZITA9m5ekCutE"
         set(value) = prefs.edit().putString(KEY_HA_TOKEN, value).apply()
 
     var haLanguage: String
@@ -178,6 +179,10 @@ class ConfigManager(context: Context) {
     var haClickBackEnabled: Boolean
         get() = prefs.getBoolean(KEY_HA_CLICK_BACK, true)
         set(value) = prefs.edit().putBoolean(KEY_HA_CLICK_BACK, value).apply()
+
+    var haClickCount: Int
+        get() = prefs.getInt(KEY_HA_CLICK_COUNT, 1)
+        set(value) = prefs.edit().putInt(KEY_HA_CLICK_COUNT, value).apply()
 
     var ttsEnabled: Boolean
         get() = prefs.getBoolean(KEY_TTS_ENABLED, true)
@@ -250,7 +255,8 @@ class ConfigManager(context: Context) {
         haLanguage: String,
         haHttps: Boolean,
         haResponseDelay: Int,
-        haClickBackEnabled: Boolean
+        haClickBackEnabled: Boolean,
+        haClickCount: Int
     ) {
         prefs.edit().apply {
             putString(KEY_HOST, host)
@@ -267,6 +273,7 @@ class ConfigManager(context: Context) {
             putBoolean(KEY_HA_HTTPS, haHttps)
             putInt(KEY_HA_RESPONSE_DELAY, haResponseDelay)
             putBoolean(KEY_HA_CLICK_BACK, haClickBackEnabled)
+            putInt(KEY_HA_CLICK_COUNT, haClickCount)
             putLong(KEY_LAST_CONNECTED, System.currentTimeMillis())
             apply()
         }

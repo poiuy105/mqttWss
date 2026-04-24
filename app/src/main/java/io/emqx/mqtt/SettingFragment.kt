@@ -48,6 +48,7 @@ class SettingFragment : BaseFragment() {
     private lateinit var mHaResponseDelaySeekbar: SeekBar
     private lateinit var mHaResponseDelayValue: TextView
     private lateinit var mHaClickBackSwitch: Switch
+    private lateinit var mHaClickCount: EditText
     private lateinit var mConfigManager: ConfigManager
     // 车机保活按钮
     private lateinit var mAdbGuideButton: Button
@@ -114,7 +115,8 @@ class SettingFragment : BaseFragment() {
             haLanguage = mHaLanguage.text.toString(),
             haHttps = mHaHttpsCheckbox.isChecked,
             haResponseDelay = mConfigManager.haResponseDelay,
-            haClickBackEnabled = mHaClickBackSwitch.isChecked
+            haClickBackEnabled = mHaClickBackSwitch.isChecked,
+            haClickCount = mConfigManager.haClickCount
         )
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
         mConfigManager.persistentNotification = mNotificationSwitch.isChecked
@@ -149,6 +151,9 @@ class SettingFragment : BaseFragment() {
         
         // 恢复HA单击替代返回开关
         mHaClickBackSwitch.isChecked = mConfigManager.haClickBackEnabled
+        
+        // 恢复HA点击次数设置（默认1次）
+        mHaClickCount.setText(mConfigManager.haClickCount.toString())
 
         // 恢复协议选择
         when (mConfigManager.protocol) {
@@ -196,6 +201,7 @@ class SettingFragment : BaseFragment() {
         mHaResponseDelaySeekbar = view.findViewById(R.id.ha_response_delay_seekbar)
         mHaResponseDelayValue = view.findViewById(R.id.ha_response_delay_value)
         mHaClickBackSwitch = view.findViewById(R.id.ha_click_back_switch)
+        mHaClickCount = view.findViewById(R.id.ha_click_count)
         mBtnTogglePasswordVisibility = view.findViewById(R.id.btn_toggle_password_visibility)
 
         // ========== 车机保活按钮初始化 ==========
@@ -345,6 +351,16 @@ class SettingFragment : BaseFragment() {
             mConfigManager.haClickBackEnabled = isChecked
             appendLog("HA Click Back ${if (isChecked) "enabled" else "disabled"}")
         }
+        
+        // HA点击次数设置 - 实时保存
+        mHaClickCount.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val clickCount = s?.toString()?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                mConfigManager.haClickCount = clickCount
+            }
+        })
 
         // ========== 功能开关 - 实时持久化 + 同步MainActivity ==========
 

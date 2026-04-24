@@ -83,9 +83,24 @@ object HomeAssistantService {
                 // 如果启用了"单击替代返回"功能，在延时后模拟点击（无论成功失败）
                 val configManager = ConfigManager.getInstance(context)
                 if (configManager.haClickBackEnabled) {
-                    appendLog(context, "Click back enabled, simulating click after delay...")
+                    val clickCount = configManager.haClickCount.coerceAtLeast(1)
+                    appendLog(context, "Click back enabled, simulating $clickCount click(s) after delay...")
                     (context as? MainActivity)?.let { activity ->
-                        MainActivity.simulateClickBack(activity)
+                        // 根据点击次数执行多次点击
+                        for (i in 1..clickCount) {
+                            if (i > 1) {
+                                // 除了第一次，每次点击前再延迟responseDelay
+                                appendLog(context, "Delay before click $i: ${responseDelay}ms")
+                                Thread.sleep(responseDelay.toLong())
+                            }
+                            appendLog(context, "Simulating click $i/$clickCount")
+                            MainActivity.simulateClickBack(activity)
+                            
+                            // 如果不是最后一次点击，等待一小段时间确保点击生效
+                            if (i < clickCount) {
+                                Thread.sleep(100)  // 点击间隔100ms
+                            }
+                        }
                     }
                 }
                             
