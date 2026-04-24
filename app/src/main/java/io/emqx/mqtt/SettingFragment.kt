@@ -17,6 +17,7 @@ import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.InputType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,6 +54,9 @@ class SettingFragment : BaseFragment() {
     private lateinit var mBydWhitelistButton: Button
     private lateinit var mBatteryOptButton: Button
     private lateinit var mAutostartButton: Button
+    // 密码可见性切换按钮
+    private lateinit var mBtnTogglePasswordVisibility: ImageButton
+    private var isPasswordVisible = false  // 默认密文模式（闭眼）
 
     // ========== 云端TTS设置控件 ==========
     private var mCloudTtsApiSpinner: Spinner? = null
@@ -192,6 +196,7 @@ class SettingFragment : BaseFragment() {
         mHaResponseDelaySeekbar = view.findViewById(R.id.ha_response_delay_seekbar)
         mHaResponseDelayValue = view.findViewById(R.id.ha_response_delay_value)
         mHaClickBackSwitch = view.findViewById(R.id.ha_click_back_switch)
+        mBtnTogglePasswordVisibility = view.findViewById(R.id.btn_toggle_password_visibility)
 
         // ========== 车机保活按钮初始化 ==========
         mAdbGuideButton = view.findViewById(R.id.btn_adb_guide)
@@ -486,6 +491,13 @@ class SettingFragment : BaseFragment() {
 
         // ========== 云端TTS设置 ==========
         setupCloudTtsSettings()
+
+        // ========== 密码可见性切换按钮 ==========
+        mBtnTogglePasswordVisibility.setOnClickListener {
+            isPasswordVisible = !isPasswordVisible
+            togglePasswordVisibility(isPasswordVisible)
+            appendLog("Password visibility: ${if (isPasswordVisible) "visible" else "hidden"}")
+        }
     }
 
     private fun testPopup() {
@@ -905,6 +917,34 @@ class SettingFragment : BaseFragment() {
     /** dp转px工具 */
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
+    }
+
+    /**
+     * 切换密码字段的明文/密文显示
+     * @param isVisible true=明文显示（睁眼），false=密文显示（闭眼）
+     */
+    private fun togglePasswordVisibility(isVisible: Boolean) {
+        val inputType = if (isVisible) {
+            InputType.TYPE_CLASS_TEXT  // 明文
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD  // 密文
+        }
+        
+        // 应用到敏感字段：Password 和 HA Token
+        mPassword.inputType = inputType
+        mHaToken.inputType = inputType
+        
+        // 保持光标在末尾，避免输入位置错乱
+        mPassword.setSelection(mPassword.text.length)
+        mHaToken.setSelection(mHaToken.text.length)
+        
+        // 更新图标
+        val iconRes = if (isVisible) {
+            R.drawable.ic_eye_open  // 睁眼图标
+        } else {
+            R.drawable.ic_eye_closed  // 闭眼图标
+        }
+        mBtnTogglePasswordVisibility.setImageResource(iconRes)
     }
 
     fun updateButtonText() {

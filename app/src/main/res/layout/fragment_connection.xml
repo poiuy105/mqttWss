@@ -17,7 +17,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- MQTT 标题 + 协议选择 同行 -->
+            <!-- MQTT 标题 + 协议选择 + 眼睛图标 同行 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -34,9 +34,10 @@
 
                 <RadioGroup
                     android:id="@+id/protocol"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
+                    android:layout_weight="1"
                     android:orientation="horizontal">
 
                     <RadioButton
@@ -71,6 +72,18 @@
                         android:text="WSS"
                         android:textSize="13sp" />
                 </RadioGroup>
+
+                <!-- 眼睛图标按钮：切换密码明文/密文显示 -->
+                <ImageButton
+                    android:id="@+id/btn_toggle_password_visibility"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Toggle password visibility"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_eye_closed" />
             </LinearLayout>
 
             <!-- SSL untrusted 证书 -->
