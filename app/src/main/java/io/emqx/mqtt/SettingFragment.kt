@@ -930,13 +930,15 @@ class SettingFragment : BaseFragment() {
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD  // 密文
         }
         
-        // 应用到敏感字段：Password 和 HA Token
+        // 应用到需要保密的字段：Host、Username、Password
+        mHost.inputType = inputType
+        mUsername.inputType = inputType
         mPassword.inputType = inputType
-        mHaToken.inputType = inputType
         
         // 保持光标在末尾，避免输入位置错乱
+        mHost.setSelection(mHost.text.length)
+        mUsername.setSelection(mUsername.text.length)
         mPassword.setSelection(mPassword.text.length)
-        mHaToken.setSelection(mHaToken.text.length)
         
         // 更新图标
         val iconRes = if (isVisible) {
