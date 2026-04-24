@@ -83,7 +83,8 @@ class ConnectionFragment : BaseFragment() {
             haLanguage = mHaLanguage.text.toString(),
             haHttps = mHaHttpsCheckbox.isChecked,
             haResponseDelay = mConfigManager.haResponseDelay,
-            haClickBackEnabled = mHaClickBackCheckbox.isChecked
+            haClickBackEnabled = mHaClickBackCheckbox.isChecked,
+            haClickCount = mConfigManager.haClickCount
         )
         mConfigManager.autoStart = mAutoStartSwitch.isChecked
         mConfigManager.persistentNotification = mNotificationSwitch.isChecked
