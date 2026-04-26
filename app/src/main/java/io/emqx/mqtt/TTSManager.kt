@@ -291,20 +291,43 @@ class TTSManager(private val context: Context) {
 
     private fun setupListener() {
         try {
-            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            val listener = object : UtteranceProgressListener() {
                 override fun onStart(id: String?) {
-                    Log.d(TAG, "Utterance onStart: id=$id")
-                    ttsListener?.onSpeakStart()
+                    Log.d(TAG, "⭐ UtteranceProgressListener onStart: id=$id")
+                    mainHandler.post {
+                        ttsListener?.onSpeakStart()
+                    }
                 }
+                
                 override fun onDone(id: String?) {
-                    Log.d(TAG, "Utterance onDone: id=$id")
-                    ttsListener?.onSpeakDone()
+                    Log.d(TAG, "⭐ UtteranceProgressListener onDone: id=$id")
+                    mainHandler.post {
+                        ttsListener?.onSpeakDone()
+                    }
                 }
+                
                 override fun onError(id: String?) {
-                    Log.e(TAG, "Utterance onError: id=$id")
-                    ttsListener?.onSpeakError()
+                    Log.e(TAG, "⭐ UtteranceProgressListener onError: id=$id")
+                    mainHandler.post {
+                        ttsListener?.onSpeakError()
+                    }
                 }
-            })
+                
+                // Android 21+ 需要实现这个方法
+                override fun onError(utteranceId: String?, errorCode: Int) {
+                    Log.e(TAG, "⭐ UtteranceProgressListener onError (code): id=$utteranceId, code=$errorCode")
+                    mainHandler.post {
+                        ttsListener?.onSpeakError()
+                    }
+                }
+            }
+            
+            val setResult = tts?.setOnUtteranceProgressListener(listener)
+            Log.d(TAG, "setupListener: setOnUtteranceProgressListener result=$setResult")
+            
+            if (setResult != TextToSpeech.SUCCESS) {
+                Log.e(TAG, "setupListener: Failed to set listener, result=$setResult")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "setupListener: exception", e)
         }
@@ -316,10 +339,12 @@ class TTSManager(private val context: Context) {
             return
         }
         
-        executor.execute {
+        // 必须在主线程执行speak，否则UtteranceProgressListener可能不工作
+        mainHandler.post {
             if (!isInitialized) {
                 Log.w(TAG, "speak: TTS not initialized, skipping speak('$text')")
-                return@execute
+                ttsListener?.onSpeakError()
+                return@post
             }
             
             try {
@@ -336,14 +361,20 @@ class TTSManager(private val context: Context) {
                 }
                 
                 val utteranceId = "tts_${System.currentTimeMillis()}"
-                Log.d(TAG, "speak: '$text' (id=$utteranceId, engine=${tts?.defaultEngine})")
+                Log.d(TAG, "⭐ speak: '$text' (id=$utteranceId, engine=${tts?.defaultEngine})")
                 
                 val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
-                if (result != TextToSpeech.SUCCESS && result != TextToSpeech.ERROR) {
-                    Log.e(TAG, "speak: unexpected result=$result")
+                Log.d(TAG, "⭐ speak result: $result (SUCCESS=${TextToSpeech.SUCCESS}, ERROR=${TextToSpeech.ERROR})")
+                
+                if (result == TextToSpeech.ERROR) {
+                    Log.e(TAG, "speak: ERROR occurred!")
+                    ttsListener?.onSpeakError()
+                } else if (result != TextToSpeech.SUCCESS) {
+                    Log.w(TAG, "speak: unexpected result=$result")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "speak: exception", e)
+                ttsListener?.onSpeakError()
             }
         }
     }
