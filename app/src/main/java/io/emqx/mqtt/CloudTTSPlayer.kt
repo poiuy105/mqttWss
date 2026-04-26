@@ -85,7 +85,7 @@ class CloudTTSPlayer private constructor() {
         val isLocal: Boolean
     )
     private var availableEngines: MutableList<TtsEngineInfo> = mutableListOf()
-    private var currentEngineIndex: Int = 0
+    var currentEngineIndex: Int = 0  // 公开，供SettingFragment访问
 
     // ========== 可配置参数（从Setting页面设置） ==========
     var currentApiIndex: Int = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
