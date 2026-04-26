@@ -71,10 +71,21 @@ class CloudTTSPlayer private constructor() {
     private var cacheDir: File? = null
     /** Context引用，用于显示Toast */
     private var appContext: Context? = null
-    /** TTSManager实例（用于本地讯飞TTS） */
+    /** TTSManager实例（用于本地TTS） */
     private var ttsManager: TTSManager? = null
     /** 日志回调（用于将日志输出到Home页面Debug Log） */
     private var logCallback: ((String) -> Unit)? = null
+    
+    // ========== TTS引擎管理 ==========
+    /** 存储所有可用的TTS引擎 */
+    data class TtsEngineInfo(
+        val index: Int,
+        val name: String,
+        val packageName: String?,
+        val isLocal: Boolean
+    )
+    private var availableEngines: MutableList<TtsEngineInfo> = mutableListOf()
+    private var currentEngineIndex: Int = 0
 
     // ========== 可配置参数（从Setting页面设置） ==========
     var currentApiIndex: Int = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
@@ -120,6 +131,173 @@ class CloudTTSPlayer private constructor() {
         logCallback?.invoke("[CloudTTS] $message")
     }
 
+    // ========== TTS引擎扫描和管理 ==========
+
+    /**
+     * 扫描系统所有可用的TTS引擎
+     */
+    fun scanAvailableEngines(context: Context): List<TtsEngineInfo> {
+        availableEngines.clear()
+        
+        val packageManager = context.packageManager
+        var localIndex = 0
+        
+        // 1. 扫描本地TTS引擎
+        val intent = android.content.Intent(android.speech.tts.TextToSpeech.Engine.ACTION_CHECK_TTS_DATA)
+        val resolveInfos = packageManager.queryIntentActivities(intent, 0)
+        
+        for (resolveInfo in resolveInfos) {
+            val packageName = resolveInfo.activityInfo.packageName
+            try {
+                val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                val appName = packageManager.getApplicationLabel(appInfo).toString()
+                
+                availableEngines.add(TtsEngineInfo(
+                    index = localIndex,
+                    name = "$appName (本地)",
+                    packageName = packageName,
+                    isLocal = true
+                ))
+                localIndex++
+                
+                logToBoth("Found local TTS: $appName ($packageName)")
+            } catch (e: Exception) {
+                logToBoth("Failed to get info for: $packageName", "W")
+            }
+        }
+        
+        // 2. 添加云端TTS选项
+        val cloudStartIndex = if (availableEngines.isEmpty()) 0 else availableEngines.size
+        
+        availableEngines.add(TtsEngineInfo(
+            index = cloudStartIndex,
+            name = "微软 Edge-TTS (音质最佳)",
+            packageName = null,
+            isLocal = false
+        ))
+        
+        availableEngines.add(TtsEngineInfo(
+            index = cloudStartIndex + 1,
+            name = "百度翻译 TTS",
+            packageName = null,
+            isLocal = false
+        ))
+        
+        availableEngines.add(TtsEngineInfo(
+            index = cloudStartIndex + 2,
+            name = "有道词典 TTS (兜底)",
+            packageName = null,
+            isLocal = false
+        ))
+        
+        logToBoth("Total TTS engines: ${availableEngines.size} (${localIndex} local + 3 cloud)")
+        return availableEngines.toList()
+    }
+
+    /**
+     * 获取所有可用引擎名称列表（用于Spinner）
+     */
+    fun getAvailableEngineNames(): List<String> {
+        return availableEngines.map { it.name }
+    }
+
+    /**
+     * 设置当前选择的引擎
+     */
+    fun setCurrentEngine(index: Int, context: Context) {
+        if (index < 0 || index >= availableEngines.size) {
+            logToBoth("Invalid engine index: $index", "E")
+            return
+        }
+        
+        currentEngineIndex = index
+        val engine = availableEngines[index]
+        
+        if (engine.isLocal) {
+            // 切换到本地TTS
+            logToBoth("Switching to local TTS: ${engine.name}")
+            initLocalTTSWithPackage(context, engine.packageName)
+        } else {
+            // 切换到云端TTS
+            logToBoth("Switching to cloud TTS: ${engine.name}")
+            // 计算云端API索引
+            val cloudIndex = index - availableEngines.indexOfFirst { !it.isLocal }
+            when (cloudIndex) {
+                0 -> currentApiIndex = API_EDGETTS
+                1 -> currentApiIndex = API_BAIDU
+                2 -> currentApiIndex = API_YOUDAO
+            }
+        }
+    }
+
+    /**
+     * 初始化指定包名的本地TTS
+     */
+    private fun initLocalTTSWithPackage(context: Context, packageName: String?) {
+        if (ttsManager != null) {
+            logToBoth("Local TTS already initialized")
+            return
+        }
+        
+        logToBoth("=== Starting Local TTS Initialization ===")
+        logToBoth("Android version: ${android.os.Build.VERSION.SDK_INT} (${android.os.Build.VERSION.RELEASE})")
+        appContext = context.applicationContext
+        
+        // 检查引擎是否安装
+        if (packageName != null) {
+            try {
+                context.packageManager.getPackageInfo(packageName, 0)
+                logToBoth("✅ TTS engine found: $packageName")
+            } catch (e: Exception) {
+                logToBoth("❌ TTS engine NOT found: $packageName", "E")
+                logToBoth("Will use default system TTS", "W")
+            }
+        }
+        
+        ttsManager = TTSManager(context)
+        
+        ttsManager?.setTTSListener(object : TTSManager.TTSListener {
+            override fun onSpeakStart() {
+                logToBoth("🔊 Local TTS speaking started")
+            }
+            override fun onSpeakDone() {
+                logToBoth("✅ Local TTS speaking completed")
+            }
+            override fun onSpeakError() {
+                logToBoth("❌ Local TTS speaking failed", "E")
+            }
+        })
+        
+        // 设置初始化监听器
+        ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
+            override fun onInitSuccess() {
+                logToBoth("✅✅✅ TTS INIT SUCCESS! Engine: ${ttsManager?.getCurrentEngineName()}")
+            }
+            
+            override fun onInitFailed(status: Int) {
+                logToBoth("❌❌❌ TTS INIT FAILED! Status: $status", "E")
+                logToBoth("Status: ${ttsManager?.getStatusDescription()}", "E")
+            }
+        })
+        
+        logToBoth("Calling ttsManager.initWithEngine($packageName)")
+        ttsManager?.initWithEngine(packageName)
+        logToBoth("=== Local TTS Init Requested ===")
+    }
+
+    /**
+     * 检查当前TTS是否就绪
+     */
+    fun isCurrentTTSReady(): Boolean {
+        val engine = availableEngines.getOrNull(currentEngineIndex) ?: return false
+        
+        return if (engine.isLocal) {
+            ttsManager?.isReady() == true
+        } else {
+            true  // 云端TTS始终可用
+        }
+    }
+
     // ========== 固定接口地址（已验证可用 2026-04-18）==========
     private val API_MAIN = "https://tts.mzzsfy.eu.org/api/tts"
     private val API_BACK1 = "https://fanyi.baidu.com/gettts"
@@ -150,6 +328,52 @@ class CloudTTSPlayer private constructor() {
             API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
             API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
             else -> playWithFallback(text, ::buildEdgeTtsUrl)
+        }
+    }
+
+    /**
+     * 播报文本（根据当前选择的引擎）
+     */
+    fun speakByCurrentEngine(text: String, force: Boolean = false) {
+        if (text.isBlank()) return
+
+        if (!force) {
+            val now = System.currentTimeMillis()
+            if (now - lastSpeakTime < speakIntervalMs) {
+                logToBoth("Skipped by debounce")
+                return
+            }
+            lastSpeakTime = now
+        } else {
+            lastSpeakTime = System.currentTimeMillis()
+        }
+
+        val engine = availableEngines.getOrNull(currentEngineIndex)
+        
+        when {
+            engine == null -> {
+                logToBoth("No engine selected, using default", "W")
+                playWithFallback(text, ::buildEdgeTtsUrl)
+            }
+            engine.isLocal -> {
+                // 本地TTS
+                if (ttsManager?.isReady() == true) {
+                    logToBoth("Using local TTS: ${engine.name}")
+                    ttsManager?.speak(text)
+                } else {
+                    logToBoth("Local TTS not ready, fallback to cloud", "W")
+                    playWithFallback(text, ::buildEdgeTtsUrl)
+                }
+            }
+            else -> {
+                // 云端TTS
+                when (currentApiIndex) {
+                    API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
+                    API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
+                    API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
+                    else -> playWithFallback(text, ::buildEdgeTtsUrl)
+                }
+            }
         }
     }
 

@@ -579,32 +579,34 @@ class SettingFragment : BaseFragment() {
             return
         }
 
-        // 1. 接口选择 Spinner（4个选项：本地讯飞 + 3个云端）
+        // ⭐ 扫描所有可用的TTS引擎
+        val engines = player.scanAvailableEngines(requireContext())
+        val engineNames = player.getAvailableEngineNames()
+        
+        appendLog("[CloudTTS] Found ${engines.count { it.isLocal }} local + 3 cloud TTS engines")
+
+        // 1. 接口选择 Spinner（动态显示所有引擎）
         val apiAdapter = android.widget.ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            listOf(
-                "本地讯飞TTS（推荐，离线可用）",
-                "微软 Edge-TTS (音质最佳)",
-                "百度翻译 TTS",
-                "有道词典 TTS (兜底)"
-            )
+            engineNames
         )
         apiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         mCloudTtsApiSpinner?.adapter = apiAdapter
 
-        mCloudTtsApiSpinner?.setSelection(player.currentApiIndex)
+        // 设置默认选择
+        mCloudTtsApiSpinner?.setSelection(player.currentEngineIndex)
+        
         mCloudTtsApiSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                player.currentApiIndex = position
+                player.setCurrentEngine(position, requireContext())
                 mConfigManager.cloudTtsApiIndex = position
                 
-                // 如果选择了本地TTS，确保已初始化
-                if (position == CloudTTSPlayer.API_LOCAL_IFLYTEK) {
-                    player.initLocalTTS(requireContext())
-                    appendLog("[CloudTTS] 切换到本地讯飞TTS")
+                val engine = engines[position]
+                if (engine.isLocal) {
+                    appendLog("[CloudTTS] 切换到本地TTS: ${engine.name}")
                 } else {
-                    appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
+                    appendLog("[CloudTTS] 切换到云端TTS: ${engine.name}")
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -614,46 +616,36 @@ class SettingFragment : BaseFragment() {
         mBtnTtsTestCloud?.setOnClickListener {
             val testText = "你好，这是语音合成测试。当前车速35公里，电量75%。"
             
-            // 检查当前选择的API类型
-            if (player.currentApiIndex == CloudTTSPlayer.API_LOCAL_IFLYTEK) {
-                // 本地讯飞TTS
-                appendLog("[CloudTTS] 🎯 Testing Local iFlytek TTS...")
+            val engine = engines.getOrNull(player.currentEngineIndex)
+            
+            if (engine?.isLocal == true) {
+                // 本地TTS
+                appendLog("[CloudTTS] 🎯 Testing Local TTS: ${engine.name}")
                 
-                // 检查是否已初始化
-                val isReady = player.isLocalTTSReady()
-                appendLog("[CloudTTS] Local TTS ready status: $isReady")
-                
-                if (isReady) {
-                    appendLog("[CloudTTS] ✅ Local TTS is READY, speaking now...")
-                    Toast.makeText(context, "使用本地讯飞TTS播报", Toast.LENGTH_SHORT).show()
-                    player.speak(testText, force = true)
+                if (player.isCurrentTTSReady()) {
+                    appendLog("[CloudTTS] ✅ Local TTS is READY, speaking...")
+                    Toast.makeText(context, "使用本地TTS播报", Toast.LENGTH_SHORT).show()
+                    player.speakByCurrentEngine(testText, force = true)
                 } else {
-                    appendLog("[CloudTTS] ⚠️ Local TTS NOT ready, initializing...")
-                    Toast.makeText(context, "正在初始化本地TTS，请稍候...", Toast.LENGTH_LONG).show()
+                    appendLog("[CloudTTS] ⚠️ Local TTS NOT ready, please wait...")
+                    Toast.makeText(context, "TTS初始化中，请稍候...", Toast.LENGTH_LONG).show()
                     
-                    // 尝试初始化
-                    player.initLocalTTS(requireContext())
-                    
-                    // 延迟3秒后自动重试
+                    // 延迟3秒后重试
                     android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        val retryReady = player.isLocalTTSReady()
-                        appendLog("[CloudTTS] Retry check - Local TTS ready: $retryReady")
-                        
-                        if (retryReady) {
+                        if (player.isCurrentTTSReady()) {
                             appendLog("[CloudTTS] ✅ Retry success, speaking...")
-                            player.speak(testText, force = true)
-                            Toast.makeText(context, "本地TTS就绪，开始播报", Toast.LENGTH_SHORT).show()
+                            player.speakByCurrentEngine(testText, force = true)
                         } else {
-                            appendLog("[CloudTTS] ❌ Local TTS still NOT ready after 3s")
-                            Toast.makeText(context, "本地TTS初始化失败，请查看日志", Toast.LENGTH_LONG).show()
+                            appendLog("[CloudTTS] ❌ Local TTS still NOT ready")
+                            Toast.makeText(context, "TTS初始化失败", Toast.LENGTH_LONG).show()
                         }
                     }, 3000)
                 }
             } else {
                 // 云端TTS
-                appendLog("[CloudTTS] ☁️ Testing Cloud TTS: ${player.getCurrentApiName()}")
-                Toast.makeText(context, "使用云端TTS: ${player.getCurrentApiName()}", Toast.LENGTH_SHORT).show()
-                player.speak(testText, force = true)
+                appendLog("[CloudTTS] ☁️ Testing Cloud TTS: ${engine?.name}")
+                Toast.makeText(context, "使用云端TTS", Toast.LENGTH_SHORT).show()
+                player.speakByCurrentEngine(testText, force = true)
             }
         }
 
