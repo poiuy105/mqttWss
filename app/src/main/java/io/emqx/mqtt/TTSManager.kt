@@ -24,16 +24,16 @@ class TTSManager(private val context: Context) {
 
     // 车机优化：重试和引擎切换机制
     private var retryCount = 0
-    private val maxRetries = 3
-    private val retryDelayMs = 2000L
+    private val maxRetries = 5  // 增加到5次，兼容Android 10老旧车机
+    private val retryDelayMs = 3000L  // 增加到3秒，给车机更多响应时间
     private var triedEngines = mutableSetOf<String>()
     private val isInitializing = AtomicBoolean(false)
     private var timeoutRunnable: Runnable? = null
 
     companion object {
         private const val TAG = "TTSManager"
-        // 车机TTS初始化需要更长时间（比亚迪车机可能需要15-30秒）
-        const val INIT_TIMEOUT_MS = 30000L
+        // 车机TTS初始化需要更长时间（Android 10车机可能需要20-40秒）
+        const val INIT_TIMEOUT_MS = 40000L  // 增加到40秒以兼容老旧车机
     }
 
     interface TTSListener {
@@ -155,11 +155,14 @@ class TTSManager(private val context: Context) {
 
     private fun handleInitSuccess(enginePackageName: String?) {
         Log.d(TAG, "handleInitSuccess: TextToSpeech.SUCCESS received")
+        Log.d(TAG, "Android version: ${Build.VERSION.SDK_INT} (${Build.VERSION.RELEASE})")
         
         // 尝试设置中文语言
+        // Android 10 (API 29) 及以下使用 Locale.CHINA，Android 11+ 使用 SIMPLIFIED_CHINESE
         val targetLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) 
             Locale.SIMPLIFIED_CHINESE else Locale.CHINA
         
+        Log.d(TAG, "Attempting to set language: $targetLocale")
         val langResult = tts?.setLanguage(targetLocale)
         Log.d(TAG, "handleInitSuccess: setLanguage($targetLocale)=$langResult")
 
