@@ -73,6 +73,8 @@ class CloudTTSPlayer private constructor() {
     private var appContext: Context? = null
     /** TTSManager实例（用于本地讯飞TTS） */
     private var ttsManager: TTSManager? = null
+    /** 日志回调（用于将日志输出到Home页面Debug Log） */
+    private var logCallback: ((String) -> Unit)? = null
 
     // ========== 可配置参数（从Setting页面设置） ==========
     var currentApiIndex: Int = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
@@ -94,6 +96,28 @@ class CloudTTSPlayer private constructor() {
      */
     fun setContext(context: Context) {
         appContext = context.applicationContext
+    }
+
+    /**
+     * 设置日志回调（将日志输出到Home页面Debug Log）
+     */
+    fun setLogCallback(callback: (String) -> Unit) {
+        logCallback = callback
+    }
+
+    /**
+     * 内部日志方法：同时输出到logcat和Debug Log容器
+     */
+    private fun logToBoth(message: String, level: String = "D") {
+        // 输出到logcat
+        when (level) {
+            "E" -> android.util.Log.e(TAG, message)
+            "W" -> android.util.Log.w(TAG, message)
+            else -> android.util.Log.d(TAG, message)
+        }
+        
+        // 输出到Home页面Debug Log
+        logCallback?.invoke("[CloudTTS] $message")
     }
 
     // ========== 固定接口地址（已验证可用 2026-04-18）==========
@@ -151,35 +175,48 @@ class CloudTTSPlayer private constructor() {
      */
     fun initLocalTTS(context: Context) {
         if (ttsManager != null) {
-            Log.d(TAG, "Local TTS already initialized")
+            logToBoth("Local TTS already initialized")
             return
         }
         
+        logToBoth("=== Starting Local TTS Initialization ===")
         appContext = context.applicationContext
+        
+        // 检查讯飞引擎是否安装
+        val iflytekPackage = "com.iflytek.speechsuite"
+        try {
+            context.packageManager.getPackageInfo(iflytekPackage, 0)
+            logToBoth("✅ iFlytek engine found: $iflytekPackage")
+        } catch (e: Exception) {
+            logToBoth("❌ iFlytek engine NOT found: $iflytekPackage - ${e.message}", "E")
+            logToBoth("Will use default system TTS engine", "W")
+        }
+        
         ttsManager = TTSManager(context)
         ttsManager?.setTTSListener(object : TTSManager.TTSListener {
             override fun onSpeakStart() {
-                Log.d(TAG, "Local TTS speaking started")
+                logToBoth("🔊 Local TTS speaking started")
             }
             override fun onSpeakDone() {
-                Log.d(TAG, "Local TTS speaking completed")
+                logToBoth("✅ Local TTS speaking completed")
             }
             override fun onSpeakError() {
-                Log.e(TAG, "Local TTS speaking failed")
+                logToBoth("❌ Local TTS speaking failed", "E")
             }
         })
         
-        // 初始化为讯飞引擎
-        val iflytekPackage = "com.iflytek.speechsuite"
+        logToBoth("Calling ttsManager.initWithEngine($iflytekPackage)")
         ttsManager?.initWithEngine(iflytekPackage)
-        Log.d(TAG, "Local iFlytek TTS initialization requested")
+        logToBoth("=== Local TTS Initialization Requested ===")
     }
 
     /**
      * 检查本地TTS是否就绪
      */
     fun isLocalTTSReady(): Boolean {
-        return ttsManager?.isReady() == true
+        val ready = ttsManager?.isReady() == true
+        logToBoth("isLocalTTSReady: $ready")
+        return ready
     }
 
     /**
@@ -187,15 +224,15 @@ class CloudTTSPlayer private constructor() {
      */
     private fun speakWithLocalTTS(text: String) {
         if (ttsManager == null && appContext != null) {
-            Log.w(TAG, "Local TTS not initialized, initializing now...")
+            logToBoth("Local TTS not initialized, initializing now...", "W")
             initLocalTTS(appContext!!)
         }
         
         if (ttsManager?.isReady() == true) {
-            Log.d(TAG, "Using local iFlytek TTS: $text")
+            logToBoth("Using local iFlytek TTS: $text")
             ttsManager?.speak(text)
         } else {
-            Log.w(TAG, "Local TTS not ready, falling back to Edge-TTS")
+            logToBoth("Local TTS not ready, falling back to Edge-TTS", "W")
             // 如果本地TTS未就绪，降级到Edge-TTS
             val originalIndex = currentApiIndex
             currentApiIndex = API_EDGETTS

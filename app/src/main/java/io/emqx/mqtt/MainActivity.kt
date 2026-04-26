@@ -167,6 +167,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         ttsPlayer = CloudTTSPlayer.getInstance()
         // 设置Context（用于显示Toast）
         ttsPlayer?.setContext(this)
+        // ⭐ 设置日志回调（将CloudTTS日志输出到Home页面Debug Log）
+        ttsPlayer?.setLogCallback { message ->
+            appendLog(message)
+        }
         // 设置音频缓存目录（先下载到本地文件再播放）
         val ttsCacheDir = File(cacheDir, "cloudtts_cache")
         ttsPlayer?.setCacheDir(ttsCacheDir)
