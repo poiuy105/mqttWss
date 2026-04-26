@@ -39,9 +39,10 @@ class CloudTTSPlayer private constructor() {
         }
 
         // 接口索引常量
-        const val API_EDGETTS = 0    // Edge-TTS（首选，车载最优，音质最佳）
-        const val API_BAIDU = 1      // 百度翻译（备用1）
-        const val API_YOUDAO = 2     // 有道词典（兜底）
+        const val API_LOCAL_IFLYTEK = 0  // 本地讯飞TTS（离线可用，推荐首选）⭐
+        const val API_EDGETTS = 1        // Edge-TTS（音质最佳）
+        const val API_BAIDU = 2          // 百度翻译（备用1）
+        const val API_YOUDAO = 3         // 有道词典（兜底）
 
         // Edge-TTS 中文音色列表
         val EDGETTS_VOICES = listOf(
@@ -70,9 +71,11 @@ class CloudTTSPlayer private constructor() {
     private var cacheDir: File? = null
     /** Context引用，用于显示Toast */
     private var appContext: Context? = null
+    /** TTSManager实例（用于本地讯飞TTS） */
+    private var ttsManager: TTSManager? = null
 
     // ========== 可配置参数（从Setting页面设置） ==========
-    var currentApiIndex: Int = API_EDGETTS
+    var currentApiIndex: Int = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
     var voice: String = "zh-CN-XiaoxiaoNeural"
     var speed: Float = 1.0f       // 语速倍率 (Edge-TTS用rate格式)
     var pitch: String = "+0Hz"    // 音调偏移 (Edge-TTS用pitch格式, 如"+0Hz","-5Hz","+10Hz")
@@ -118,9 +121,11 @@ class CloudTTSPlayer private constructor() {
         }
 
         when (currentApiIndex) {
+            API_LOCAL_IFLYTEK -> speakWithLocalTTS(text)
             API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
             API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
-            else -> playWithFallback(text, ::buildYoudaoUrl)
+            API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
+            else -> playWithFallback(text, ::buildEdgeTtsUrl)
         }
     }
 
@@ -131,10 +136,72 @@ class CloudTTSPlayer private constructor() {
         if (text.isBlank()) return
         lastSpeakTime = System.currentTimeMillis()
         when (apiIndex) {
+            API_LOCAL_IFLYTEK -> speakWithLocalTTS(text)
             API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
             API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
             API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
             else -> playWithFallback(text, ::buildEdgeTtsUrl)
+        }
+    }
+
+    // ========== 本地讯飞TTS方法 ==========
+
+    /**
+     * 初始化本地TTS（异步，不阻塞UI）
+     */
+    fun initLocalTTS(context: Context) {
+        if (ttsManager != null) {
+            Log.d(TAG, "Local TTS already initialized")
+            return
+        }
+        
+        appContext = context.applicationContext
+        ttsManager = TTSManager(context)
+        ttsManager?.setTTSListener(object : TTSManager.TTSListener {
+            override fun onSpeakStart() {
+                Log.d(TAG, "Local TTS speaking started")
+            }
+            override fun onSpeakDone() {
+                Log.d(TAG, "Local TTS speaking completed")
+            }
+            override fun onSpeakError() {
+                Log.e(TAG, "Local TTS speaking failed")
+            }
+        })
+        
+        // 初始化为讯飞引擎
+        val iflytekPackage = "com.iflytek.speechsuite"
+        ttsManager?.initWithEngine(iflytekPackage)
+        Log.d(TAG, "Local iFlytek TTS initialization requested")
+    }
+
+    /**
+     * 检查本地TTS是否就绪
+     */
+    fun isLocalTTSReady(): Boolean {
+        return ttsManager?.isReady() == true
+    }
+
+    /**
+     * 使用本地讯飞TTS播报
+     */
+    private fun speakWithLocalTTS(text: String) {
+        if (ttsManager == null && appContext != null) {
+            Log.w(TAG, "Local TTS not initialized, initializing now...")
+            initLocalTTS(appContext!!)
+        }
+        
+        if (ttsManager?.isReady() == true) {
+            Log.d(TAG, "Using local iFlytek TTS: $text")
+            ttsManager?.speak(text)
+        } else {
+            Log.w(TAG, "Local TTS not ready, falling back to Edge-TTS")
+            // 如果本地TTS未就绪，降级到Edge-TTS
+            val originalIndex = currentApiIndex
+            currentApiIndex = API_EDGETTS
+            playWithFallback(text, ::buildEdgeTtsUrl)
+            // 恢复原选择
+            currentApiIndex = originalIndex
         }
     }
 
@@ -385,9 +452,11 @@ class CloudTTSPlayer private constructor() {
      */
     fun getCurrentApiName(): String {
         return when (currentApiIndex) {
+            API_LOCAL_IFLYTEK -> "本地讯飞TTS（离线）"
             API_EDGETTS -> "微软Edge-TTS (${EDGETTS_VOICE_NAMES[voice] ?: voice})"
             API_BAIDU -> "百度翻译TTS"
-            else -> "有道词典TTS"
+            API_YOUDAO -> "有道词典TTS"
+            else -> "未知接口"
         }
     }
 
@@ -395,7 +464,7 @@ class CloudTTSPlayer private constructor() {
      * 重置为默认车载最优配置
      */
     fun resetToDefaults() {
-        currentApiIndex = API_EDGETTS
+        currentApiIndex = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
         voice = "zh-CN-XiaoxiaoNeural"
         speed = 1.0f
         pitch = "+0Hz"

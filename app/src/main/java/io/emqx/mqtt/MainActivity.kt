@@ -163,7 +163,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         CapturedTextManager.init(this)
 
-        // ========== 初始化云端TTS（启动即用，无需等待） ==========
+        // ========== 初始化TTS（启动即用，无需等待） ==========
         ttsPlayer = CloudTTSPlayer.getInstance()
         // 设置Context（用于显示Toast）
         ttsPlayer?.setContext(this)
@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             currentApiIndex = cfg.cloudTtsApiIndex
             voice = cfg.cloudTtsVoice
             speed = cfg.cloudTtsSpeed
-            // pitch在Edge-TTS中为String格式如"+0Hz"，ConfigManager存储的是Float近似值，需要转换
+            // pitch在Edge-TTS中为String格式如“+0Hz”，ConfigManager存储的是Float近似值，需要转换
             val pitchVal = cfg.cloudTtsPitch
             if (pitchVal > 0f) {
                 pitch = "+${(pitchVal * 10).toInt()}Hz"
@@ -188,6 +188,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             volume = cfg.cloudTtsVolume
         }
         appendLog("[CloudTTS] 已初始化: ${ttsPlayer?.getCurrentApiName()}")
+                
+        // 预初始化本地TTS（异步，不阻塞启动）
+        if (cfg.cloudTtsApiIndex == CloudTTSPlayer.API_LOCAL_IFLYTEK) {
+            Log.d("MainActivity", "Pre-initializing local iFlytek TTS...")
+            Thread {
+                try {
+                    Thread.sleep(2000)  // 延迟2秒，避免影响启动速度
+                    runOnUiThread {
+                        ttsPlayer?.initLocalTTS(this@MainActivity)
+                        appendLog("[TTS] Local iFlytek TTS pre-initialized")
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to init local TTS: ${e.message}")
+                }
+            }.start()
+        }
 
         floatWindowManager = FloatWindowManager.getInstance(this)
 

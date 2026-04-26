@@ -579,11 +579,16 @@ class SettingFragment : BaseFragment() {
             return
         }
 
-        // 1. 接口选择 Spinner（Edge-TTS / 百度翻译 / 有道词典）
+        // 1. 接口选择 Spinner（4个选项：本地讯飞 + 3个云端）
         val apiAdapter = android.widget.ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            listOf("微软 Edge-TTS (推荐，音质最佳)", "百度翻译 TTS", "有道词典 TTS (兜底)")
+            listOf(
+                "本地讯飞TTS（推荐，离线可用）",
+                "微软 Edge-TTS (音质最佳)",
+                "百度翻译 TTS",
+                "有道词典 TTS (兜底)"
+            )
         )
         apiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         mCloudTtsApiSpinner?.adapter = apiAdapter
@@ -593,8 +598,14 @@ class SettingFragment : BaseFragment() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 player.currentApiIndex = position
                 mConfigManager.cloudTtsApiIndex = position
-                // 仅Edge-TTS才显示音色选择（百度/有道不支持选音色）
-                appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
+                
+                // 如果选择了本地TTS，确保已初始化
+                if (position == CloudTTSPlayer.API_LOCAL_IFLYTEK) {
+                    player.initLocalTTS(requireContext())
+                    appendLog("[CloudTTS] 切换到本地讯飞TTS")
+                } else {
+                    appendLog("[CloudTTS] 接口切换: ${player.getCurrentApiName()}")
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
