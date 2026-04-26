@@ -161,7 +161,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_HA_ADDRESS, value).apply()
 
     var haToken: String
-        get() = prefs.getString(KEY_HA_TOKEN, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0OTNhOWFmZmY2OTk0MWQzOTU2Nzk0Y2Q4NGZmNjRkOSIsImlhdCI6MTc3NjI5OTYzOCwiZXhwIjoyMDkxNjU5NjM4fQ.dialeqLgCrgW0iNiRflpA-4AE4GOjUZITA9m5ekCutE") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0OTNhOWFmZmY2OTk0MWQzOTU2Nzk0Y2Q4NGZmNjRkOSIsImlhdCI6MTc3NjI5OTYzOCwiZXhwIjoyMDkxNjU5NjM4fQ.dialeqLgCrgW0iNiRflpA-4AE4GOjUZITA9m5ekCutE"
+        get() = prefs.getString(KEY_HA_TOKEN, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0NWMyZTBiODlmMGI0MTYwYWVhZWU2YTYyYWZjNjNkNiIsImlhdCI6MTc3NjU1NzY3NSwiZXhwIjoyMDkxOTE3Njc1fQ.0xzF8z1cz6xi4ajpS2zgjoxMDu4EfqoNP0mrIvYVSGE") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0NWMyZTBiODlmMGI0MTYwYWVhZWU2YTYyYWZjNjNkNiIsImlhdCI6MTc3NjU1NzY3NSwiZXhwIjoyMDkxOTE3Njc1fQ.0xzF8z1cz6xi4ajpS2zgjoxMDu4EfqoNP0mrIvYVSGE"
         set(value) = prefs.edit().putString(KEY_HA_TOKEN, value).apply()
 
     var haLanguage: String

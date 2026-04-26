@@ -278,6 +278,21 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     Log.e("MainActivity", "Auto-connect delayed task failed: ${e.message}")
                 }
             }.start()
+            
+            // 如果 capture voice 开关是打开的，启动稳定后主动运行无障碍服务
+            if (configManager.voiceCaptureEnabled) {
+                Log.d("MainActivity", "Voice capture was enabled, will check accessibility service after 5s delay...")
+                Thread {
+                    try {
+                        Thread.sleep(5000)  // 等待5秒，确保应用启动稳定
+                        runOnUiThread {
+                            checkAndStartAccessibilityService()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Accessibility check delayed task failed: ${e.message}")
+                    }
+                }.start()
+            }
         } else if (autoConnectFromBoot) {
             // 从 BootReceiver/通知栏启动：使用后台线程延迟2秒后自动连接
             Log.d("MainActivity", "Auto-connect requested from boot/notification (background thread)")
@@ -471,6 +486,99 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             })
         } else {
             Log.w("MainActivity", "No saved config found, skipping auto-connect")
+        }
+    }
+
+    private fun setupAccessibilityService() {
+        // 原有的无障碍服务设置逻辑
+    }
+
+    /**
+     * 检查并启动无障碍服务（用于重启后自动恢复）
+     */
+    private fun checkAndStartAccessibilityService() {
+        val configManager = ConfigManager.getInstance(this)
+        
+        // 只有当 voice capture 开关是打开的才执行
+        if (!configManager.voiceCaptureEnabled) {
+            Log.d("MainActivity", "Voice capture is disabled, skipping accessibility check")
+            return
+        }
+        
+        val isCurrentlyEnabled = isAccessibilityServiceEnabled()
+        
+        if (isCurrentlyEnabled) {
+            Log.d("MainActivity", "✅ Accessibility service already enabled, no action needed")
+            // 确保 CapturedTextManager 已初始化并启用
+            CapturedTextManager.init(this)
+            CapturedTextManager.isEnabled = true
+            appendLog("[A11y] Service verified and enabled")
+        } else {
+            Log.w("MainActivity", "⚠️ Accessibility service not enabled, showing notification to guide user")
+            appendLog("[A11y] Service not enabled, guiding user...")
+            
+            // 显示通知引导用户开启无障碍服务
+            showAccessibilityEnableNotification()
+        }
+    }
+
+    /**
+     * 显示开启无障碍服务的通知
+     */
+    private fun showAccessibilityEnableNotification() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // 创建通知渠道（Android 8.0+）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    "accessibility_channel",
+                    "无障碍服务提醒",
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.description = "需要开启无障碍服务以支持语音捕获功能"
+                notificationManager.createNotificationChannel(channel)
+            }
+            
+            // 创建点击通知后跳转到无障碍设置的 Intent
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // 构建通知
+            val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(this, "accessibility_channel")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("MQTT Assistant")
+                    .setContentText("请点击开启无障碍服务以使用语音捕获功能")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(this)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("MQTT Assistant")
+                    .setContentText("请点击开启无障碍服务以使用语音捕获功能")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            }
+            
+            notificationManager.notify(2001, notification)
+            Log.d("MainActivity", "Accessibility enable notification shown")
+            appendLog("[A11y] Notification displayed to guide user")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to show accessibility notification: ${e.message}", e)
         }
     }
 
