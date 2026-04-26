@@ -193,6 +193,10 @@ class CloudTTSPlayer private constructor() {
         }
         
         ttsManager = TTSManager(context)
+        
+        // ⭐ 设置TTSManager的日志输出到CloudTTS
+        // 注意：TTSManager内部使用Log.d，我们需要通过logcat查看
+        
         ttsManager?.setTTSListener(object : TTSManager.TTSListener {
             override fun onSpeakStart() {
                 logToBoth("🔊 Local TTS speaking started")

@@ -112,8 +112,10 @@ class TTSManager(private val context: Context) {
         Log.d(TAG, "initTTS: starting with engine='$engineDesc', retry=$retryCount/$maxRetries")
 
         try {
+            Log.d(TAG, "Creating TextToSpeech instance with engine: $enginePackageName")
             tts = TextToSpeech(context, object : TextToSpeech.OnInitListener {
                 override fun onInit(status: Int) {
+                    Log.d(TAG, "⭐ onInit callback received! status=$status")
                     val prevStatus = initStatus.getAndSet(status)
                     Log.d(TAG, "onInit: status=$status, previous=$prevStatus, engine='$engineDesc'")
 
@@ -127,6 +129,8 @@ class TTSManager(private val context: Context) {
                     }
                 }
             }, enginePackageName)
+            
+            Log.d(TAG, "TextToSpeech instance created successfully: ${tts != null}")
 
             // 设置超时检测（车机需要更长时间）
             timeoutRunnable = Runnable {
@@ -136,10 +140,15 @@ class TTSManager(private val context: Context) {
                 }
             }
             mainHandler.postDelayed(timeoutRunnable!!, INIT_TIMEOUT_MS)
+            Log.d(TAG, "Timeout check scheduled for ${INIT_TIMEOUT_MS}ms")
 
         } catch (e: Exception) {
-            Log.e(TAG, "initTTS: exception during creation", e)
+            Log.e(TAG, "initTTS: EXCEPTION during TextToSpeech creation", e)
+            Log.e(TAG, "Exception type: ${e.javaClass.name}")
+            Log.e(TAG, "Exception message: ${e.message}")
+            e.printStackTrace()
             isInitializing.set(false)
+            initStatus.set(-5)
             initListener?.onInitFailed(-5)
         }
     }
