@@ -11,6 +11,11 @@ import java.util.concurrent.TimeUnit
 
 object HomeAssistantService {
     private const val TAG = "HomeAssistantService"
+    
+    // 存储最近POST的文本，用于后续屏幕检查
+    @Volatile
+    var lastPostedText: String? = null
+    
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
@@ -22,6 +27,9 @@ object HomeAssistantService {
     }
 
     fun sendCommand(context: Context, text: String, callback: (Boolean, String?) -> Unit) {
+        // 保存POST的文本，用于后续屏幕检查
+        lastPostedText = text
+        
         val configManager = ConfigManager.getInstance(context)
         val haAddress = configManager.haAddress
         val haToken = configManager.haToken
@@ -73,34 +81,30 @@ object HomeAssistantService {
                 appendLog(context, "HTTP Response received - Status: ${response.code}")
                 val responseBody = response.body?.string()
                 appendLog(context, "Response Body: $responseBody")
-                            
+                                        
                 // 应用响应延迟（模拟系统返回延迟）
                 if (responseDelay > 0) {
                     appendLog(context, "Applying response delay: ${responseDelay}ms")
                     Thread.sleep(responseDelay.toLong())
                 }
-                            
-                // 如果启用了"单击替代返回"功能，在延时后模拟点击（无论成功失败）
+                                        
+                // ⭐ 智能检查：如果启用了“单击替代返回”功能
                 val configManager = ConfigManager.getInstance(context)
                 if (configManager.haClickBackEnabled) {
                     val clickCount = configManager.haClickCount.coerceAtLeast(1)
-                    appendLog(context, "Click back enabled, simulating $clickCount click(s) after delay...")
-                    (context as? MainActivity)?.let { activity ->
-                        // 根据点击次数执行多次点击
-                        for (i in 1..clickCount) {
-                            if (i > 1) {
-                                // 除了第一次，每次点击前再延迟responseDelay
-                                appendLog(context, "Delay before click $i: ${responseDelay}ms")
-                                Thread.sleep(responseDelay.toLong())
-                            }
-                            appendLog(context, "Simulating click $i/$clickCount")
-                            MainActivity.simulateClickBack(activity)
-                            
-                            // 如果不是最后一次点击，等待一小段时间确保点击生效
-                            if (i < clickCount) {
-                                Thread.sleep(100)  // 点击间隔100ms
-                            }
-                        }
+                                
+                    // 检查屏幕并执行智能返回
+                    val actionExecuted = checkAndPerformSmartReturn(
+                        context = context,
+                        targetText = lastPostedText,
+                        clickCount = clickCount,
+                        responseDelay = responseDelay
+                    )
+                                
+                    if (actionExecuted) {
+                        appendLog(context, "✅ Smart return executed ($clickCount times)")
+                    } else {
+                        appendLog(context, "ℹ️ Screen cleared by HA, skip return")
                     }
                 }
                             
@@ -123,5 +127,81 @@ object HomeAssistantService {
                 }
             }
         })
+    }
+    
+    /**
+     * 智能检查屏幕并执行返回操作
+     * @return true=执行了操作，false=跳过（屏幕已清空）
+     */
+    private fun checkAndPerformSmartReturn(
+        context: Context,
+        targetText: String?,
+        clickCount: Int,
+        responseDelay: Int
+    ): Boolean {
+        // 如果没有目标文本，直接执行返回
+        if (targetText.isNullOrBlank()) {
+            Log.d(TAG, "No target text, performing return anyway")
+            performReturnActions(context, clickCount, responseDelay)
+            return true
+        }
+        
+        // 获取无障碍服务实例
+        val a11yService = VoiceAccessibilityService.getInstance()
+        if (a11yService == null) {
+            Log.w(TAG, "Accessibility service not available, performing return anyway")
+            performReturnActions(context, clickCount, responseDelay)
+            return true
+        }
+        
+        // ⭐ 关键检查：屏幕上是否还有目标文本
+        val textFound = a11yService.isTextOnScreen(targetText, maxDepth = 5)
+        
+        if (textFound) {
+            Log.d(TAG, "✅ Text '$targetText' still on screen, executing return")
+            appendLog(context, "Text found, executing $clickCount return action(s)")
+            performReturnActions(context, clickCount, responseDelay)
+            return true
+        } else {
+            Log.d(TAG, "❌ Text '$targetText' NOT on screen, skip return")
+            appendLog(context, "Text not found (HA auto-cleared), skip return")
+            return false
+        }
+    }
+    
+    /**
+     * 执行返回操作（支持多次）
+     */
+    private fun performReturnActions(
+        context: Context,
+        clickCount: Int,
+        responseDelay: Int
+    ) {
+        val a11yService = VoiceAccessibilityService.getInstance()
+        
+        for (i in 1..clickCount) {
+            if (i > 1) {
+                Log.d(TAG, "Delay before action $i: ${responseDelay}ms")
+                Thread.sleep(responseDelay.toLong())
+            }
+            
+            // 优先使用无障碍全局返回
+            if (a11yService?.performGlobalBack() == true) {
+                Log.d(TAG, "Global back action $i/$clickCount executed")
+                appendLog(context, "Return action $i/$clickCount (system back)")
+            } else {
+                // 降级为模拟点击
+                Log.w(TAG, "Global back failed, fallback to simulate click")
+                (context as? MainActivity)?.let { activity ->
+                    MainActivity.simulateClickBack(activity)
+                    appendLog(context, "Return action $i/$clickCount (simulate click)")
+                }
+            }
+            
+            // 多次点击之间的间隔
+            if (i < clickCount) {
+                Thread.sleep(100)
+            }
+        }
     }
 }

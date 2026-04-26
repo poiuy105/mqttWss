@@ -303,4 +303,103 @@ class VoiceAccessibilityService : AccessibilityService() {
             )
         }
     }
+
+    // ========== 智能返回相关方法 ==========
+
+    /**
+     * 检查屏幕上是否包含指定文本（用于HA响应后判断是否需要返回）
+     * @param targetText 要查找的文本
+     * @param maxDepth 最大遍历深度（避免性能问题，默认5）
+     * @return true=找到，false=未找到
+     */
+    fun isTextOnScreen(targetText: String, maxDepth: Int = 5): Boolean {
+        if (targetText.isBlank()) {
+            android.util.Log.w("A11yService", "isTextOnScreen: empty target text")
+            return false
+        }
+
+        val rootNode = rootInActiveWindow ?: run {
+            android.util.Log.w("A11yService", "isTextOnScreen: no active window")
+            return false
+        }
+
+        try {
+            val found = findTextInNode(rootNode, targetText, 0, maxDepth)
+            android.util.Log.d("A11yService", "isTextOnScreen: '$targetText' -> ${if (found) "FOUND" else "NOT FOUND"}")
+            return found
+        } catch (e: Exception) {
+            android.util.Log.e("A11yService", "isTextOnScreen error: ${e.message}", e)
+            return false
+        } finally {
+            rootNode.recycle()
+        }
+    }
+
+    /**
+     * 递归查找文本节点
+     */
+    private fun findTextInNode(
+        node: AccessibilityNodeInfo?,
+        target: String,
+        currentDepth: Int,
+        maxDepth: Int
+    ): Boolean {
+        if (node == null || currentDepth > maxDepth) {
+            return false
+        }
+
+        // 1. 检查当前节点的 text
+        node.text?.let {
+            val nodeText = it.toString().trim()
+            if (nodeText.isNotEmpty() && nodeText.contains(target, ignoreCase = true)) {
+                android.util.Log.d("A11yService", "Found in text: '$nodeText'")
+                return true
+            }
+        }
+
+        // 2. 检查 contentDescription
+        node.contentDescription?.let {
+            val desc = it.toString().trim()
+            if (desc.isNotEmpty() && desc.contains(target, ignoreCase = true)) {
+                android.util.Log.d("A11yService", "Found in description: '$desc'")
+                return true
+            }
+        }
+
+        // 3. 递归检查子节点
+        val childCount = node.childCount
+        if (childCount > 0 && childCount < 200) {  // 限制子节点数量
+            for (i in 0 until childCount) {
+                val child = node.getChild(i)
+                if (child != null) {
+                    if (findTextInNode(child, target, currentDepth + 1, maxDepth)) {
+                        child.recycle()
+                        return true
+                    }
+                    child.recycle()
+                }
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * 执行系统级返回（模拟返回键）
+     * @return true=成功，false=失败
+     */
+    fun performGlobalBack(): Boolean {
+        val success = performGlobalAction(GLOBAL_ACTION_BACK)
+        android.util.Log.d("A11yService", "performGlobalBack: ${if (success) "SUCCESS" else "FAILED"}")
+        return success
+    }
+
+    /**
+     * 执行系统级Home键
+     */
+    fun performGlobalHome(): Boolean {
+        val success = performGlobalAction(GLOBAL_ACTION_HOME)
+        android.util.Log.d("A11yService", "performGlobalHome: ${if (success) "SUCCESS" else "FAILED"}")
+        return success
+    }
 }
