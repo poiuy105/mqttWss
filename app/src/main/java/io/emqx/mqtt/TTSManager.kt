@@ -432,6 +432,18 @@ class TTSManager(private val context: Context) {
         return android.content.Intent(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA)
     }
 
+    /**
+     * 立即释放TTS资源（同步方法，用于切换引擎时）
+     */
+    fun shutdown() {
+        Log.d(TAG, "shutdown: releasing TTS resources")
+        releaseInternal()
+        // 重置状态以便重新初始化
+        retryCount = 0
+        triedEngines.clear()
+        initStatus.set(-1)
+    }
+
     private fun releaseInternal() {
         cancelTimeout()
         try {

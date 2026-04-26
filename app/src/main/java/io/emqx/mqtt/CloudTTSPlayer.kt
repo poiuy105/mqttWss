@@ -234,9 +234,18 @@ class CloudTTSPlayer private constructor() {
      * 初始化指定包名的本地TTS
      */
     private fun initLocalTTSWithPackage(context: Context, packageName: String?) {
-        if (ttsManager != null) {
-            logToBoth("Local TTS already initialized")
+        // 如果已经初始化了相同的引擎，跳过
+        val currentEngine = ttsManager?.getCurrentEngineName()
+        if (ttsManager != null && currentEngine == packageName) {
+            logToBoth("Local TTS already initialized with same engine: $packageName")
             return
+        }
+        
+        // 如果已初始化但引擎不同，先释放旧实例
+        if (ttsManager != null) {
+            logToBoth("Releasing old TTS engine: $currentEngine")
+            ttsManager?.shutdown()
+            ttsManager = null
         }
         
         logToBoth("=== Starting Local TTS Initialization ===")
@@ -292,7 +301,9 @@ class CloudTTSPlayer private constructor() {
         val engine = availableEngines.getOrNull(currentEngineIndex) ?: return false
         
         return if (engine.isLocal) {
-            ttsManager?.isReady() == true
+            val ready = ttsManager?.isReady() == true
+            logToBoth("isCurrentTTSReady: engine=${engine.name}, ready=$ready, manager=${ttsManager != null}")
+            ready
         } else {
             true  // 云端TTS始终可用
         }
