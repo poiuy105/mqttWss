@@ -205,6 +205,18 @@ class CloudTTSPlayer private constructor() {
             }
         })
         
+        // ⭐ 设置初始化监听器
+        ttsManager?.setOnInitListener(object : TTSManager.OnInitListener {
+            override fun onInitSuccess() {
+                logToBoth("✅✅✅ TTS INITIALIZATION SUCCESS! Engine: ${ttsManager?.getCurrentEngineName()}")
+            }
+            
+            override fun onInitFailed(status: Int) {
+                logToBoth("❌❌❌ TTS INITIALIZATION FAILED! Status: $status", "E")
+                logToBoth("Status description: ${ttsManager?.getStatusDescription()}", "E")
+            }
+        })
+        
         logToBoth("Calling ttsManager.initWithEngine($iflytekPackage)")
         ttsManager?.initWithEngine(iflytekPackage)
         logToBoth("=== Local TTS Initialization Requested ===")
