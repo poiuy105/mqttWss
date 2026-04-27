@@ -40,9 +40,10 @@ class CloudTTSPlayer private constructor() {
 
         // 接口索引常量
         const val API_LOCAL_IFLYTEK = 0  // 本地讯飞TTS（离线可用，推荐首选）⭐
-        const val API_EDGETTS = 1        // Edge-TTS（音质最佳）
-        const val API_BAIDU = 2          // 百度翻译（备用1）
-        const val API_YOUDAO = 3         // 有道词典（兜底）
+        const val API_KITTENTTS = 1      // KittenTTS（轻量级离线，可选）
+        const val API_EDGETTS = 2        // Edge-TTS（音质最佳）
+        const val API_BAIDU = 3          // 百度翻译（备用1）
+        const val API_YOUDAO = 4         // 有道词典（兜底）
 
         // Edge-TTS 中文音色列表
         val EDGETTS_VOICES = listOf(
@@ -73,6 +74,8 @@ class CloudTTSPlayer private constructor() {
     private var appContext: Context? = null
     /** TTSManager实例（用于本地TTS） */
     private var ttsManager: TTSManager? = null
+    /** KittenTTS引擎实例（可选） */
+    private var kittenTTSEngine: KittenTTSEngine? = null
     /** 日志回调（用于将日志输出到Home页面Debug Log） */
     private var logCallback: ((String) -> Unit)? = null
     
@@ -166,7 +169,19 @@ class CloudTTSPlayer private constructor() {
             }
         }
         
-        // 2. 添加云端TTS选项
+        // 2. 添加 KittenTTS（如果包含）
+        if (BuildConfig.INCLUDE_KITTENTTS) {
+            availableEngines.add(TtsEngineInfo(
+                index = localIndex,
+                name = "KittenTTS (轻量级离线)",
+                packageName = null,
+                isLocal = true
+            ))
+            localIndex++
+            logToBoth("Found KittenTTS engine")
+        }
+        
+        // 3. 添加云端TTS选项
         val cloudStartIndex = if (availableEngines.isEmpty()) 0 else availableEngines.size
         
         availableEngines.add(TtsEngineInfo(
@@ -350,6 +365,7 @@ class CloudTTSPlayer private constructor() {
 
         when (currentApiIndex) {
             API_LOCAL_IFLYTEK -> speakWithLocalTTS(text)
+            API_KITTENTTS -> speakWithKittenTTS(text)
             API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
             API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
             API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
@@ -506,6 +522,48 @@ class CloudTTSPlayer private constructor() {
             playWithFallback(text, ::buildEdgeTtsUrl)
             // 恢复原选择
             currentApiIndex = originalIndex
+        }
+    }
+
+    /**
+     * 使用 KittenTTS 播报
+     */
+    private fun speakWithKittenTTS(text: String) {
+        if (!BuildConfig.INCLUDE_KITTENTTS) {
+            logToBoth("KittenTTS not included in this build", "E")
+            return
+        }
+        
+        try {
+            // 懒加载 KittenTTS 引擎
+            if (kittenTTSEngine == null) {
+                kittenTTSEngine = KittenTTSEngine()
+            }
+            
+            if (!kittenTTSEngine!!.isReady()) {
+                logToBoth("KittenTTS not initialized, initializing now...", "W")
+                if (appContext != null) {
+                    val success = kittenTTSEngine!!.initialize(appContext!!)
+                    if (!success) {
+                        logToBoth("KittenTTS initialization failed", "E")
+                        return
+                    }
+                }
+            }
+            
+            if (kittenTTSEngine!!.isReady()) {
+                logToBoth("Using KittenTTS: $text")
+                // TODO: 支持音色和语速配置
+                kittenTTSEngine!!.speak(text, voice = "Jasper", speed = speed)
+            } else {
+                logToBoth("KittenTTS not ready, falling back to Edge-TTS", "W")
+                val originalIndex = currentApiIndex
+                currentApiIndex = API_EDGETTS
+                playWithFallback(text, ::buildEdgeTtsUrl)
+                currentApiIndex = originalIndex
+            }
+        } catch (e: Exception) {
+            logToBoth("KittenTTS error: ${e.message}", "E")
         }
     }
 

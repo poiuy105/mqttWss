@@ -23,6 +23,24 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
+    // 产品风味：编译不同版本的APK
+    flavorDimensions "tts"
+    productFlavors {
+        standard {
+            dimension "tts"
+            applicationIdSuffix ""
+            versionNameSuffix "-standard"
+            buildConfigField "boolean", "INCLUDE_KITTENTTS", "false"
+        }
+        full {
+            dimension "tts"
+            applicationIdSuffix ".full"
+            versionNameSuffix "-full"
+            buildConfigField "boolean", "INCLUDE_KITTENTTS", "true"
+        }
+    }
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -43,6 +61,11 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    
+    // KittenTTS 相关依赖（仅 full 版本）
+    // 注意：实际使用时需要添加 KittenTTS Android SDK
+    // fullImplementation 'com.github.gyanendra-baghel:kittentts-android:x.x.x'
+    
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
