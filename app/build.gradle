@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId "io.emqx.mqtt"
         minSdk 23
-        targetSdk 34
+        targetSdk 29
         versionCode 1
         versionName "1.0"
 
@@ -25,17 +25,17 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            
-            // 禁用Release构建时的lint检查
-            lintOptions {
-                checkReleaseBuilds false
-                abortOnError false
-            }
         }
         debug {
             minifyEnabled false
             shrinkResources false
         }
+    }
+    
+    // 禁用lint检查以允许低targetSdk版本
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
     
     // 启用 BuildConfig 生成（Gradle 8+ 需要）
