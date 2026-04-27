@@ -22,11 +22,29 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+    - name: Build Standard APK (without any TTS)
+      run: ./gradlew assembleStandardDebug
 
-    - name: Upload APK
+    - name: Build Full APK (with KittenTTS)
+      run: ./gradlew assembleFullDebug
+
+    - name: Build ChineseTTS APK (with ChineseTtsTflite)
+      run: ./gradlew assembleChinesettsDebug
+
+    - name: Upload Standard APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: app-standard-debug
+        path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
+
+    - name: Upload Full APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-full-debug
+        path: app/build/outputs/apk/full/debug/app-full-debug.apk
+
+    - name: Upload ChineseTTS APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-chinesetts-debug
+        path: app/build/outputs/apk/chinesetts/debug/app-chinesetts-debug.apk

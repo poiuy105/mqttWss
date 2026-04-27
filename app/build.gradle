@@ -38,12 +38,14 @@ android {
             applicationIdSuffix ""
             versionNameSuffix "-standard"
             buildConfigField "boolean", "INCLUDE_KITTENTTS", "false"
+            buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "false"
         }
         full {
             dimension "tts"
             applicationIdSuffix ".full"
             versionNameSuffix "-full"
             buildConfigField "boolean", "INCLUDE_KITTENTTS", "true"
+            buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "false"
             
             // KittenTTS 需要的配置
             ndk {
@@ -54,6 +56,13 @@ android {
             androidResources {
                 noCompress "onnx", "npz"
             }
+        }
+        chinesetts {
+            dimension "tts"
+            applicationIdSuffix ".chinesetts"
+            versionNameSuffix "-chinesetts"
+            buildConfigField "boolean", "INCLUDE_KITTENTTS", "false"
+            buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "true"
         }
     }
     
@@ -88,6 +97,10 @@ dependencies {
     
     // KittenTTS 相关依赖（仅 full 版本）
     fullImplementation 'com.microsoft.onnxruntime:onnxruntime-android:1.16.3'
+    
+    // ChineseTtsTflite 相关依赖（仅 chinesetts 版本）
+    chinesettsImplementation 'org.tensorflow:tensorflow-lite:2.8.0'
+    chinesettsImplementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.8.0'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
