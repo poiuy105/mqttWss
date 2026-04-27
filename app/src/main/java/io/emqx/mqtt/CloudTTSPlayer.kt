@@ -513,6 +513,29 @@ class CloudTTSPlayer private constructor() {
         }
     }
 
+    /**
+     * 使用ChineseTtsTflite播报
+     */
+    private fun speakWithChineseTtsFlite(text: String) {
+        if (chineseTtsEngine == null && appContext != null) {
+            logToBoth("ChineseTtsTflite not initialized, initializing now...", "W")
+            initChineseTtsFlite(appContext!!)
+        }
+        
+        if (chineseTtsEngine?.isReady() == true) {
+            logToBoth("Using ChineseTtsTflite (offline): $text")
+            chineseTtsEngine?.speak(text)
+        } else {
+            logToBoth("ChineseTtsTflite not ready, falling back to Edge-TTS", "W")
+            // 如果ChineseTtsTflite未就绪，降级到Edge-TTS
+            val originalIndex = currentApiIndex
+            currentApiIndex = API_EDGETTS
+            playWithFallback(text, ::buildEdgeTtsUrl)
+            // 恢复原选择
+            currentApiIndex = originalIndex
+        }
+    }
+
     // ========== URL构建方法 ==========
 
     private fun buildEdgeTtsUrl(text: String): TtsRequestInfo {
