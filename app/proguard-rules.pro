@@ -13,8 +13,13 @@
 -dontwarn org.bouncycastle.**
 -keep class org.bouncycastle.** { *; }
 
+# Conscrypt - OkHttp依赖
+-dontwarn org.conscrypt.**
+-keep class org.conscrypt.** { *; }
+
 # OkHttp - 保持OkHttp相关类
 -dontwarn okhttp3.internal.platform.BouncyCastlePlatform
+-dontwarn okhttp3.internal.platform.ConscryptPlatform
 -keep class okhttp3.** { *; }
 -keep interface okhttp3.** { *; }
 
