@@ -2,21 +2,15 @@
 
 ## 概述
 
-本项目现已支持三种不同的APK版本，每种版本针对不同的使用场景：
+本项目现已支持两种不同的APK版本，每种版本针对不同的使用场景：
 
 ### 1. Standard版本（标准版）
 - **包名**: `io.emqx.mqtt`
-- **特点**: 体积最小，不包含任何离线TTS引擎
-- **适用场景**: 仅使用云端TTS（Edge-TTS、百度、有道）
+- **特点**: 体积最小，不包含ChineseTtsTflite
+- **适用场景**: 仅使用云端TTS（Edge-TTS、百度、有道）或本地讯飞TTS
 - **APK大小**: 约5-8MB
 
-### 2. Full版本（完整版）
-- **包名**: `io.emqx.mqtt.full`
-- **特点**: 包含KittenTTS离线引擎
-- **适用场景**: 需要高质量离线TTS，支持多种语言
-- **APK大小**: 约50-80MB（含模型文件）
-
-### 3. ChineseTTS版本（中文版）🆕
+### 2. ChineseTTS版本（中文版）🆕
 - **包名**: `io.emqx.mqtt.chinesetts`
 - **特点**: 包含ChineseTtsTflite离线中文TTS引擎
 - **适用场景**: 车机环境，完全离线，专为中文优化
@@ -29,11 +23,10 @@
 
 ## GitHub Actions 自动编译
 
-每次推送到master分支时，GitHub Actions会自动编译三个版本的APK：
+每次推送到master分支时，GitHub Actions会自动编译两个版本的APK：
 
 1. **app-standard-debug.apk** - 标准版
-2. **app-full-debug.apk** - 完整版（KittenTTS）
-3. **app-chinesetts-debug.apk** - 中文版（ChineseTtsTflite）
+2. **app-chinesetts-debug.apk** - 中文版（ChineseTtsTflite）
 
 ## 下载编译好的APK
 
@@ -104,16 +97,16 @@ curl -L -o tacotron2_quan.tflite "https://github.com/benjaminwan/ChineseTtsTflit
 
 ## TTS引擎对比
 
-| 特性 | Standard | Full (KittenTTS) | ChineseTTS |
-|------|----------|------------------|------------|
-| 离线能力 | ❌ 需要网络 | ✅ 完全离线 | ✅ 完全离线 |
-| 中文支持 | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| 多语言支持 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ |
-| APK大小 | 小 (5-8MB) | 中 (50-80MB) | 大 (60-90MB) |
-| 需要注册 | ❌ | ❌ | ❌ |
-| 音质 | 依赖网络 | 优秀 | 良好 |
-| 延迟 | 高（网络） | 低 (<200ms) | 低 (<200ms) |
-| 车机适用性 | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| 特性 | Standard | ChineseTTS |
+|------|----------|------------|
+| 离线能力 | ⚠️ 部分离线（讯飞） | ✅ 完全离线 |
+| 中文支持 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| 多语言支持 | ⭐⭐⭐⭐⭐ | ⭐⭐ |
+| APK大小 | 小 (5-8MB) | 大 (60-90MB) |
+| 需要注册 | ❌ | ❌ |
+| 音质 | 依赖网络/引擎 | 良好 |
+| 延迟 | 中 | 低 (<200ms) |
+| 车机适用性 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 
 ## 选择建议
 
@@ -123,15 +116,10 @@ curl -L -o tacotron2_quan.tflite "https://github.com/benjaminwan/ChineseTtsTflit
 - ✅ 需要完全离线功能
 - ✅ 不希望有任何注册或API限制
 
-### 推荐使用 Full 版本的场景：
-- ✅ 需要多语言支持
-- ✅ 对音质要求极高
-- ✅ 设备存储空间充足
-
 ### 推荐使用 Standard 版本的场景：
 - ✅ 网络环境稳定
 - ✅ 希望APK体积最小
-- ✅ 不介意使用云端TTS
+- ✅ 使用本地讯飞TTS或其他系统TTS引擎
 
 ## 技术细节
 

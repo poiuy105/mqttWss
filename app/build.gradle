@@ -6,9 +6,6 @@ plugins {
 android {
     namespace 'io.emqx.mqtt'
     compileSdk 36
-    
-    // KittenTTS 需要 NDK
-    ndkVersion "27.0.12077973"
 
     defaultConfig {
         applicationId "io.emqx.mqtt"
@@ -18,9 +15,6 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        
-        // KittenTTS 需要的 ABI 过滤器（仅 full 版本）
-        // standard 版本会被覆盖
     }
 
     buildTypes {
@@ -37,31 +31,12 @@ android {
             dimension "tts"
             applicationIdSuffix ""
             versionNameSuffix "-standard"
-            buildConfigField "boolean", "INCLUDE_KITTENTTS", "false"
             buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "false"
-        }
-        full {
-            dimension "tts"
-            applicationIdSuffix ".full"
-            versionNameSuffix "-full"
-            buildConfigField "boolean", "INCLUDE_KITTENTTS", "true"
-            buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "false"
-            
-            // KittenTTS 需要的配置
-            ndk {
-                abiFilters "arm64-v8a", "armeabi-v7a"
-            }
-            
-            // 不压缩 ONNX 和 NPZ 文件
-            androidResources {
-                noCompress "onnx", "npz"
-            }
         }
         chinesetts {
             dimension "tts"
             applicationIdSuffix ".chinesetts"
             versionNameSuffix "-chinesetts"
-            buildConfigField "boolean", "INCLUDE_KITTENTTS", "false"
             buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "true"
         }
     }
@@ -72,14 +47,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = '17'
-    }
-    
-    // KittenTTS C++ 代码编译配置（仅 full 版本）
-    externalNativeBuild {
-        cmake {
-            path = file("src/full/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
     }
 }
 
@@ -94,9 +61,6 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-    
-    // KittenTTS 相关依赖（仅 full 版本）
-    fullImplementation 'com.microsoft.onnxruntime:onnxruntime-android:1.16.3'
     
     // ChineseTtsTflite 相关依赖（仅 chinesetts 版本）
     chinesettsImplementation 'org.tensorflow:tensorflow-lite:2.8.0'
