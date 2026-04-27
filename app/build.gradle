@@ -24,6 +24,11 @@ android {
         }
     }
     
+    // 启用 BuildConfig 生成（Gradle 8+ 需要）
+    buildFeatures {
+        buildConfig true
+    }
+    
     // 产品风味：编译不同版本的APK
     flavorDimensions "tts"
     productFlavors {
