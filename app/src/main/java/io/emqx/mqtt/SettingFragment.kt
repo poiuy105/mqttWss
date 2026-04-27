@@ -63,6 +63,12 @@ class SettingFragment : BaseFragment() {
     private var mCloudTtsApiSpinner: Spinner? = null
     private var mBtnTtsTestCloud: Button? = null
     private var mBtnTtsResetDefault: Button? = null
+    private lateinit var mTtsVolumeSeekbar: SeekBar
+    private lateinit var mTtsVolumeValue: TextView
+    
+    // ========== 弹窗文字大小控件 ==========
+    private lateinit var mPopupTextSizeSeekbar: SeekBar
+    private lateinit var mPopupTextSizeValue: TextView
 
     // 标志位：区分是用户手动切换协议还是加载配置
     private var isInitializing = true
@@ -154,6 +160,16 @@ class SettingFragment : BaseFragment() {
         
         // 恢复HA点击次数设置（默认1次）
         mHaClickCount.setText(mConfigManager.haClickCount.toString())
+        
+        // 恢复TTS音量设置（默认2，范围0-10）
+        val ttsVolume = mConfigManager.cloudTtsVolume.toInt().coerceIn(0, 10)
+        mTtsVolumeSeekbar.progress = ttsVolume
+        mTtsVolumeValue.text = "$ttsVolume"
+        
+        // 恢复弹窗文字大小设置（默认30，范围10-100）
+        val popupSize = mConfigManager.popupTextSize.coerceIn(10, 100)
+        mPopupTextSizeSeekbar.progress = popupSize - 10  // SeekBar从0开始，对应10
+        mPopupTextSizeValue.text = "$popupSize"
 
         // 恢复协议选择
         when (mConfigManager.protocol) {
@@ -214,6 +230,12 @@ class SettingFragment : BaseFragment() {
         mCloudTtsApiSpinner = view.findViewById(R.id.cloud_tts_api_spinner)
         mBtnTtsTestCloud = view.findViewById(R.id.btn_tts_test_cloud)
         mBtnTtsResetDefault = view.findViewById(R.id.btn_tts_reset_default)
+        mTtsVolumeSeekbar = view.findViewById(R.id.tts_volume_seekbar)
+        mTtsVolumeValue = view.findViewById(R.id.tts_volume_value)
+        
+        // ========== 弹窗文字大小控件初始化 ==========
+        mPopupTextSizeSeekbar = view.findViewById(R.id.popup_text_size_seekbar)
+        mPopupTextSizeValue = view.findViewById(R.id.popup_text_size_value)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -422,6 +444,20 @@ class SettingFragment : BaseFragment() {
             appendLog("=== 弹窗测试 ===")
             testPopup()
         }
+        
+        // 弹窗文字大小拖动条监听器
+        mPopupTextSizeSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val textSize = (progress + 10).coerceIn(10, 100)  // SeekBar从0开始，对应10
+                    mPopupTextSizeValue.text = "$textSize"
+                    mConfigManager.popupTextSize = textSize
+                    appendLog("Popup text size changed to: $textSize")
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         mButton.setOnClickListener {
             if (mButton.text.toString() == getString(R.string.connect)) {
@@ -671,6 +707,21 @@ class SettingFragment : BaseFragment() {
         }
 
         appendLog("[CloudTTS] 设置已加载: ${player.getCurrentApiName()}")
+        
+        // TTS音量拖动条监听器
+        mTtsVolumeSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val volume = progress.coerceIn(0, 10)
+                    mTtsVolumeValue.text = "$volume"
+                    player.volume = volume.toFloat()
+                    mConfigManager.cloudTtsVolume = player.volume
+                    appendLog("[CloudTTS] Volume changed to: $volume")
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
     }
 
     /** 从CloudTTSPlayer同步滑块值到UI显示 */

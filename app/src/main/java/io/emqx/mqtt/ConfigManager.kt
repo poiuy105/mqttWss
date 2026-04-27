@@ -42,6 +42,7 @@ class ConfigManager(context: Context) {
         private const val KEY_FLOAT_WINDOW_ENABLED = "float_window_enabled"
         private const val KEY_VOICE_CAPTURE_ENABLED = "voice_capture_enabled"
         private const val KEY_SHOW_DEBUG_LOG = "show_debug_log"
+        private const val KEY_POPUP_TEXT_SIZE = "popup_text_size"
         // ========== 云端TTS配置 ==========
         private const val KEY_CLOUD_TTS_API_INDEX = "cloud_tts_api_index"
         private const val KEY_CLOUD_TTS_VOICE = "cloud_tts_voice"
@@ -199,6 +200,10 @@ class ConfigManager(context: Context) {
     var showDebugLog: Boolean
         get() = prefs.getBoolean(KEY_SHOW_DEBUG_LOG, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_DEBUG_LOG, value).apply()
+
+    var popupTextSize: Int
+        get() = prefs.getInt(KEY_POPUP_TEXT_SIZE, 30)
+        set(value) = prefs.edit().putInt(KEY_POPUP_TEXT_SIZE, value).apply()
 
     // ========== 云端TTS配置 ==========
     var cloudTtsApiIndex: Int

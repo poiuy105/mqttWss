@@ -332,6 +332,38 @@
                     android:textSize="11sp" />
             </LinearLayout>
 
+            <!-- 弹窗文字大小拖动条 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="Popup Text Size:"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/popup_text_size_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="90"
+                    android:progress="20" />
+
+                <TextView
+                    android:id="@+id/popup_text_size_value"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:text="30"
+                    android:textSize="12sp"
+                    android:gravity="end" />
+            </LinearLayout>
+
             <!-- Home Assistant 区域 -->
             <TextView
                 android:layout_width="wrap_content"
@@ -755,6 +787,38 @@
                     android:text="Reset"
                     android:textAllCaps="false"
                     android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- TTS音量拖动条 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="TTS Volume:"
+                    android:textColor="#666666"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/tts_volume_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="10"
+                    android:progress="2" />
+
+                <TextView
+                    android:id="@+id/tts_volume_value"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:text="2"
+                    android:textSize="12sp"
+                    android:gravity="end" />
             </LinearLayout>
 
         </LinearLayout>
