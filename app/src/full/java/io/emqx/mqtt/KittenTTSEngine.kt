@@ -1,7 +1,13 @@
 package io.emqx.mqtt
 
 import android.content.Context
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import java.io.File
 
 /**
  * KittenTTS 封装类（完整版实现）
@@ -32,10 +38,27 @@ class KittenTTSEngine {
             "Bella", "Jasper", "Luna", "Bruno",
             "Rosie", "Hugo", "Kiki", "Leo"
         )
+        
+        // 加载原生库
+        init {
+            try {
+                System.loadLibrary("kittentts-native")
+                Log.d(TAG, "Native library loaded successfully")
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "Failed to load native library", e)
+            }
+        }
     }
     
     @Volatile
     private var isInitialized = false
+    private var audioTrack: AudioTrack? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    
+    // Native methods
+    private external fun nativeInitialize(modelPath: String): Boolean
+    private external fun nativeSynthesize(text: String, voice: String, speed: Float): FloatArray
+    private external fun nativeRelease()
     
     /**
      * 初始化 KittenTTS 引擎
@@ -44,18 +67,56 @@ class KittenTTSEngine {
         return try {
             Log.d(TAG, "Initializing KittenTTS engine...")
             
-            // TODO: 实际初始化逻辑
-            // 1. 加载 ONNX 模型
-            // 2. 初始化 espeak-ng
-            // 3. 准备音频播放器
+            // 检查模型文件是否存在
+            val modelFile = File(context.filesDir, "model/kitten_tts.onnx")
+            if (!modelFile.exists()) {
+                // 从 assets 复制模型文件
+                copyAssetsToFiles(context)
+            }
             
-            isInitialized = true
-            Log.d(TAG, "✅ KittenTTS initialized successfully")
-            true
+            // 调用 native 初始化
+            val modelPath = File(context.filesDir, "model").absolutePath
+            isInitialized = nativeInitialize(modelPath)
+            
+            if (isInitialized) {
+                Log.d(TAG, "✅ KittenTTS initialized successfully")
+            } else {
+                Log.e(TAG, "❌ Native initialization failed")
+            }
+            
+            isInitialized
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to initialize KittenTTS", e)
             isInitialized = false
             false
+        }
+    }
+    
+    /**
+     * 从 assets 复制文件到 filesDir
+     */
+    private fun copyAssetsToFiles(context: Context) {
+        try {
+            val assetManager = context.assets
+            val modelDir = File(context.filesDir, "model")
+            if (!modelDir.exists()) {
+                modelDir.mkdirs()
+            }
+            
+            // 复制模型文件
+            val files = listOf("kitten_tts.onnx", "voices.npz", "config.json")
+            for (fileName in files) {
+                val inputStream = assetManager.open("model/$fileName")
+                val outputFile = File(modelDir, fileName)
+                inputStream.use { input ->
+                    outputFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d(TAG, "Copied $fileName to ${outputFile.absolutePath}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy assets", e)
         }
     }
     
@@ -87,12 +148,17 @@ class KittenTTSEngine {
             Log.d(TAG, "🔊 Speaking with KittenTTS: voice=$voice, speed=$speed")
             Log.d(TAG, "Text: $text")
             
-            // TODO: 实际的 TTS 推理和播放逻辑
-            // 1. 文本预处理
-            // 2. ONNX 推理生成音频
-            // 3. 使用 AudioTrack 播放
+            // 调用 native 合成
+            val audioData = nativeSynthesize(text, voice, speed)
             
-            true
+            if (audioData.isNotEmpty()) {
+                // 播放音频
+                playAudio(audioData)
+                true
+            } else {
+                Log.e(TAG, "Synthesis returned empty audio")
+                false
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to speak", e)
             false
@@ -100,9 +166,42 @@ class KittenTTSEngine {
     }
     
     /**
+     * 播放音频数据
+     */
+    private fun playAudio(audioData: FloatArray) {
+        try {
+            val sampleRate = 24000
+            val channelConfig = AudioFormat.CHANNEL_OUT_MONO
+            val audioFormat = AudioFormat.ENCODING_PCM_FLOAT
+            
+            val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+            
+            audioTrack = AudioTrack.Builder()
+                .setAudioFormat(AudioFormat.Builder()
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(channelConfig)
+                    .setEncoding(audioFormat)
+                    .build())
+                .setBufferSizeInBytes(bufferSize)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build()
+            
+            audioTrack?.play()
+            audioTrack?.write(audioData, 0, audioData.size, AudioTrack.WRITE_BLOCKING)
+            
+            Log.d(TAG, "Audio playback started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to play audio", e)
+        }
+    }
+    
+    /**
      * 停止播放
      */
     fun stop() {
+        audioTrack?.stop()
+        audioTrack?.release()
+        audioTrack = null
         Log.d(TAG, "Stopped playback")
     }
     
@@ -111,6 +210,7 @@ class KittenTTSEngine {
      */
     fun release() {
         stop()
+        nativeRelease()
         isInitialized = false
         Log.d(TAG, "Released KittenTTS engine")
     }

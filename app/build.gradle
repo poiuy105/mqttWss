@@ -6,6 +6,9 @@ plugins {
 android {
     namespace 'io.emqx.mqtt'
     compileSdk 36
+    
+    // KittenTTS 需要 NDK
+    ndkVersion "27.0.12077973"
 
     defaultConfig {
         applicationId "io.emqx.mqtt"
@@ -15,6 +18,9 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // KittenTTS 需要的 ABI 过滤器（仅 full 版本）
+        // standard 版本会被覆盖
     }
 
     buildTypes {
@@ -38,6 +44,16 @@ android {
             applicationIdSuffix ".full"
             versionNameSuffix "-full"
             buildConfigField "boolean", "INCLUDE_KITTENTTS", "true"
+            
+            // KittenTTS 需要的配置
+            ndk {
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
+            
+            // 不压缩 ONNX 和 NPZ 文件
+            androidResources {
+                noCompress "onnx", "npz"
+            }
         }
     }
     
@@ -47,6 +63,14 @@ android {
     }
     kotlinOptions {
         jvmTarget = '17'
+    }
+    
+    // KittenTTS C++ 代码编译配置（仅 full 版本）
+    externalNativeBuild {
+        cmake {
+            path = file("src/full/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 }
 
@@ -63,8 +87,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     
     // KittenTTS 相关依赖（仅 full 版本）
-    // 注意：实际使用时需要添加 KittenTTS Android SDK
-    // fullImplementation 'com.github.gyanendra-baghel:kittentts-android:x.x.x'
+    fullImplementation 'com.microsoft.onnxruntime:onnxruntime-android:1.16.3'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
