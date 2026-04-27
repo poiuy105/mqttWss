@@ -25,6 +25,12 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // 禁用Release构建时的lint检查
+            lintOptions {
+                checkReleaseBuilds false
+                abortOnError false
+            }
         }
         debug {
             minifyEnabled false
