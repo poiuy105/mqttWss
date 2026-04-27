@@ -116,10 +116,14 @@ class FloatWindowManager(private val context: Context) {
             maxLines = 1
         }
 
+        // 从 ConfigManager 读取弹窗文字大小配置
+        val configManager = ConfigManager.getInstance(context)
+        val popupTextSize = configManager.popupTextSize.toFloat().coerceIn(10f, 100f)
+        
         payloadTextView = TextView(context).apply {
             text = payload
             setTextColor(0xFFFFFFFF.toInt())
-            textSize = 16f
+            textSize = popupTextSize  // 使用配置的文字大小
             maxLines = 3
         }
 

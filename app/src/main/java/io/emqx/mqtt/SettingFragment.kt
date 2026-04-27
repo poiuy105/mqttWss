@@ -716,6 +716,10 @@ class SettingFragment : BaseFragment() {
                     mTtsVolumeValue.text = "$volume"
                     player.volume = volume.toFloat()
                     mConfigManager.cloudTtsVolume = player.volume
+                    
+                    // ⭐ 关键：通知TTSManager更新音量
+                    player.updateTtsVolume()
+                    
                     appendLog("[CloudTTS] Volume changed to: $volume")
                 }
             }

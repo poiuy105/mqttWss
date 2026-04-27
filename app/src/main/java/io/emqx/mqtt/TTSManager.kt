@@ -22,6 +22,9 @@ class TTSManager(private val context: Context) {
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // TTS音量控制 (0.0 - 1.0)
+    private var ttsVolume = 1.0f
+
     // 车机优化：重试和引擎切换机制
     private var retryCount = 0
     private val maxRetries = 5  // 增加到5次，兼容Android 10老旧车机
@@ -349,7 +352,7 @@ class TTSManager(private val context: Context) {
             
             try {
                 val params = Bundle().apply {
-                    putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f)
+                    putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, ttsVolume)
                     // Android 21+ 支持流类型设置
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
@@ -361,7 +364,7 @@ class TTSManager(private val context: Context) {
                 }
                 
                 val utteranceId = "tts_${System.currentTimeMillis()}"
-                Log.d(TAG, "⭐ speak: '$text' (id=$utteranceId, engine=${tts?.defaultEngine})")
+                Log.d(TAG, "⭐ speak: '$text' (volume=$ttsVolume, id=$utteranceId)")
                 
                 val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
                 Log.d(TAG, "⭐ speak result: $result (SUCCESS=${TextToSpeech.SUCCESS}, ERROR=${TextToSpeech.ERROR})")
@@ -377,6 +380,14 @@ class TTSManager(private val context: Context) {
                 ttsListener?.onSpeakError()
             }
         }
+    }
+
+    /**
+     * 设置TTS音量 (0.0 - 1.0)
+     */
+    fun setVolume(volume: Float) {
+        ttsVolume = volume.coerceIn(0.0f, 1.0f)
+        Log.d(TAG, "setVolume: $ttsVolume")
     }
 
     fun setSpeechRate(rate: Float) {

@@ -265,6 +265,11 @@ class CloudTTSPlayer private constructor() {
         
         ttsManager = TTSManager(context)
         
+        // 设置初始音量
+        val normalizedVolume = (volume / 10f).coerceIn(0.0f, 1.0f)
+        ttsManager?.setVolume(normalizedVolume)
+        logToBoth("Initial TTS volume set to: $volume (normalized: $normalizedVolume)")
+        
         ttsManager?.setTTSListener(object : TTSManager.TTSListener {
             override fun onSpeakStart() {
                 logToBoth("🔊 Local TTS speaking started")
@@ -307,6 +312,16 @@ class CloudTTSPlayer private constructor() {
         } else {
             true  // 云端TTS始终可用
         }
+    }
+
+    /**
+     * 更新TTSManager的音量设置
+     */
+    fun updateTtsVolume() {
+        // 将0-10转换为0.0-1.0
+        val normalizedVolume = (volume / 10f).coerceIn(0.0f, 1.0f)
+        ttsManager?.setVolume(normalizedVolume)
+        logToBoth("TTS volume updated to: $volume (normalized: $normalizedVolume)")
     }
 
     // ========== 固定接口地址（已验证可用 2026-04-18）==========
