@@ -6,13 +6,21 @@ import android.util.Log
 /**
  * KittenTTS 封装类（完整版实现）
  * 
- * 注意：这是框架代码，实际集成需要：
- * 1. 从 https://github.com/gyanendra-baghel/kittentts-android 获取完整实现
- * 2. 添加 ONNX Runtime 依赖
- * 3. 下载 KittenTTS 模型文件到 assets
- * 4. 编译 C++ 代码（espeak-ng）
+ * ⚠️ 当前状态：框架代码，未完整实现
  * 
- * 当前实现仅作为占位符，等待官方 Android SDK 发布
+ * 完整集成需要以下步骤：
+ * 1. 从 https://github.com/gyanendra-baghel/kittentts-android 获取完整实现
+ * 2. 在 build.gradle 添加 ONNX Runtime 依赖：
+ *    fullImplementation 'com.microsoft.onnxruntime:onnxruntime-android:1.16.3'
+ * 3. 下载模型文件到 app/src/full/assets/model/：
+ *    - kitten_tts.onnx (25-80MB)
+ *    - voices.npz
+ *    - config.json
+ * 4. 准备 espeak-ng 数据到 app/src/full/assets/espeak-ng-data/
+ * 5. 编译 C++ 原生库（需要 NDK 27.0.12077973 + CMake 3.22.1）
+ * 6. 实现实际的 ONNX 推理逻辑
+ * 
+ * 参考文档：KITTENTTS_INTEGRATION.md
  */
 class KittenTTSEngine {
     
