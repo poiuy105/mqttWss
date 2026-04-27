@@ -22,8 +22,13 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            shrinkResources false
         }
     }
     
@@ -52,6 +57,17 @@ android {
                 abiFilters "arm64-v8a"
             }
         }
+        chinesettslite {
+            dimension "tts"
+            applicationIdSuffix ".chinesettslite"
+            versionNameSuffix "-chinesetts-lite"
+            buildConfigField "boolean", "INCLUDE_CHINESE_TTS", "true"
+            
+            // 优化：只保留arm64-v8a架构
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+        }
     }
     
     compileOptions {
@@ -75,9 +91,12 @@ dependencies {
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     
-    // ChineseTtsTflite 相关依赖（仅 chinesetts 版本）
+    // ChineseTtsTflite 相关依赖（完整版 - 含select-tf-ops）
     chinesettsImplementation 'org.tensorflow:tensorflow-lite:2.8.0'
     chinesettsImplementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.8.0'
+    
+    // ChineseTtsTflite 精简版依赖（不含select-tf-ops，体积更小）
+    chinesettsliteImplementation 'org.tensorflow:tensorflow-lite:2.8.0'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

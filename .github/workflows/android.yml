@@ -22,20 +22,29 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Standard APK (without ChineseTtsTflite)
-      run: ./gradlew assembleStandardDebug
+    - name: Build Standard Release APK (without ChineseTtsTflite)
+      run: ./gradlew assembleStandardRelease
 
-    - name: Build ChineseTTS APK (with ChineseTtsTflite)
-      run: ./gradlew assembleChinesettsDebug
+    - name: Build ChineseTTS Release APK (with select-tf-ops)
+      run: ./gradlew assembleChinesettsRelease
 
-    - name: Upload Standard APK
+    - name: Build ChineseTTS Lite Release APK (without select-tf-ops)
+      run: ./gradlew assembleChinesettsliteRelease
+
+    - name: Upload Standard Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-standard-debug
-        path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
+        name: app-standard-release
+        path: app/build/outputs/apk/standard/release/app-standard-release.apk
 
-    - name: Upload ChineseTTS APK
+    - name: Upload ChineseTTS Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-chinesetts-debug
-        path: app/build/outputs/apk/chinesetts/debug/app-chinesetts-debug.apk
+        name: app-chinesetts-release
+        path: app/build/outputs/apk/chinesetts/release/app-chinesetts-release.apk
+
+    - name: Upload ChineseTTS Lite Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-chinesetts-lite-release
+        path: app/build/outputs/apk/chinesettslite/release/app-chinesettslite-release.apk
