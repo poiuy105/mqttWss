@@ -481,6 +481,54 @@ class CloudTTSPlayer private constructor() {
         logToBoth("=== Local TTS Initialization Requested ===")
     }
 
+    // ========== ChineseTtsTflite 离线中文TTS方法 ==========
+
+    /**
+     * 初始化ChineseTtsTflite引擎（异步）
+     */
+    fun initChineseTtsFlite(context: Context) {
+        if (chineseTtsEngine != null) {
+            logToBoth("ChineseTtsTflite already initialized")
+            return
+        }
+        
+        logToBoth("=== Starting ChineseTtsTflite Initialization ===")
+        appContext = context.applicationContext
+        
+        chineseTtsEngine = ChineseTtsEngine(context)
+        
+        chineseTtsEngine?.setTTSListener(object : ChineseTtsEngine.TTSListener {
+            override fun onSpeakStart() {
+                logToBoth("🔊 ChineseTtsTflite speaking started")
+            }
+            override fun onSpeakDone() {
+                logToBoth("✅ ChineseTtsTflite speaking completed")
+            }
+            override fun onSpeakError(error: String) {
+                logToBoth("❌ ChineseTtsTflite speaking failed: $error", "E")
+            }
+        })
+        
+        chineseTtsEngine?.initialize { success ->
+            if (success) {
+                logToBoth("✅✅✅ ChineseTtsTflite initialization SUCCESS")
+            } else {
+                logToBoth("❌❌❌ ChineseTtsTflite initialization FAILED", "E")
+            }
+        }
+        
+        logToBoth("=== ChineseTtsTflite Initialization Requested ===")
+    }
+
+    /**
+     * 检查ChineseTtsTflite是否就绪
+     */
+    fun isChineseTtsFliteReady(): Boolean {
+        val ready = chineseTtsEngine?.isReady() == true
+        logToBoth("isChineseTtsFliteReady: $ready")
+        return ready
+    }
+
     /**
      * 检查本地TTS是否就绪
      */
