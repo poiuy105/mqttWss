@@ -282,8 +282,8 @@ class ChineseSimpleTTS(private val context: Context) {
         }
         
         // 创建 AudioTrack
-        val bufferSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-        val audioTrack = AudioTrack.Builder()
+        val bufferSize = android.media.AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+        val audioTrack = android.media.AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -298,7 +298,7 @@ class ChineseSimpleTTS(private val context: Context) {
                     .build()
             )
             .setBufferSizeInBytes(bufferSize)
-            .setTransferMode(AudioTrack.MODE_STREAM)
+            .setTransferMode(android.media.AudioTrack.MODE_STREAM)
             .build()
         
         this.audioTrack = audioTrack
@@ -308,7 +308,7 @@ class ChineseSimpleTTS(private val context: Context) {
             audioTrack.write(pcmData, 0, pcmData.size)
             
             // 等待播放完成
-            while (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
+            while (audioTrack.playState == android.media.AudioTrack.PLAYSTATE_PLAYING) {
                 Thread.sleep(10)
             }
         } finally {
