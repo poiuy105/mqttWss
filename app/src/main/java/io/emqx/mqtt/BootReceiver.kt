@@ -53,46 +53,11 @@ class BootReceiver : BroadcastReceiver() {
         if (configManager.hasSavedConfig()) {
             Log.d("BootReceiver", "Auto-start enabled, launching MainActivity...")
             
-            // ⭐ 新增：立即播报启动提示（使用CloudTTS，后台运行）
-            speakBootMessage(context)
-            
-            // ⭐ 修改：不再直接启动Activity，改为启动MqttService进行后台连接
+            // ⭐ 修改：启动后台MQTT连接服务
             startMqttBackgroundService(context)
         } else {
             Log.d("BootReceiver", "No saved config found, skipping auto-start")
         }
-    }
-
-    /**
-     * 播报开机启动提示（使用CloudTTS，后台运行不弹界面）
-     */
-    private fun speakBootMessage(context: Context) {
-        Thread {
-            try {
-                Log.d("BootReceiver", "Starting boot message TTS...")
-                
-                // 获取CloudTTS实例
-                val ttsPlayer = CloudTTSPlayer.getInstance()
-                ttsPlayer.setContext(context.applicationContext)
-                
-                // 设置缓存目录
-                val cacheDir = java.io.File(context.cacheDir, "cloudtts_cache")
-                ttsPlayer.setCacheDir(cacheDir)
-                
-                // 从配置恢复设置
-                val configManager = ConfigManager.getInstance(context)
-                ttsPlayer.currentApiIndex = configManager.cloudTtsApiIndex
-                ttsPlayer.voice = configManager.cloudTtsVoice
-                ttsPlayer.speed = configManager.cloudTtsSpeed
-                
-                // 立即播报（force=true跳过防抖）
-                ttsPlayer.speak("MQTT助手已启动，正在连接服务器", force = true)
-                
-                Log.d("BootReceiver", "Boot message spoken successfully")
-            } catch (e: Exception) {
-                Log.e("BootReceiver", "Failed to speak boot message: ${e.message}", e)
-            }
-        }.start()
     }
 
     /**
