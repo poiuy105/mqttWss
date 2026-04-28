@@ -186,6 +186,10 @@ class VoiceAccessibilityService : AccessibilityService() {
         // 服务连接成功，标记"上次运行时是开着的"
         getSharedPreferences("a11y_status", MODE_PRIVATE)
             .edit().putBoolean("a11y_was_enabled", true).apply()
+        
+        // ⭐ 新增：自动恢复CapturedTextManager的启用状态（重启后关键修复）
+        CapturedTextManager.isEnabled = true
+        android.util.Log.i("A11yService", "✅ Accessibility connected, auto-enabled text capture")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

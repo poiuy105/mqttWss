@@ -45,6 +45,30 @@ class BootReceiver : BroadcastReceiver() {
 
         // ========== 1. 无障碍状态自检 ==========
         checkAndRestoreAccessibility(context)
+        
+        // ⭐ 新增：延迟5秒后再次检查并启用（等待无障碍服务完全启动）
+        Thread {
+            Thread.sleep(5000)
+            
+            val enabledServices = try {
+                Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                )
+            } catch (e: Exception) {
+                null
+            }
+            
+            val isCurrentlyEnabled = enabledServices?.contains(VoiceAccessibilityService.SERVICE_COMPONENT) == true
+            
+            if (isCurrentlyEnabled) {
+                CapturedTextManager.isEnabled = true
+                CapturedTextManager.init(context)
+                Log.d("BootReceiver", "Delayed check: Accessibility confirmed, CapturedTextManager enabled")
+            } else {
+                Log.w("BootReceiver", "Delayed check: Accessibility still not ready")
+            }
+        }.start()
 
         // ========== 2. MQTT自动连接（原有逻辑）==========
         val configManager = ConfigManager.getInstance(context)
@@ -109,7 +133,7 @@ class BootReceiver : BroadcastReceiver() {
         val sp = context.getSharedPreferences("a11y_status", Context.MODE_PRIVATE)
         val wasEnabled = sp.getBoolean("a11y_was_enabled", false)
         val wasReset = sp.getBoolean("a11y_was_reset", false)
-
+    
         val enabledServices = try {
             Settings.Secure.getString(
                 context.contentResolver,
@@ -119,23 +143,31 @@ class BootReceiver : BroadcastReceiver() {
             Log.e("BootReceiver", "Cannot read accessibility setting: ${e.message}")
             null
         }
-
+    
         val isCurrentlyEnabled = enabledServices?.contains(VoiceAccessibilityService.SERVICE_COMPONENT) == true
-
+    
         Log.d("BootReceiver", "A11y check: wasEnabled=$wasEnabled, wasReset=$wasReset, currentlyEnabled=$isCurrentlyEnabled")
-
+    
         when {
             // 系统抹除了无障碍权限 → 记录标记，并在通知栏显示引导
             wasEnabled && !isCurrentlyEnabled -> {
                 Log.w("BootReceiver", "⚠️ Accessibility was RESET by system! Showing notification.")
                 sp.edit().putBoolean("a11y_needs_fix", true).apply()
-                
-                // ⭐ 在通知栏显示无障碍重置引导（替代原来的"申请成功"位置）
+                    
+                // ⭐ 在通知栏显示无障碍重置引导（替代原来的“申请成功”位置）
                 showAccessibilityResetNotification(context)
             }
             isCurrentlyEnabled -> {
                 Log.i("BootReceiver", "✅ Accessibility service still enabled")
+                // ⭐ 新增：如果无障碍已启用，确保CapturedTextManager也被启用
+                CapturedTextManager.isEnabled = true
+                CapturedTextManager.init(context)
+                Log.d("BootReceiver", "Auto-enabled CapturedTextManager")
                 // AccessibilityService由系统管理，无需手动启动
+            }
+            else -> {
+                // 无障碍从未启用过，不处理
+                Log.d("BootReceiver", "Accessibility never enabled, skipping")
             }
         }
     }
