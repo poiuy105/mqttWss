@@ -143,9 +143,9 @@ object HomeAssistantService {
                         // 记录日志
                         appendLog(context, "Return action $i/$clickCount executed")
                     } else {
-                        Log.d(TAG, "❌ Text cleared by HA, stopping return sequence at $i/$clickCount")
-                        appendLog(context, "Screen cleared, stop return sequence ($i/$clickCount)")
-                        break  // ⭐ 如果屏幕已清空，立即停止后续返回
+                        Log.d(TAG, "❌ Text cleared by HA, skip return action $i/$clickCount but continue monitoring")
+                        appendLog(context, "Screen cleared, skip action $i/$clickCount (continue monitoring)")
+                        // ⭐ 不break，继续循环以检测文本是否重新出现
                     }
                     
                     // 多次点击之间的固定间隔（100ms）
