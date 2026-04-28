@@ -359,7 +359,7 @@ class CloudTTSPlayer private constructor() {
      * @param urlBuilder URL构建函数
      * @param apiName API名称（用于日志）
      */
-    private fun playAudioDirectly(text: String, urlBuilder: (String) -> String, apiName: String) {
+    private fun playAudioDirectly(text: String, urlBuilder: (String) -> TtsRequestInfo, apiName: String) {
         // 1. 检查缓存
         audioCache?.getCachedAudio(text)?.let { cachedFile ->
             logToBoth("✅ Cache hit for: $text")
@@ -374,8 +374,8 @@ class CloudTTSPlayer private constructor() {
         
         downloadExecutor.execute {
             try {
-                val url = urlBuilder(text)
-                val downloadedFile = downloadAudio(url, tempFile)
+                val requestInfo = urlBuilder(text)
+                val downloadedFile = downloadAudio(requestInfo)
                 
                 if (downloadedFile != null) {
                     // 保存到缓存
