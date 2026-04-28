@@ -254,6 +254,16 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // ========== 比亚迪车机：启动时检测无障碍状态 ==========
         checkAccessibilityOnStartup()
 
+        // ⭐ 检测是否为后台模式启动（从BootReceiver）
+        val isBackgroundMode = intent.getBooleanExtra("background_mode", false)
+        val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
+        
+        if (isBackgroundMode) {
+            Log.d("MainActivity", "Launched in BACKGROUND MODE from BootReceiver")
+            // ⭐ 后台模式：立即移动到后台，不显示界面
+            moveTaskToBack(true)
+        }
+
         // 恢复横竖屏切换前保存的MQTT连接（避免断连重连）
         if (sPreservedClient != null && sPreservedClient?.isConnected == true) {
             mClient = sPreservedClient
@@ -730,8 +740,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     runOnUiThread {
                         ToastUtils.showShort(this@MainActivity, "Connected!")
                         notifyMqttStatusChanged(true)
-                        // TTS播报MQTT连接状态
+                        
+                        // ⭐ TTS播报MQTT连接状态（无论前台还是后台都播报）
                         ttsPlayer?.speak("MQTT已连接", force = true)
+                        
+                        // ⭐ 如果是后台模式，确保通知栏显示连接状态
+                        if (intent.getBooleanExtra("background_mode", false)) {
+                            MqttService.updateStatus(this@MainActivity, "MQTT 已连接", "服务正常运行中")
+                            Log.d("MainActivity", "Background mode: notification updated")
+                        }
                     }
                 }
 

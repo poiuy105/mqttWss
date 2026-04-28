@@ -53,23 +53,87 @@ class BootReceiver : BroadcastReceiver() {
         if (configManager.hasSavedConfig()) {
             Log.d("BootReceiver", "Auto-start enabled, launching MainActivity...")
             
-            // 尝试直接启动 Activity
-            try {
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    // 重要：添加 FLAG_ACTIVITY_NEW_TASK 以从后台启动
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    // 传递 auto_connect 参数，触发自动重连
-                    putExtra("auto_connect", true)
-                }
-                context.startActivity(launchIntent)
-                Log.d("BootReceiver", "MainActivity launched successfully with auto_connect=true")
-            } catch (e: Exception) {
-                // Android 10+ 可能阻止后台启动 Activity，显示通知作为备选方案
-                Log.w("BootReceiver", "Failed to start Activity directly: ${e.message}, showing notification instead")
-                showAutoStartNotification(context)
-            }
+            // ⭐ 新增：立即播报启动提示（使用CloudTTS，后台运行）
+            speakBootMessage(context)
+            
+            // ⭐ 修改：不再直接启动Activity，改为启动MqttService进行后台连接
+            startMqttBackgroundService(context)
         } else {
             Log.d("BootReceiver", "No saved config found, skipping auto-start")
+        }
+    }
+
+    /**
+     * 播报开机启动提示（使用CloudTTS，后台运行不弹界面）
+     */
+    private fun speakBootMessage(context: Context) {
+        Thread {
+            try {
+                Log.d("BootReceiver", "Starting boot message TTS...")
+                
+                // 获取CloudTTS实例
+                val ttsPlayer = CloudTTSPlayer.getInstance()
+                ttsPlayer.setContext(context.applicationContext)
+                
+                // 设置缓存目录
+                val cacheDir = java.io.File(context.cacheDir, "cloudtts_cache")
+                ttsPlayer.setCacheDir(cacheDir)
+                
+                // 从配置恢复设置
+                val configManager = ConfigManager.getInstance(context)
+                ttsPlayer.currentApiIndex = configManager.cloudTtsApiIndex
+                ttsPlayer.voice = configManager.cloudTtsVoice
+                ttsPlayer.speed = configManager.cloudTtsSpeed
+                
+                // 立即播报（force=true跳过防抖）
+                ttsPlayer.speak("MQTT助手已启动，正在连接服务器", force = true)
+                
+                Log.d("BootReceiver", "Boot message spoken successfully")
+            } catch (e: Exception) {
+                Log.e("BootReceiver", "Failed to speak boot message: ${e.message}", e)
+            }
+        }.start()
+    }
+
+    /**
+     * 启动后台MQTT连接服务（不弹界面）
+     */
+    private fun startMqttBackgroundService(context: Context) {
+        try {
+            // 启动MqttService作为前台服务
+            val serviceIntent = Intent(context, MqttService::class.java).apply {
+                action = MqttService.ACTION_START
+            }
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+            
+            Log.d("BootReceiver", "MqttService started in background")
+            
+            // ⭐ 延迟2秒后启动MainActivity（但设置为后台模式，不弹到前台）
+            Thread {
+                Thread.sleep(2000)
+                
+                // 启动MainActivity但不带到前台（仅初始化必要组件）
+                val launchIntent = Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // ⭐ 关键：添加这些flag让Activity在后台运行
+                    addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    putExtra("auto_connect", true)
+                    putExtra("background_mode", true)  // 标记为后台模式
+                }
+                context.startActivity(launchIntent)
+                
+                Log.d("BootReceiver", "MainActivity launched in background mode")
+            }.start()
+            
+        } catch (e: Exception) {
+            Log.e("BootReceiver", "Failed to start background service: ${e.message}", e)
+            // 降级方案：显示通知让用户手动点击
+            showAutoStartNotification(context)
         }
     }
 
@@ -96,31 +160,75 @@ class BootReceiver : BroadcastReceiver() {
         Log.d("BootReceiver", "A11y check: wasEnabled=$wasEnabled, wasReset=$wasReset, currentlyEnabled=$isCurrentlyEnabled")
 
         when {
-            // 系统抹除了无障碍权限 → 记录标记，等MainActivity弹出引导
+            // 系统抹除了无障碍权限 → 记录标记，并在通知栏显示引导
             wasEnabled && !isCurrentlyEnabled -> {
-                Log.w("BootReceiver", "⚠️ Accessibility was RESET by system! Marking for user guidance.")
+                Log.w("BootReceiver", "⚠️ Accessibility was RESET by system! Showing notification.")
                 sp.edit().putBoolean("a11y_needs_fix", true).apply()
+                
+                // ⭐ 在通知栏显示无障碍重置引导（替代原来的"申请成功"位置）
+                showAccessibilityResetNotification(context)
             }
             isCurrentlyEnabled -> {
-                Log.i("BootReceiver", "✅ Accessibility service still enabled, trying to start foreground service...")
-                // 尝试直接拉起前台服务（保活）
-                tryStartForegroundService(context)
+                Log.i("BootReceiver", "✅ Accessibility service still enabled")
+                // AccessibilityService由系统管理，无需手动启动
             }
         }
     }
 
-    /** 尝试启动无障碍前台服务（API26+必须用startForegroundService） */
-    private fun tryStartForegroundService(context: Context) {
+    /**
+     * 显示无障碍被重置的通知（在通知栏原位置展示困境）
+     */
+    private fun showAccessibilityResetNotification(context: Context) {
         try {
-            val serviceIntent = Intent(context, VoiceAccessibilityService::class.java)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+                val channel = NotificationChannel(
+                    "accessibility_channel",
+                    "无障碍服务提醒",
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.description = "需要开启无障碍服务以支持语音捕获功能"
+                notificationManager.createNotificationChannel(channel)
             }
-            Log.d("BootReceiver", "Foreground service start requested")
+            
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, "accessibility_channel")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("⚠️ 无障碍服务已关闭")
+                    .setContentText("点击此处重新开启MQTT Assistant无障碍服务")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(context)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("⚠️ 无障碍服务已关闭")
+                    .setContentText("点击此处重新开启MQTT Assistant无障碍服务")
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+            }
+            
+            // ⭐ 使用固定ID 2001，与MainActivity中的通知ID一致
+            notificationManager.notify(2001, notification)
+            Log.d("BootReceiver", "Accessibility reset notification shown (ID=2001)")
         } catch (e: Exception) {
-            Log.e("BootReceiver", "Failed to start foreground service: ${e.message}")
+            Log.e("BootReceiver", "Failed to show accessibility notification: ${e.message}", e)
         }
     }
 
