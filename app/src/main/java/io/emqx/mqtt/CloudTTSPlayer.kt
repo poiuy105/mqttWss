@@ -76,6 +76,10 @@ class CloudTTSPlayer private constructor() {
     /** 日志回调（用于将日志输出到Home页面Debug Log） */
     private var logCallback: ((String) -> Unit)? = null
     
+    // ========== Edge-TTS缓存管理器 ==========
+    /** ⭐ Edge-TTS音频缓存（仅对Edge-TTS生效） */
+    private var edgeTtsCache: EdgeTtsAudioCache? = null
+    
     // ========== TTS引擎管理 ==========
     /** 存储所有可用的TTS引擎 */
     data class TtsEngineInfo(
@@ -100,6 +104,10 @@ class CloudTTSPlayer private constructor() {
     fun setCacheDir(dir: File) {
         cacheDir = dir
         if (!cacheDir!!.exists()) cacheDir!!.mkdirs()
+        
+        // ⭐ 初始化Edge-TTS缓存管理器（50MB上限）
+        edgeTtsCache = EdgeTtsAudioCache(dir, maxDiskSizeMB = 50)
+        logToBoth("Edge-TTS audio cache initialized (max 50MB)")
     }
 
     /**
@@ -241,6 +249,21 @@ class CloudTTSPlayer private constructor() {
     }
 
     /**
+     * ⭐ 新增：获取Edge-TTS缓存统计信息
+     */
+    fun getEdgeTtsCacheStats(): EdgeTtsAudioCache.CacheStats? {
+        return edgeTtsCache?.getCacheStats()
+    }
+    
+    /**
+     * ⭐ 新增：清空Edge-TTS缓存
+     */
+    fun clearEdgeTtsCache() {
+        edgeTtsCache?.clearCache()
+        logToBoth("Edge-TTS cache cleared")
+    }
+
+    /**
      * 初始化指定包名的本地TTS
      */
     private fun initLocalTTSWithPackage(context: Context, packageName: String?) {
@@ -360,6 +383,20 @@ class CloudTTSPlayer private constructor() {
      * @param apiName API名称（用于日志）
      */
     private fun playAudioDirectly(text: String, urlBuilder: (String) -> TtsRequestInfo, apiName: String) {
+        // ⭐ 仅对Edge-TTS启用缓存
+        val isEdgeTts = (apiName == "Edge-TTS")
+        
+        // 1. 检查缓存（仅Edge-TTS）
+        if (isEdgeTts) {
+            edgeTtsCache?.getCachedAudio(text)?.let { cachedFile ->
+                logToBoth("✅ Edge-TTS cache hit: $text")
+                // 直接播放缓存文件，不删除
+                playCachedAudio(cachedFile)
+                return
+            }
+        }
+        
+        // 2. 缓存miss或非Edge-TTS，下载音频
         // 取消之前的下载任务
         currentDownload?.cancel(false)
 
@@ -387,6 +424,11 @@ class CloudTTSPlayer private constructor() {
                     return@submit
                 }
 
+                // ⭐ 如果是Edge-TTS，保存到缓存
+                if (isEdgeTts) {
+                    edgeTtsCache?.cacheAudio(text, audioFile)
+                }
+
                 // 在主线程播放本地文件
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     try {
@@ -409,8 +451,10 @@ class CloudTTSPlayer private constructor() {
                             }
                             setOnCompletionListener { mp ->
                                 try { mp.reset() } catch (e: Exception) {}
-                                // 删除临时文件
-                                try { audioFile.delete() } catch (e: Exception) {}
+                                // ⭐ 非缓存文件才删除（Edge-TTS缓存文件保留）
+                                if (!isEdgeTts) {
+                                    try { audioFile.delete() } catch (e: Exception) {}
+                                }
                             }
                             setOnErrorListener { _, what, extra ->
                                 Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
@@ -438,6 +482,45 @@ class CloudTTSPlayer private constructor() {
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
                         Toast.makeText(ctx, "TTS播报失败: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
+                }
+            }
+        }
+    }
+    
+    /**
+     * ⭐ 播放缓存的音频文件（不删除文件）
+     */
+    private fun playCachedAudio(cachedFile: File) {
+        appContext?.let { ctx ->
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                try {
+                    stop()
+                    mediaPlayer = MediaPlayer().apply {
+                        setDataSource(cachedFile.absolutePath)
+                        setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
+                        setOnPreparedListener { mp ->
+                            try {
+                                mp.start()
+                                Log.d(TAG, "Playback from cache: ${cachedFile.name} (${cachedFile.length()}B)")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "start() exception: ${e.message}")
+                                Toast.makeText(ctx, "TTS播放失败", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        setOnCompletionListener { mp ->
+                            try { mp.reset() } catch (e: Exception) {}
+                            // ⭐ 缓存文件不删除
+                        }
+                        setOnErrorListener { _, what, extra ->
+                            Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
+                            Toast.makeText(ctx, "TTS播放错误", Toast.LENGTH_SHORT).show()
+                            true
+                        }
+                        prepareAsync()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "MediaPlayer setup error: ${e.message}", e)
+                    Toast.makeText(ctx, "TTS初始化失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
