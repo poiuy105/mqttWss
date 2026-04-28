@@ -360,35 +360,75 @@ class CloudTTSPlayer private constructor() {
      * @param apiName API名称（用于日志）
      */
     private fun playAudioDirectly(text: String, urlBuilder: (String) -> TtsRequestInfo, apiName: String) {
-        // 1. 检查缓存
-        audioCache?.getCachedAudio(text)?.let { cachedFile ->
-            logToBoth("✅ Cache hit for: $text")
-            playAudioFile(cachedFile)
-            return
+        // 取消之前的下载任务
+        currentDownload?.cancel(false)
+
+        val info = urlBuilder(text)
+        logToBoth("Downloading from $apiName: $text")
+
+        // 在主线程立即显示Toast提示，在下载开始前就给用户反馈
+        appContext?.let { ctx ->
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // 2. 缓存miss，下载音频
-        logToBoth("Downloading from $apiName: $text")
-        
-        val tempFile = File(cacheDir, "temp_${System.currentTimeMillis()}.mp3")
-        
-        downloadExecutor.execute {
+        currentDownload = downloadExecutor.submit {
             try {
-                val requestInfo = urlBuilder(text)
-                val downloadedFile = downloadAudio(requestInfo)
-                
-                if (downloadedFile != null) {
-                    // 保存到缓存
-                    audioCache?.cacheAudio(text, downloadedFile)
-                    
-                    // 播放
-                    playAudioFile(downloadedFile)
-                } else {
+                val audioFile = downloadAudio(info)
+                if (audioFile == null || !audioFile.exists() || audioFile.length() < 256L) {
                     // ⭐ 失败则停止，不尝试其他API
                     logToBoth("❌ Download failed from $apiName, stopping", "E")
                     appContext?.let { ctx ->
                         android.os.Handler(android.os.Looper.getMainLooper()).post {
                             Toast.makeText(ctx, "TTS播报失败", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    return@submit
+                }
+
+                // 在主线程播放本地文件
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    try {
+                        stop()
+                        mediaPlayer = MediaPlayer().apply {
+                            setDataSource(audioFile.absolutePath)
+                            setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
+                            setOnPreparedListener { mp ->
+                                try {
+                                    mp.start()
+                                    Log.d(TAG, "Playback started: ${audioFile.name} (${audioFile.length()}B)")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "start() exception: ${e.message}")
+                                    appContext?.let { ctx ->
+                                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                            Toast.makeText(ctx, "TTS播放失败", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            }
+                            setOnCompletionListener { mp ->
+                                try { mp.reset() } catch (e: Exception) {}
+                                // 删除临时文件
+                                try { audioFile.delete() } catch (e: Exception) {}
+                            }
+                            setOnErrorListener { _, what, extra ->
+                                Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
+                                appContext?.let { ctx ->
+                                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                        Toast.makeText(ctx, "TTS播放错误", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                true
+                            }
+                            prepareAsync()
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "MediaPlayer setup error: ${e.message}", e)
+                        appContext?.let { ctx ->
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                Toast.makeText(ctx, "TTS初始化失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
