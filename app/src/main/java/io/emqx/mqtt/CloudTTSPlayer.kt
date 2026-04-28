@@ -88,7 +88,7 @@ class CloudTTSPlayer private constructor() {
     var currentEngineIndex: Int = 0  // 公开，供SettingFragment访问
 
     // ========== 可配置参数（从Setting页面设置） ==========
-    var currentApiIndex: Int = API_LOCAL_IFLYTEK  // 默认使用本地讯飞TTS
+    var currentApiIndex: Int = API_EDGETTS  // ⭐ 默认使用微软Edge-TTS
     var voice: String = "zh-CN-XiaoxiaoNeural"
     var speed: Float = 1.0f       // 语速倍率 (Edge-TTS用rate格式)
     var pitch: String = "+0Hz"    // 音调偏移 (Edge-TTS用pitch格式, 如"+0Hz","-5Hz","+10Hz")
@@ -191,6 +191,16 @@ class CloudTTSPlayer private constructor() {
         ))
         
         logToBoth("Total TTS engines: ${availableEngines.size} (${localIndex} local + 3 cloud)")
+        
+        // ⭐ 设置默认引擎索引（优先使用Edge-TTS）
+        if (availableEngines.isNotEmpty()) {
+            val edgeTtsIndex = availableEngines.indexOfFirst { !it.isLocal }
+            if (edgeTtsIndex >= 0) {
+                currentEngineIndex = edgeTtsIndex
+                logToBoth("Default engine set to: ${availableEngines[edgeTtsIndex].name}")
+            }
+        }
+        
         return availableEngines.toList()
     }
 
@@ -315,7 +325,7 @@ class CloudTTSPlayer private constructor() {
     private val API_BACK2 = "https://dict.youdao.com/dictvoice"
 
     /**
-     * 播报文本（主入口，自动防抖+自动降级）
+     * 播报文本（主入口，自动防抖）
      * @param text 要朗读的文本
      * @param force 是否强制播放（忽略防抖间隔）
      */
@@ -333,12 +343,63 @@ class CloudTTSPlayer private constructor() {
             lastSpeakTime = System.currentTimeMillis()
         }
 
+        // ⭐ 简化：直接使用当前选择的API，不再自动降级
         when (currentApiIndex) {
             API_LOCAL_IFLYTEK -> speakWithLocalTTS(text)
-            API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
-            API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
-            API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
-            else -> playWithFallback(text, ::buildEdgeTtsUrl)
+            API_EDGETTS -> playAudioDirectly(text, ::buildEdgeTtsUrl, "Edge-TTS")
+            API_BAIDU -> playAudioDirectly(text, ::buildBaiduUrl, "百度翻译")
+            API_YOUDAO -> playAudioDirectly(text, ::buildYoudaoUrl, "有道词典")
+            else -> playAudioDirectly(text, ::buildEdgeTtsUrl, "Edge-TTS")
+        }
+    }
+
+    /**
+     * ⭐ 新增：直接播放音频（无降级逻辑）
+     * @param text 要播报的文本
+     * @param urlBuilder URL构建函数
+     * @param apiName API名称（用于日志）
+     */
+    private fun playAudioDirectly(text: String, urlBuilder: (String) -> String, apiName: String) {
+        // 1. 检查缓存
+        audioCache?.getCachedAudio(text)?.let { cachedFile ->
+            logToBoth("✅ Cache hit for: $text")
+            playAudioFile(cachedFile)
+            return
+        }
+
+        // 2. 缓存miss，下载音频
+        logToBoth("Downloading from $apiName: $text")
+        
+        val tempFile = File(cacheDir, "temp_${System.currentTimeMillis()}.mp3")
+        
+        downloadExecutor.execute {
+            try {
+                val url = urlBuilder(text)
+                val downloadedFile = downloadAudio(url, tempFile)
+                
+                if (downloadedFile != null) {
+                    // 保存到缓存
+                    audioCache?.cacheAudio(text, downloadedFile)
+                    
+                    // 播放
+                    playAudioFile(downloadedFile)
+                } else {
+                    // ⭐ 失败则停止，不尝试其他API
+                    logToBoth("❌ Download failed from $apiName, stopping", "E")
+                    appContext?.let { ctx ->
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            Toast.makeText(ctx, "TTS播报失败", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                logToBoth("❌ Download error: ${e.message}", "E")
+                appContext?.let { ctx ->
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        Toast.makeText(ctx, "TTS播报失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
@@ -363,8 +424,8 @@ class CloudTTSPlayer private constructor() {
         
         when {
             engine == null -> {
-                logToBoth("No engine selected, using default", "W")
-                playWithFallback(text, ::buildEdgeTtsUrl)
+                logToBoth("No engine selected, using default Edge-TTS", "W")
+                playAudioDirectly(text, ::buildEdgeTtsUrl, "Edge-TTS")
             }
             engine.isLocal -> {
                 // 本地TTS
@@ -372,17 +433,22 @@ class CloudTTSPlayer private constructor() {
                     logToBoth("Using local TTS: ${engine.name}")
                     ttsManager?.speak(text)
                 } else {
-                    logToBoth("Local TTS not ready, fallback to cloud", "W")
-                    playWithFallback(text, ::buildEdgeTtsUrl)
+                    // ⭐ 本地TTS未就绪，直接停止，不降级到云端
+                    logToBoth("Local TTS not ready, stopping", "W")
+                    appContext?.let { ctx ->
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            Toast.makeText(ctx, "本地TTS未就绪", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             }
             else -> {
-                // 云端TTS
+                // 云端TTS - 直接使用当前选择的API
                 when (currentApiIndex) {
-                    API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
-                    API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
-                    API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
-                    else -> playWithFallback(text, ::buildEdgeTtsUrl)
+                    API_EDGETTS -> playAudioDirectly(text, ::buildEdgeTtsUrl, "Edge-TTS")
+                    API_BAIDU -> playAudioDirectly(text, ::buildBaiduUrl, "百度翻译")
+                    API_YOUDAO -> playAudioDirectly(text, ::buildYoudaoUrl, "有道词典")
+                    else -> playAudioDirectly(text, ::buildEdgeTtsUrl, "Edge-TTS")
                 }
             }
         }
@@ -394,12 +460,21 @@ class CloudTTSPlayer private constructor() {
     fun speakWithApi(apiIndex: Int, text: String) {
         if (text.isBlank()) return
         lastSpeakTime = System.currentTimeMillis()
+        
+        val apiName = when (apiIndex) {
+            API_LOCAL_IFLYTEK -> "本地讯飞"
+            API_EDGETTS -> "Edge-TTS"
+            API_BAIDU -> "百度翻译"
+            API_YOUDAO -> "有道词典"
+            else -> "Unknown"
+        }
+        
         when (apiIndex) {
             API_LOCAL_IFLYTEK -> speakWithLocalTTS(text)
-            API_EDGETTS -> playWithFallback(text, ::buildEdgeTtsUrl)
-            API_BAIDU -> playWithFallback(text, ::buildBaiduUrl)
-            API_YOUDAO -> playWithFallback(text, ::buildYoudaoUrl)
-            else -> playWithFallback(text, ::buildEdgeTtsUrl)
+            API_EDGETTS -> playAudioDirectly(text, ::buildEdgeTtsUrl, apiName)
+            API_BAIDU -> playAudioDirectly(text, ::buildBaiduUrl, apiName)
+            API_YOUDAO -> playAudioDirectly(text, ::buildYoudaoUrl, apiName)
+            else -> playAudioDirectly(text, ::buildEdgeTtsUrl, apiName)
         }
     }
 
