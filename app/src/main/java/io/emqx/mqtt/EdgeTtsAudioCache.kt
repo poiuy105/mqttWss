@@ -6,8 +6,8 @@ import java.security.MessageDigest
 
 /**
  * ⭐ Edge-TTS音频缓存管理器
- * 采用LRU（最近最少使用）策略，仅对Edge-TTS生效
- * 磁盘缓存最大50MB，超出时自动清理最旧的文件
+ * 采用LFU（最不常用）策略，仅对Edge-TTS生效
+ * 磁盘缓存最大50MB，超出时自动清理最不常用的文件
  */
 class EdgeTtsAudioCache(
     private val cacheDir: File,
@@ -21,15 +21,17 @@ class EdgeTtsAudioCache(
     // 内存缓存：快速访问最近使用的音频（最多20个）
     private val memoryCache = LruCache<String, File>(20)
     
+    // ⭐ 访问频率统计：记录每个缓存文件的访问次数
+    private val accessCountMap = mutableMapOf<String, Int>()
+    
     // 磁盘缓存目录
     private val diskCacheDir = File(cacheDir, CACHE_SUBDIR).apply {
         if (!exists()) mkdirs()
     }
     
     init {
-        // 启动时清理过期缓存
-        cleanupOldCache()
-        android.util.Log.d(TAG, "Edge-TTS audio cache initialized (max ${maxDiskSizeMB}MB)")
+        // ⭐ 启动时加载已有的访问频率统计（从文件名推断，初始为0）
+        android.util.Log.d(TAG, "Edge-TTS audio cache initialized (max ${maxDiskSizeMB}MB, LFU strategy)")
     }
     
     /**
@@ -52,7 +54,9 @@ class EdgeTtsAudioCache(
         // 1. 先查内存缓存（最快）
         memoryCache.get(key)?.let { cachedFile ->
             if (cachedFile.exists()) {
-                android.util.Log.d(TAG, "Memory cache hit: $text")
+                // ⭐ 增加访问计数
+                accessCountMap[key] = (accessCountMap[key] ?: 0) + 1
+                android.util.Log.d(TAG, "Memory cache hit: $text (access count: ${accessCountMap[key]})")
                 return cachedFile
             }
         }
@@ -60,7 +64,9 @@ class EdgeTtsAudioCache(
         // 2. 再查磁盘缓存
         val diskFile = File(diskCacheDir, "$key.mp3")
         if (diskFile.exists()) {
-            android.util.Log.d(TAG, "Disk cache hit: $text (${diskFile.length()} bytes)")
+            // ⭐ 增加访问计数
+            accessCountMap[key] = (accessCountMap[key] ?: 0) + 1
+            android.util.Log.d(TAG, "Disk cache hit: $text (${diskFile.length()} bytes, access count: ${accessCountMap[key]})")
             
             // 加入内存缓存（加速下次访问）
             memoryCache.put(key, diskFile)
@@ -99,7 +105,7 @@ class EdgeTtsAudioCache(
     }
     
     /**
-     * 强制清理超出限制的磁盘缓存
+     * 强制清理超出限制的磁盘缓存（⭐ 改为LFU策略：删除最不常用的文件）
      */
     private fun enforceDiskCacheLimit() {
         val maxSizeBytes = maxDiskSizeMB * 1024 * 1024
@@ -108,46 +114,34 @@ class EdgeTtsAudioCache(
         if (currentSize > maxSizeBytes) {
             android.util.Log.w(TAG, "Cache size ${currentSize / 1024 / 1024}MB exceeds limit, cleaning up...")
             
-            // 按最后修改时间排序，删除最旧的文件
-            val files = diskCacheDir.listFiles()?.sortedBy { it.lastModified() } ?: emptyList()
+            // ⭐ 按访问频率排序，删除最不常用的文件（访问次数少的优先删除）
+            val files = diskCacheDir.listFiles() ?: emptyArray()
+            val filesWithAccessCount = files.map { file ->
+                val key = file.nameWithoutExtension
+                val accessCount = accessCountMap[key] ?: 0
+                Pair(file, accessCount)
+            }.sortedBy { it.second }  // 按访问次数升序排序
+            
             var freedSize = 0L
             
-            for (file in files) {
+            for ((file, accessCount) in filesWithAccessCount) {
                 if (currentSize - freedSize <= maxSizeBytes * 0.8) break  // 清理到80%
                 
+                android.util.Log.d(TAG, "Deleting LFU cache: ${file.name} (access count: $accessCount)")
                 file.delete()
                 freedSize += file.length()
                 
-                // 同时从内存缓存移除
+                // 同时从内存缓存和访问统计移除
                 val key = file.nameWithoutExtension
                 memoryCache.remove(key)
+                accessCountMap.remove(key)
             }
             
-            android.util.Log.d(TAG, "Freed ${freedSize / 1024}KB from cache")
+            android.util.Log.d(TAG, "Freed ${freedSize / 1024}KB from cache (deleted ${filesWithAccessCount.takeWhile { (currentSize - freedSize) > maxSizeBytes * 0.8 }.size} files)")
         }
     }
     
-    /**
-     * 清理超过7天的旧缓存
-     */
-    private fun cleanupOldCache() {
-        val sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000)
-        val files = diskCacheDir.listFiles() ?: return
-        
-        var deletedCount = 0
-        for (file in files) {
-            if (file.lastModified() < sevenDaysAgo) {
-                file.delete()
-                memoryCache.remove(file.nameWithoutExtension)
-                deletedCount++
-            }
-        }
-        
-        if (deletedCount > 0) {
-            android.util.Log.d(TAG, "Cleaned up $deletedCount old cache files")
-        }
-    }
-    
+
     /**
      * 清空所有缓存
      */
