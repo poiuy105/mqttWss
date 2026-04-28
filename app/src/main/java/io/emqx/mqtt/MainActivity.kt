@@ -298,7 +298,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
         // Auto Connect：只要有配置就自动连接（已移除 Auto Connect 开关）
         val configManager = ConfigManager.getInstance(this)
-        val autoConnectFromBoot = intent.getBooleanExtra("auto_connect", false)
         
         if (configManager.hasSavedConfig()) {
             // 有保存的配置：使用后台线程延迟3秒后自动连接（避免主线程卡死导致任务不执行）
