@@ -63,6 +63,11 @@ class SettingFragment : BaseFragment() {
     private var mCloudTtsApiSpinner: Spinner? = null
     private var mBtnTtsTestCloud: Button? = null
     private var mBtnTtsResetDefault: Button? = null
+    // ⭐ 新增：TTS速度和音量拖动条
+    private var mTtsSpeedSeekbar: SeekBar? = null
+    private var mTtsSpeedValue: TextView? = null
+    private var mTtsVolumeSeekbar: SeekBar? = null
+    private var mTtsVolumeValue: TextView? = null
 
     // 标志位：区分是用户手动切换协议还是加载配置
     private var isInitializing = true
@@ -214,6 +219,11 @@ class SettingFragment : BaseFragment() {
         mCloudTtsApiSpinner = view.findViewById(R.id.cloud_tts_api_spinner)
         mBtnTtsTestCloud = view.findViewById(R.id.btn_tts_test_cloud)
         mBtnTtsResetDefault = view.findViewById(R.id.btn_tts_reset_default)
+        // ⭐ 新增：初始化TTS速度和音量拖动条
+        mTtsSpeedSeekbar = view.findViewById(R.id.tts_speed_seekbar)
+        mTtsSpeedValue = view.findViewById(R.id.tts_speed_value)
+        mTtsVolumeSeekbar = view.findViewById(R.id.tts_volume_seekbar)
+        mTtsVolumeValue = view.findViewById(R.id.tts_volume_value)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -671,6 +681,96 @@ class SettingFragment : BaseFragment() {
         }
 
         appendLog("[CloudTTS] 设置已加载: ${player.getCurrentApiName()}")
+        
+        // ⭐ 新增：设置TTS速度拖动条（0.5-3.0，step 0.5）
+        setupTtsSpeedSeekbar(player)
+        
+        // ⭐ 新增：设置TTS音量拖动条（0.5-5.0，step 0.5）
+        setupTtsVolumeSeekbar(player)
+    }
+    
+    /**
+     * ⭐ 设置TTS速度拖动条
+     * 范围：0.5-3.0，步长0.5，默认1.0
+     * SeekBar max=5，对应值 = (progress + 1) * 0.5
+     */
+    private fun setupTtsSpeedSeekbar(player: CloudTTSPlayer) {
+        val currentSpeed = mConfigManager.cloudTtsSpeed
+        
+        // 将速度值转换为SeekBar进度：(speed / 0.5) - 1
+        val initialProgress = ((currentSpeed / 0.5f) - 1).toInt().coerceIn(0, 5)
+        
+        mTtsSpeedSeekbar?.progress = initialProgress
+        updateTtsSpeedDisplay(currentSpeed)
+        
+        mTtsSpeedSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    // 计算速度值：(progress + 1) * 0.5
+                    val speed = (progress + 1) * 0.5f
+                    updateTtsSpeedDisplay(speed)
+                    
+                    // 保存到ConfigManager
+                    mConfigManager.cloudTtsSpeed = speed
+                    player.speed = speed
+                    
+                    appendLog("[CloudTTS] Speed changed to: ${speed}x")
+                }
+            }
+            
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+    
+    /**
+     * ⭐ 更新速度显示
+     */
+    private fun updateTtsSpeedDisplay(speed: Float) {
+        mTtsSpeedValue?.text = String.format("%.1fx", speed)
+    }
+    
+    /**
+     * ⭐ 设置TTS音量拖动条
+     * 范围：0.5-5.0，步长0.5，默认1.0
+     * SeekBar max=9，对应值 = (progress + 1) * 0.5
+     */
+    private fun setupTtsVolumeSeekbar(player: CloudTTSPlayer) {
+        val currentVolume = mConfigManager.cloudTtsVolume
+        
+        // 将音量值转换为SeekBar进度：(volume / 0.5) - 1
+        val initialProgress = ((currentVolume / 0.5f) - 1).toInt().coerceIn(0, 9)
+        
+        mTtsVolumeSeekbar?.progress = initialProgress
+        updateTtsVolumeDisplay(currentVolume)
+        
+        mTtsVolumeSeekbar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    // 计算音量值：(progress + 1) * 0.5
+                    val volume = (progress + 1) * 0.5f
+                    updateTtsVolumeDisplay(volume)
+                    
+                    // 保存到ConfigManager
+                    mConfigManager.cloudTtsVolume = volume
+                    player.volume = volume
+                    
+                    appendLog("[CloudTTS] Volume changed to: $volume")
+                }
+            }
+            
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+    
+    /**
+     * ⭐ 更新音量显示
+     */
+    private fun updateTtsVolumeDisplay(volume: Float) {
+        mTtsVolumeValue?.text = String.format("%.1f", volume)
     }
 
     /** 从CloudTTSPlayer同步滑块值到UI显示 */

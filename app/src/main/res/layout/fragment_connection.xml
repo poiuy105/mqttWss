@@ -757,6 +757,73 @@
                     android:textSize="10sp" />
             </LinearLayout>
 
+            <!-- ⭐ 新增：TTS速度和音量拖动条 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <!-- 速度拖动条 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="wrap_content"
+                        android:text="速度:"
+                        android:textSize="12sp" />
+
+                    <SeekBar
+                        android:id="@+id/tts_speed_seekbar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="5" />
+
+                    <TextView
+                        android:id="@+id/tts_speed_value"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="1.0x"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 音量拖动条 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="wrap_content"
+                        android:text="音量:"
+                        android:textSize="12sp" />
+
+                    <SeekBar
+                        android:id="@+id/tts_volume_seekbar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="9" />
+
+                    <TextView
+                        android:id="@+id/tts_volume_value"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="1.0"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 

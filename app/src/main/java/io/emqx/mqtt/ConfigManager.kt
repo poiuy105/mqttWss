@@ -210,7 +210,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_CLOUD_TTS_VOICE, value).apply()
 
     var cloudTtsSpeed: Float
-        get() = prefs.getFloat(KEY_CLOUD_TTS_SPEED, 0.92f)
+        get() = prefs.getFloat(KEY_CLOUD_TTS_SPEED, 1.0f)  // ⭐ 默认1.0x
         set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_SPEED, value).apply()
 
     var cloudTtsPitch: Float
@@ -218,7 +218,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_PITCH, value).apply()
 
     var cloudTtsVolume: Float
-        get() = prefs.getFloat(KEY_CLOUD_TTS_VOLUME, 0.9f)
+        get() = prefs.getFloat(KEY_CLOUD_TTS_VOLUME, 1.0f)  // ⭐ 默认1.0
         set(value) = prefs.edit().putFloat(KEY_CLOUD_TTS_VOLUME, value).apply()
 
     var cloudTtsOiowebType: String
