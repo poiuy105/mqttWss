@@ -127,7 +127,7 @@ object HomeAssistantService {
                 Log.d(TAG, "🎯 Smart return monitor started: clickCount=$clickCount, delay=${delayMs}ms")
                 
                 for (i in 1..clickCount) {
-                    // ⭐ 第1次不需要延迟，后续每次先延迟再检查
+                    // ⭐ 第1次立即执行，后续每次先延迟再检查（延迟时间由Setting界面的response delay控制）
                     if (i > 1) {
                         Log.d(TAG, "⏱️ Waiting ${delayMs}ms before action $i/$clickCount")
                         Thread.sleep(delayMs.toLong())
@@ -146,11 +146,6 @@ object HomeAssistantService {
                         Log.d(TAG, "❌ Text cleared by HA, skip return action $i/$clickCount but continue monitoring")
                         appendLog(context, "Screen cleared, skip action $i/$clickCount (continue monitoring)")
                         // ⭐ 不break，继续循环以检测文本是否重新出现
-                    }
-                    
-                    // 多次点击之间的固定间隔（100ms）
-                    if (i < clickCount) {
-                        Thread.sleep(100)
                     }
                 }
                 
