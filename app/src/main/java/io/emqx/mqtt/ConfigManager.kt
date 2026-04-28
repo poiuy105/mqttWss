@@ -173,7 +173,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_HA_HTTPS, value).apply()
 
     var haResponseDelay: Int
-        get() = prefs.getInt(KEY_HA_RESPONSE_DELAY, 10)
+        get() = prefs.getInt(KEY_HA_RESPONSE_DELAY, 50)
         set(value) = prefs.edit().putInt(KEY_HA_RESPONSE_DELAY, value).apply()
 
     var haClickBackEnabled: Boolean
@@ -181,7 +181,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_HA_CLICK_BACK, value).apply()
 
     var haClickCount: Int
-        get() = prefs.getInt(KEY_HA_CLICK_COUNT, 1)
+        get() = prefs.getInt(KEY_HA_CLICK_COUNT, 3)
         set(value) = prefs.edit().putInt(KEY_HA_CLICK_COUNT, value).apply()
 
     var ttsEnabled: Boolean

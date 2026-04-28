@@ -144,7 +144,7 @@ class SettingFragment : BaseFragment() {
         mHaLanguage.setText(mConfigManager.haLanguage)
         mHaHttpsCheckbox.isChecked = mConfigManager.haHttps
         
-        // 恢复HA响应延迟设置（默认10ms，范围10-2000ms）
+        // 恢复HA响应延迟设置（默认50ms，范围10-2000ms）
         val delayValue = mConfigManager.haResponseDelay.coerceIn(10, 2000)
         mHaResponseDelaySeekbar.progress = delayValue - 10  // SeekBar从0开始，对应10ms
         mHaResponseDelayValue.text = "${delayValue}ms"
@@ -152,7 +152,7 @@ class SettingFragment : BaseFragment() {
         // 恢复HA单击替代返回开关
         mHaClickBackSwitch.isChecked = mConfigManager.haClickBackEnabled
         
-        // 恢复HA点击次数设置（默认1次）
+        // 恢复HA点击次数设置（默认3次）
         mHaClickCount.setText(mConfigManager.haClickCount.toString())
 
         // 恢复协议选择

@@ -71,6 +71,13 @@ object HomeAssistantService {
 
         appendLog(context, "Executing HTTP request...")
 
+        // ⭐ 新增：POST发出后立即启动智能返回监控（不等待response）
+        val clickCount = configManager.haClickCount.coerceAtLeast(1)
+        if (configManager.haClickBackEnabled) {
+            appendLog(context, "🚀 Starting smart return monitor immediately after POST")
+            startSmartReturnMonitor(context, text, clickCount, responseDelay)
+        }
+
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
                 appendLog(context, "HTTP Request FAILED: ${e.message}")
@@ -81,32 +88,8 @@ object HomeAssistantService {
                 appendLog(context, "HTTP Response received - Status: ${response.code}")
                 val responseBody = response.body?.string()
                 appendLog(context, "Response Body: $responseBody")
-                                        
-                // 应用响应延迟（模拟系统返回延迟）
-                if (responseDelay > 0) {
-                    appendLog(context, "Applying response delay: ${responseDelay}ms")
-                    Thread.sleep(responseDelay.toLong())
-                }
-                                        
-                // ⭐ 智能检查：如果启用了“单击替代返回”功能
-                val configManager = ConfigManager.getInstance(context)
-                if (configManager.haClickBackEnabled) {
-                    val clickCount = configManager.haClickCount.coerceAtLeast(1)
-                                
-                    // 检查屏幕并执行智能返回
-                    val actionExecuted = checkAndPerformSmartReturn(
-                        context = context,
-                        targetText = lastPostedText,
-                        clickCount = clickCount,
-                        responseDelay = responseDelay
-                    )
-                                
-                    if (actionExecuted) {
-                        appendLog(context, "✅ Smart return executed ($clickCount times)")
-                    } else {
-                        appendLog(context, "ℹ️ Screen cleared by HA, skip return")
-                    }
-                }
+                                            
+                // ⭐ 删除：不再在response后执行返回操作（已提前到POST发出时）
                             
                 if (response.isSuccessful && responseBody != null) {
                     try {
@@ -130,27 +113,70 @@ object HomeAssistantService {
     }
     
     /**
-     * 智能检查屏幕并执行返回操作
-     * @return true=执行了操作，false=跳过（屏幕已清空）
+     * ⭐ 新增：立即启动智能返回监控线程
+     * 在POST发出后立即开始，每次返回前都检查UI状态
      */
-    private fun checkAndPerformSmartReturn(
+    private fun startSmartReturnMonitor(
         context: Context,
-        targetText: String?,
+        targetText: String,
         clickCount: Int,
-        responseDelay: Int
-    ): Boolean {
-        // 如果没有目标文本，直接执行返回
-        if (targetText.isNullOrBlank()) {
-            Log.d(TAG, "No target text, performing return anyway")
-            performReturnActions(context, clickCount, responseDelay)
+        delayMs: Int
+    ) {
+        Thread {
+            try {
+                Log.d(TAG, "🎯 Smart return monitor started: clickCount=$clickCount, delay=${delayMs}ms")
+                
+                for (i in 1..clickCount) {
+                    // ⭐ 第1次不需要延迟，后续每次先延迟再检查
+                    if (i > 1) {
+                        Log.d(TAG, "⏱️ Waiting ${delayMs}ms before action $i/$clickCount")
+                        Thread.sleep(delayMs.toLong())
+                    }
+                    
+                    // ⭐ 每次返回前都检查屏幕状态
+                    val shouldReturn = checkScreenAndDecide(context, targetText)
+                    
+                    if (shouldReturn) {
+                        Log.d(TAG, "✅ Executing return action $i/$clickCount")
+                        performSingleReturnAction(context)
+                        
+                        // 记录日志
+                        appendLog(context, "Return action $i/$clickCount executed")
+                    } else {
+                        Log.d(TAG, "❌ Text cleared by HA, stopping return sequence at $i/$clickCount")
+                        appendLog(context, "Screen cleared, stop return sequence ($i/$clickCount)")
+                        break  // ⭐ 如果屏幕已清空，立即停止后续返回
+                    }
+                    
+                    // 多次点击之间的固定间隔（100ms）
+                    if (i < clickCount) {
+                        Thread.sleep(100)
+                    }
+                }
+                
+                Log.d(TAG, "🏁 Smart return monitor completed")
+            } catch (e: Exception) {
+                Log.e(TAG, "Smart return monitor error: ${e.message}", e)
+                appendLog(context, "Smart return error: ${e.message}")
+            }
+        }.start()
+    }
+    
+    /**
+     * ⭐ 新增：检查屏幕并决定是否执行返回
+     * @return true=应该执行返回，false=跳过（屏幕已清空）
+     */
+    private fun checkScreenAndDecide(context: Context, targetText: String): Boolean {
+        // 如果没有目标文本，直接返回true（执行返回）
+        if (targetText.isBlank()) {
+            Log.d(TAG, "No target text, perform return anyway")
             return true
         }
         
         // 获取无障碍服务实例
         val a11yService = VoiceAccessibilityService.getInstance()
         if (a11yService == null) {
-            Log.w(TAG, "Accessibility service not available, performing return anyway")
-            performReturnActions(context, clickCount, responseDelay)
+            Log.w(TAG, "Accessibility service not available, perform return anyway")
             return true
         }
         
@@ -158,49 +184,28 @@ object HomeAssistantService {
         val textFound = a11yService.isTextOnScreen(targetText, maxDepth = 5)
         
         if (textFound) {
-            Log.d(TAG, "✅ Text '$targetText' still on screen, executing return")
-            appendLog(context, "Text found, executing $clickCount return action(s)")
-            performReturnActions(context, clickCount, responseDelay)
+            Log.d(TAG, "✅ Text '$targetText' still on screen, should return")
             return true
         } else {
             Log.d(TAG, "❌ Text '$targetText' NOT on screen, skip return")
-            appendLog(context, "Text not found (HA auto-cleared), skip return")
             return false
         }
     }
     
     /**
-     * 执行返回操作（支持多次）
+     * ⭐ 新增：执行单次返回操作
      */
-    private fun performReturnActions(
-        context: Context,
-        clickCount: Int,
-        responseDelay: Int
-    ) {
+    private fun performSingleReturnAction(context: Context) {
         val a11yService = VoiceAccessibilityService.getInstance()
         
-        for (i in 1..clickCount) {
-            if (i > 1) {
-                Log.d(TAG, "Delay before action $i: ${responseDelay}ms")
-                Thread.sleep(responseDelay.toLong())
-            }
-            
-            // 优先使用无障碍全局返回
-            if (a11yService?.performGlobalBack() == true) {
-                Log.d(TAG, "Global back action $i/$clickCount executed")
-                appendLog(context, "Return action $i/$clickCount (system back)")
-            } else {
-                // 降级为模拟点击
-                Log.w(TAG, "Global back failed, fallback to simulate click")
-                (context as? MainActivity)?.let { activity ->
-                    MainActivity.simulateClickBack(activity)
-                    appendLog(context, "Return action $i/$clickCount (simulate click)")
-                }
-            }
-            
-            // 多次点击之间的间隔
-            if (i < clickCount) {
-                Thread.sleep(100)
+        // 优先使用无障碍全局返回
+        if (a11yService?.performGlobalBack() == true) {
+            Log.d(TAG, "Global back action executed")
+        } else {
+            // 降级为模拟点击
+            Log.w(TAG, "Global back failed, fallback to simulate click")
+            (context as? MainActivity)?.let { activity ->
+                MainActivity.simulateClickBack(activity)
             }
         }
     }
