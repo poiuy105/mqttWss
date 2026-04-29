@@ -52,6 +52,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     var ttsPlayer: CloudTTSPlayer? = null
     var floatWindowManager: FloatWindowManager? = null
 
+    // ========== 亮屏/解锁广播接收器 ==========
+    private var screenReceiver: android.content.BroadcastReceiver? = null
+
     // ========== 横竖屏切换时保持MQTT连接不断（static holder跨recreate存活）==========
     companion object {
         /** 保存MqttAsyncClient实例，在Activity重建时避免断连 */
@@ -348,6 +351,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         } else {
             Log.d("MainActivity", "No saved config, no auto-connect")
         }
+        
+        // ⭐ 新增：注册亮屏/解锁广播接收器
+        registerScreenReceiver()
     }
 
     // 横屏侧边栏导航项View列表，用于选中态管理
@@ -1165,6 +1171,82 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "App stopped, but MQTT monitor continues running")
     }
 
+    /**
+     * ⭐ 注册亮屏/解锁广播接收器
+     */
+    private fun registerScreenReceiver() {
+        screenReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                when (intent?.action) {
+                    Intent.ACTION_SCREEN_ON -> {
+                        Log.d("MainActivity", "Screen turned on, updating status...")
+                        updateNotificationStatus()
+                    }
+                    Intent.ACTION_USER_PRESENT -> {
+                        Log.d("MainActivity", "Device unlocked, updating status...")
+                        updateNotificationStatus()
+                    }
+                }
+            }
+        }
+        
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        
+        try {
+            registerReceiver(screenReceiver, filter)
+            Log.d("MainActivity", "Screen receiver registered")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to register screen receiver: ${e.message}")
+        }
+    }
+
+    /**
+     * ⭐ 注销亮屏/解锁广播接收器
+     */
+    private fun unregisterScreenReceiver() {
+        try {
+            screenReceiver?.let {
+                unregisterReceiver(it)
+                screenReceiver = null
+                Log.d("MainActivity", "Screen receiver unregistered")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to unregister screen receiver: ${e.message}")
+        }
+    }
+
+    /**
+     * ⭐ 更新通知栏状态（MQTT连接状态 + 无障碍服务状态）
+     */
+    private fun updateNotificationStatus() {
+        // 1. 获取MQTT连接状态
+        val isMqttConnected = mClient?.isConnected == true
+        
+        // 2. 获取无障碍服务状态
+        val isAccessibilityEnabled = AccessibilityUtils.isServiceEnabled(this)
+        
+        // 3. 构建通知栏消息（同时显示MQTT和无障碍服务状态）
+        val statusMessage = buildString {
+            append("MQTT: ${if (isMqttConnected) "已连接" else "未连接"}")
+            append(" | 无障碍: ${if (isAccessibilityEnabled) "已启用" else "未启用"}")
+        }
+        
+        // 4. 更新通知栏
+        MqttService.updateConnectionStatus(this, isMqttConnected)
+        if (MqttService.isPersistentNotificationEnabled(this)) {
+            val notificationTitle = if (isMqttConnected) "MQTT 已连接" else "MQTT 未连接"
+            MqttService.instance?.updateNotification(notificationTitle, statusMessage)
+        }
+        
+        Log.d("MainActivity", "Updated notification status: $statusMessage")
+        
+        // 5. 通知所有Fragment更新UI
+        notifyMqttStatusChanged(isMqttConnected)
+    }
+
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         
@@ -1219,5 +1301,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         ttsPlayer?.release()
         // 释放浮动窗口资源
         floatWindowManager?.release()
+        
+        // ⭐ 新增：注销亮屏/解锁广播接收器
+        unregisterScreenReceiver()
     }
 }
