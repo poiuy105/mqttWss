@@ -26,6 +26,7 @@ class HomeFragment : BaseFragment() {
     private var batteryLevelText: TextView? = null
     private var batteryStatusText: TextView? = null
     private var mqttStatusText: TextView? = null
+    private var mqttStatusIndicator: View? = null  // ⭐ 新增：MQTT状态指示器
     private var networkTypeText: TextView? = null
     private var wifiNameText: TextView? = null
     private var screenInfoText: TextView? = null
@@ -51,6 +52,7 @@ class HomeFragment : BaseFragment() {
         batteryLevelText = view.findViewById(R.id.battery_level)
         batteryStatusText = view.findViewById(R.id.battery_status)
         mqttStatusText = view.findViewById(R.id.mqtt_status)
+        mqttStatusIndicator = view.findViewById(R.id.mqtt_status_indicator)  // ⭐ 新增：初始化状态指示器
         networkTypeText = view.findViewById(R.id.network_type)
         wifiNameText = view.findViewById(R.id.wifi_name)
         screenInfoText = view.findViewById(R.id.screen_info)
@@ -207,9 +209,13 @@ class HomeFragment : BaseFragment() {
         if (connected) {
             mqttStatusText?.text = "Connected"
             mqttStatusText?.setTextColor(0xFF00FF00.toInt())
+            // ⭐ 修复：更新状态指示器为绿色
+            mqttStatusIndicator?.setBackgroundResource(R.drawable.status_dot_green)
         } else {
             mqttStatusText?.text = "Disconnected"
             mqttStatusText?.setTextColor(0xFFFF0000.toInt())
+            // ⭐ 修复：更新状态指示器为红色
+            mqttStatusIndicator?.setBackgroundResource(R.drawable.status_dot_red)
         }
     }
 

@@ -273,6 +273,8 @@ class CloudTTSPlayer private constructor() {
      */
     fun clearEdgeTtsCache() {
         edgeTtsCache?.clearCache()
+        // ⭐ 修复：同时清除历史记录
+        recentSpeakHistory.clear()
         logToBoth("Edge-TTS cache cleared")
     }
     
@@ -360,6 +362,13 @@ class CloudTTSPlayer private constructor() {
             // 同时从历史记录中移除
             recentSpeakHistory.removeAll { it.text == text }
             logToBoth("Deleted cache for: $text")
+        } else {
+            // ⭐ 修复：即使文件不存在，也从历史记录中移除（可能已被LFU清理）
+            val removed = recentSpeakHistory.removeAll { it.text == text }
+            if (removed) {
+                logToBoth("Removed from history (file already deleted): $text")
+                return true  // 视为成功
+            }
         }
         return result
     }
