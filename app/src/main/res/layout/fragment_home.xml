@@ -322,8 +322,7 @@
                 android:minWidth="@dimen/button_min_width"
                 android:text="Clear"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body"
-                app:cornerRadius="8dp" />
+                android:textSize="@dimen/text_body" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log_copy"
@@ -334,8 +333,7 @@
                 android:minWidth="@dimen/button_min_width"
                 android:text="Copy"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body"
-                app:cornerRadius="8dp" />
+                android:textSize="@dimen/text_body" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log_close"
@@ -346,8 +344,7 @@
                 android:minWidth="@dimen/button_min_width"
                 android:text="Close"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body"
-                app:cornerRadius="8dp" />
+                android:textSize="@dimen/text_body" />
         </LinearLayout>
 
         <ScrollView
