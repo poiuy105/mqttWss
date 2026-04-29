@@ -1041,19 +1041,6 @@ class CloudTTSPlayer private constructor() {
     }
 
     /**
-     * ⭐ P1-3修复：停止当前播放
-     */
-    fun stop() {
-        try {
-            mediaPlayer?.stop()
-            mediaPlayer?.reset()
-            Log.d(TAG, "TTS playback stopped")
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to stop TTS: ${e.message}")
-        }
-    }
-    
-    /**
      * ⭐ P1-3修复：清理缓存文件（保留最近使用的）
      */
     fun clearCache() {
