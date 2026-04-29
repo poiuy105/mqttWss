@@ -824,6 +824,17 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- ⭐ 新增：管理Edge-TTS缓存按钮 -->
+            <Button
+                android:id="@+id/btn_manage_edge_tts_cache"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginTop="8dp"
+                android:text="管理Edge-TTS缓存（查看/删除）"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:backgroundTint="#FF5722" />
+
         </LinearLayout>
     </ScrollView>
 

@@ -80,6 +80,19 @@ class CloudTTSPlayer private constructor() {
     /** ⭐ Edge-TTS音频缓存（仅对Edge-TTS生效） */
     private var edgeTtsCache: EdgeTtsAudioCache? = null
     
+    // ========== 最近播报历史记录 ==========
+    /** ⭐ 最近播报记录（最多保留50条，用于缓存管理） */
+    private val recentSpeakHistory = mutableListOf<SpeakRecord>()
+    private val MAX_HISTORY_SIZE = 50
+    
+    /** 播报记录数据类 */
+    data class SpeakRecord(
+        val text: String,           // 原始文本
+        val cacheKey: String,       // 缓存文件名（MD5哈希）
+        val timestamp: Long,        // 播报时间
+        val isSuccess: Boolean      // 是否成功播放
+    )
+    
     // ========== TTS引擎管理 ==========
     /** 存储所有可用的TTS引擎 */
     data class TtsEngineInfo(
@@ -262,6 +275,94 @@ class CloudTTSPlayer private constructor() {
         edgeTtsCache?.clearCache()
         logToBoth("Edge-TTS cache cleared")
     }
+    
+    /**
+     * ⭐ 新增：获取所有Edge-TTS缓存文件列表
+     */
+    fun getEdgeTtsCachedFiles(): List<EdgeTtsAudioCache.CachedFileInfo> {
+        return edgeTtsCache?.getAllCachedFiles() ?: emptyList()
+    }
+    
+    /**
+     * ⭐ 新增：删除指定的Edge-TTS缓存文件
+     * @param fileName 文件名（如 "a1b2c3d4.mp3"）
+     * @return true=删除成功
+     */
+    fun deleteEdgeTtsCachedFile(fileName: String): Boolean {
+        val result = edgeTtsCache?.deleteCachedFile(fileName) ?: false
+        if (result) {
+            logToBoth("Deleted cache file: $fileName")
+        }
+        return result
+    }
+    
+    /**
+     * ⭐ 新增：生成文本的缓存Key（MD5哈希）
+     */
+    private fun generateCacheKeyForText(text: String): String {
+        try {
+            val md = java.security.MessageDigest.getInstance("MD5")
+            val digest = md.digest(text.toByteArray(Charsets.UTF_8))
+            return digest.joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            // 降级方案：使用hashCode
+            return text.hashCode().toString()
+        }
+    }
+    
+    /**
+     * ⭐ 新增：添加播报记录到历史
+     * @param text 原始文本
+     * @param success 是否成功（技术上是否成功，不代表内容正确）
+     */
+    fun addToSpeakHistory(text: String, success: Boolean) {
+        // ⭐ 仅对Edge-TTS记录历史
+        if (currentApiIndex != API_EDGETTS) return
+        
+        // 生成缓存key
+        val cacheKey = generateCacheKeyForText(text)
+        
+        // 添加到历史记录
+        recentSpeakHistory.add(0, SpeakRecord(
+            text = text,
+            cacheKey = cacheKey,
+            timestamp = System.currentTimeMillis(),
+            isSuccess = true  // ⭐ 始终标记为成功（因为文件本身是有效的，只是内容可能不对）
+        ))
+        
+        // 限制历史记录数量
+        if (recentSpeakHistory.size > MAX_HISTORY_SIZE) {
+            recentSpeakHistory.removeAt(recentSpeakHistory.size - 1)
+        }
+        
+        android.util.Log.d(TAG, "Added to history: $text (cache: $cacheKey)")
+    }
+    
+    /**
+     * ⭐ 新增：获取最近播报历史
+     * @return 历史记录列表（最多50条）
+     */
+    fun getRecentSpeakHistory(): List<SpeakRecord> {
+        return recentSpeakHistory.toList()  // 返回副本，防止外部修改
+    }
+    
+    /**
+     * ⭐ 新增：根据原文删除对应的缓存
+     * @param text 原始文本
+     * @return true=删除成功
+     */
+    fun deleteCacheByText(text: String): Boolean {
+        val cacheKey = generateCacheKeyForText(text)
+        val fileName = "$cacheKey.mp3"
+        
+        val result = deleteEdgeTtsCachedFile(fileName)
+        if (result) {
+            // 同时从历史记录中移除
+            recentSpeakHistory.removeAll { it.text == text }
+            logToBoth("Deleted cache for: $text")
+        }
+        return result
+    }
 
     /**
      * 初始化指定包名的本地TTS
@@ -392,6 +493,8 @@ class CloudTTSPlayer private constructor() {
                 logToBoth("✅ Edge-TTS cache hit: $text")
                 // 直接播放缓存文件，不删除
                 playCachedAudio(cachedFile)
+                // ⭐ 记录历史（缓存命中=成功）
+                addToSpeakHistory(text, true)
                 return
             }
         }
@@ -421,12 +524,18 @@ class CloudTTSPlayer private constructor() {
                             Toast.makeText(ctx, "TTS播报失败", Toast.LENGTH_SHORT).show()
                         }
                     }
+                    // ⭐ 记录失败历史
+                    if (isEdgeTts) {
+                        addToSpeakHistory(text, false)
+                    }
                     return@submit
                 }
 
                 // ⭐ 如果是Edge-TTS，保存到缓存
                 if (isEdgeTts) {
                     edgeTtsCache?.cacheAudio(text, audioFile)
+                    // ⭐ 记录历史（下载成功=成功，即使内容可能是错误提示）
+                    addToSpeakHistory(text, true)
                 }
 
                 // 在主线程播放本地文件

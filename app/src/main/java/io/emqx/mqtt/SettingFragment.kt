@@ -1,6 +1,7 @@
 package io.emqx.mqtt
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.Intent
 import android.net.Uri
@@ -68,6 +69,8 @@ class SettingFragment : BaseFragment() {
     private var mTtsSpeedValue: TextView? = null
     private var mTtsVolumeSeekbar: SeekBar? = null
     private var mTtsVolumeValue: TextView? = null
+    // ⭐ 新增：管理Edge-TTS缓存按钮
+    private var mBtnManageEdgeTtsCache: Button? = null
 
     // 标志位：区分是用户手动切换协议还是加载配置
     private var isInitializing = true
@@ -224,6 +227,8 @@ class SettingFragment : BaseFragment() {
         mTtsSpeedValue = view.findViewById(R.id.tts_speed_value)
         mTtsVolumeSeekbar = view.findViewById(R.id.tts_volume_seekbar)
         mTtsVolumeValue = view.findViewById(R.id.tts_volume_value)
+        // ⭐ 新增：初始化管理Edge-TTS缓存按钮
+        mBtnManageEdgeTtsCache = view.findViewById(R.id.btn_manage_edge_tts_cache)
 
         if (mClientId.text.isNullOrEmpty()) {
             mClientId.setText(MqttAsyncClient.generateClientId())
@@ -764,6 +769,11 @@ class SettingFragment : BaseFragment() {
             
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+        
+        // ⭐ 新增：管理Edge-TTS缓存按钮点击事件
+        mBtnManageEdgeTtsCache?.setOnClickListener {
+            showEdgeTtsCacheManager(player)
+        }
     }
     
     /**
@@ -771,6 +781,91 @@ class SettingFragment : BaseFragment() {
      */
     private fun updateTtsVolumeDisplay(volume: Float) {
         mTtsVolumeValue?.text = String.format("%.1f", volume)
+    }
+    
+    /**
+     * ⭐ 显示Edge-TTS缓存管理对话框
+     */
+    private fun showEdgeTtsCacheManager(player: CloudTTSPlayer) {
+        val history = player.getRecentSpeakHistory()
+        
+        if (history.isEmpty()) {
+            android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Edge-TTS播报历史")
+                .setMessage("暂无播报记录。\n\n播报Edge-TTS音频后，这里会显示最近50条记录。")
+                .setPositiveButton("确定", null)
+                .show()
+            return
+        }
+        
+        // 构建历史记录列表
+        val items = history.map { record ->
+            val statusIcon = if (record.isSuccess) "✅" else "❌"
+            val timeStr = java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(record.timestamp))
+            "$statusIcon ${record.text}\n   $timeStr"
+        }.toTypedArray()
+        
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Edge-TTS播报历史（最近${history.size}条）")
+            .setItems(items) { _, which ->
+                val record = history[which]
+                showCacheItemOptions(player, record)
+            }
+            .setNegativeButton("关闭", null)
+            .setNeutralButton("清除全部") { _, _ ->
+                player.clearEdgeTtsCache()
+                appendLog("[Edge-TTS] All cache cleared")
+            }
+            .show()
+    }
+    
+    /**
+     * ⭐ 显示单个缓存项的操作选项
+     */
+    private fun showCacheItemOptions(player: CloudTTSPlayer, record: CloudTTSPlayer.SpeakRecord) {
+        val options = arrayOf(
+            "🗑️ 删除此条缓存",
+            "📋 复制原文",
+            "ℹ️ 查看详情"
+        )
+        
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("操作：${record.text.take(30)}...")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        // 删除缓存
+                        val deleted = player.deleteCacheByText(record.text)
+                        if (deleted) {
+                            appendLog("[Edge-TTS] Deleted: ${record.text}")
+                            android.widget.Toast.makeText(context, "已删除", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(context, "删除失败", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    1 -> {
+                        // 复制原文
+                        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("TTS Text", record.text)
+                        clipboard.setPrimaryClip(clip)
+                        android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    2 -> {
+                        // 查看详情
+                        val detailMsg = "原文：${record.text}\n\n" +
+                                "缓存Key：${record.cacheKey}\n\n" +
+                                "时间：${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(record.timestamp))}\n\n" +
+                                "状态：${if (record.isSuccess) "✅ 成功" else "❌ 失败"}"
+                        android.app.AlertDialog.Builder(requireContext())
+                            .setTitle("详细信息")
+                            .setMessage(detailMsg)
+                            .setPositiveButton("确定", null)
+                            .show()
+                    }
+                }
+            }
+            .show()
     }
 
     /** 从CloudTTSPlayer同步滑块值到UI显示 */
