@@ -1160,11 +1160,24 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
         
+        // ⭐ 修复：检查Activity状态
+        if (isFinishing || isDestroyed) {
+            Log.d("MainActivity", "Activity destroyed, canceling reconnect schedule")
+            return
+        }
+        
         // 指数退避：3s, 6s, 12s, 24s, 48s
         val delay = 3000L * (1 shl retryCount) // 3s * 2^retryCount
         appendLog("🔄 Scheduling reconnect attempt ${retryCount + 1}/$maxRetries in ${delay/1000}s...")
         
-        window.decorView.postDelayed({
+        // ⭐ 修复：使用postDelayedTask代替window.decorView.postDelayed
+        postDelayedTask({
+            // 再次检查Activity状态
+            if (isFinishing || isDestroyed) {
+                Log.d("MainActivity", "Activity destroyed during reconnect delay")
+                return@postDelayedTask
+            }
+            
             if (configManager.hasSavedConfig() && !isConnecting && (mClient?.isConnected != true)) {
                 appendLog("🔄 Reconnect attempt ${retryCount + 1}/$maxRetries...")
                 val connection = Connection(

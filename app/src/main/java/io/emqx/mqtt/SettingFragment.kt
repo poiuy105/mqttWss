@@ -550,9 +550,12 @@ class SettingFragment : BaseFragment() {
             appendLog("3. 弹窗已显示")
             appendLog("4. 5秒后自动消失")
 
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                main.hideFloatMessage()
-                appendLog("5. 弹窗已隐藏")
+            // ⭐ 修复：使用view?.postDelayed代替Handler，确保Fragment销毁时自动取消
+            view?.postDelayed({
+                if (isAdded && !isDetached) {
+                    main.hideFloatMessage()
+                    appendLog("5. 弹窗已隐藏")
+                }
             }, 5000)
         } ?: run {
             appendLog("MainActivity无效，无法显示弹窗")
@@ -647,14 +650,16 @@ class SettingFragment : BaseFragment() {
                     appendLog("[CloudTTS] ⚠️ Local TTS NOT ready, please wait...")
                     Toast.makeText(context, "TTS初始化中，请稍候...", Toast.LENGTH_LONG).show()
                     
-                    // 延迟3秒后重试
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        if (player.isCurrentTTSReady()) {
-                            appendLog("[CloudTTS] ✅ Retry success, speaking...")
-                            player.speakByCurrentEngine(testText, force = true)
-                        } else {
-                            appendLog("[CloudTTS] ❌ Local TTS still NOT ready")
-                            Toast.makeText(context, "TTS初始化失败", Toast.LENGTH_LONG).show()
+                    // ⭐ 修复：使用view?.postDelayed代替Handler
+                    view?.postDelayed({
+                        if (isAdded && !isDetached) {
+                            if (player.isCurrentTTSReady()) {
+                                appendLog("[CloudTTS] ✅ Retry success, speaking...")
+                                player.speakByCurrentEngine(testText, force = true)
+                            } else {
+                                appendLog("[CloudTTS] ❌ Local TTS still NOT ready")
+                                Toast.makeText(context, "TTS初始化失败", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }, 3000)
                 }
