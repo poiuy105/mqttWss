@@ -196,6 +196,12 @@ class HomeFragment : BaseFragment() {
 
         val networkFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         fragmentActivity?.registerReceiver(networkReceiver, networkFilter)
+        
+        // ⭐ 修复：每次恢复时同步MQTT状态（解决UI与实际连接状态不一致的问题）
+        (fragmentActivity as? MainActivity)?.let { main ->
+            val isConnected = main.getMqttClient()?.isConnected == true
+            updateMqttStatus(isConnected)
+        }
     }
 
     override fun onPause() {
