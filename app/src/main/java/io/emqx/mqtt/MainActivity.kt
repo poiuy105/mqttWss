@@ -1,6 +1,7 @@
 package io.emqx.mqtt
 
 import android.content.Intent
+import android.content.IntentFilter
 import java.io.File
 import android.app.Notification
 import android.app.NotificationChannel
@@ -1237,8 +1238,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // 4. 更新通知栏
         MqttService.updateConnectionStatus(this, isMqttConnected)
         if (MqttService.isPersistentNotificationEnabled(this)) {
+            // 通过Intent更新通知栏消息（包含MQTT和无障碍服务状态）
             val notificationTitle = if (isMqttConnected) "MQTT 已连接" else "MQTT 未连接"
-            MqttService.instance?.updateNotification(notificationTitle, statusMessage)
+            val intent = Intent(this, MqttService::class.java).apply {
+                action = MqttService.ACTION_UPDATE_STATUS
+                putExtra("title", notificationTitle)
+                putExtra("message", statusMessage)
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            } catch (e: Exception) {
+                Log.w("MainActivity", "Failed to update notification: ${e.message}")
+            }
         }
         
         Log.d("MainActivity", "Updated notification status: $statusMessage")
