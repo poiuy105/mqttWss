@@ -173,4 +173,50 @@ class EdgeTtsAudioCache(
         val diskSizeBytes: Long,
         val diskSizeMB: Double
     )
+    
+    /**
+     * ⭐ 新增：缓存文件信息（用于管理界面）
+     */
+    data class CachedFileInfo(
+        val fileName: String,       // 文件名（如 "a1b2c3d4.mp3"）
+        val fileSize: Long,         // 文件大小（字节）
+        val lastModified: Long      // 最后修改时间
+    )
+    
+    /**
+     * ⭐ 新增：获取所有缓存文件列表（用于管理界面）
+     * @return 缓存文件列表，按最后修改时间降序排列
+     */
+    fun getAllCachedFiles(): List<CachedFileInfo> {
+        val diskFiles = diskCacheDir.listFiles() ?: emptyArray()
+        
+        return diskFiles.map { file ->
+            CachedFileInfo(
+                fileName = file.name,
+                fileSize = file.length(),
+                lastModified = file.lastModified()
+            )
+        }.sortedByDescending { it.lastModified }  // 按时间降序
+    }
+    
+    /**
+     * ⭐ 新增：删除指定的缓存文件
+     * @param fileName 文件名（如 "a1b2c3d4.mp3"）
+     * @return true=删除成功
+     */
+    fun deleteCachedFile(fileName: String): Boolean {
+        val file = File(diskCacheDir, fileName)
+        if (file.exists()) {
+            val deleted = file.delete()
+            if (deleted) {
+                // 同时从内存缓存移除
+                val key = fileName.substringBeforeLast(".")
+                memoryCache.remove(key)
+                accessCountMap.remove(key)
+                android.util.Log.d(TAG, "Deleted cache file: $fileName")
+            }
+            return deleted
+        }
+        return false
+    }
 }
