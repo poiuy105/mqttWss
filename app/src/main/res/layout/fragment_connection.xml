@@ -644,10 +644,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="@dimen/spacing_xs"
                 android:text="点击查看ADB命令，实现重启后无障碍不失效"
                 android:textColor="#666666"
-                android:textSize="@dimen/text_body"
+                android:textSize="@dimen/text_body" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -662,7 +662,7 @@
                     android:layout_weight="1"
                     android:text="ADB说明"
                     android:textAllCaps="false"
-                    android:textSize="@dimen/text_body"
+                    android:textSize="@dimen/text_body" />
 
                 <Button
                     android:id="@+id/btn_byd_whitelist"
@@ -672,7 +672,7 @@
                     android:layout_weight="1"
                     android:text="极速白名单"
                     android:textAllCaps="false"
-                    android:textSize="@dimen/text_body"
+                    android:textSize="@dimen/text_body" />
 
                 <Button
                     android:id="@+id/btn_battery_opt"
@@ -682,7 +682,7 @@
                     android:layout_weight="1"
                     android:text="电池优化"
                     android:textAllCaps="false"
-                    android:textSize="@dimen/text_body"
+                    android:textSize="@dimen/text_body" />
 
                 <Button
                     android:id="@+id/btn_autostart"
@@ -692,7 +692,7 @@
                     android:layout_weight="1"
                     android:text="自启动"
                     android:textAllCaps="false"
-                    android:textSize="@dimen/text_body"
+                    android:textSize="@dimen/text_body" />
             </LinearLayout>
 
 
