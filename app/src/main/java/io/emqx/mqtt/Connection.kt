@@ -49,7 +49,8 @@ class Connection(
             // 配置 Last Will
             HomeAssistantIntegration.configureLastWill(options)
             
-            if (protocol == "SSL") {
+            // ⭐ 修复：SSL和WSS都需要配置socketFactory
+            if (protocol == "SSL" || protocol == "WSS") {
                 try {
                     if (allowUntrusted) {
                         options.socketFactory = SSLUtils.getInsecureSocketFactory()
