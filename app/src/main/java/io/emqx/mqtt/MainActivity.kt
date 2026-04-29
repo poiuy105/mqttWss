@@ -84,6 +84,11 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     // ========== 亮屏/解锁广播接收器 ==========
     private var screenReceiver: android.content.BroadcastReceiver? = null
+    
+    // ⭐ P0-3修复：保存CapturedTextManager listener引用，以便在onDestroy中移除
+    private val capturedTextListener: (CapturedText) -> Unit = { captured ->
+        Log.d("MainActivity", "Text captured from ${captured.packageName}: ${captured.text}")
+    }
 
     // ========== 横竖屏切换时保持MQTT连接不断（static holder跨recreate存活）==========
     companion object {
@@ -654,9 +659,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     private fun setupAccessibilityService() {
-        CapturedTextManager.addListener { captured ->
-            Log.d("MainActivity", "Text captured from ${captured.packageName}: ${captured.text}")
-        }
+        // ⭐ P0-3修复：使用保存的listener引用，防止内存泄漏
+        CapturedTextManager.addListener(capturedTextListener)
     }
 
     fun isAccessibilityServiceEnabled(): Boolean {
@@ -1454,6 +1458,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         } catch (e: Exception) {
             Log.e("MainActivity", "Failed to release float window", e)
         }
+        
+        // ⭐ P0-3修复：移除CapturedTextManager listener，防止内存泄漏
+        CapturedTextManager.removeListener(capturedTextListener)
         
         // ⭐ 新增：注销亮屏/解锁广播接收器
         unregisterScreenReceiver()
