@@ -311,38 +311,35 @@
                 android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
-            <!-- ⭐ P1优化：使用MaterialButton -->
-            <com.google.android.material.button.MaterialButton
+            <!-- Debug Log按钮 -->
+            <Button
                 android:id="@+id/btn_log_clear"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="@dimen/button_height"
-                android:minWidth="@dimen/button_min_width"
+                android:layout_height="48dp"
+                android:minWidth="80dp"
                 android:text="Clear"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body" />
+                android:textSize="14sp" />
 
-            <com.google.android.material.button.MaterialButton
+            <Button
                 android:id="@+id/btn_log_copy"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginStart="@dimen/spacing_xs"
-                android:minWidth="@dimen/button_min_width"
+                android:layout_height="48dp"
+                android:layout_marginStart="4dp"
+                android:minWidth="80dp"
                 android:text="Copy"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body" />
+                android:textSize="14sp" />
 
-            <com.google.android.material.button.MaterialButton
+            <Button
                 android:id="@+id/btn_log_close"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginStart="@dimen/spacing_xs"
-                android:minWidth="@dimen/button_min_width"
+                android:layout_height="48dp"
+                android:layout_marginStart="4dp"
+                android:minWidth="80dp"
                 android:text="Close"
                 android:textAllCaps="false"
-                android:textSize="@dimen/text_body" />
+                android:textSize="14sp" />
         </LinearLayout>
 
         <ScrollView
