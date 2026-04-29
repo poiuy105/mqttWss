@@ -952,7 +952,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                         configManager.username,
                         configManager.password,
                         configManager.protocol,
-                        configManager.path
+                        configManager.path,
+                        configManager.allowUntrusted  // ⭐ 修复：传递allowUntrusted参数
                     )
                     connect(connection, object : IMqttActionListener {
                         override fun onSuccess(asyncActionToken: IMqttToken?) {
