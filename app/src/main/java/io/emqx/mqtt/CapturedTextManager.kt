@@ -211,8 +211,16 @@ object CapturedTextManager {
 
     fun setOnlyCaptureEnabled(enabled: Boolean) {
         if (prefs == null) {
-            Log.w("CapturedTextManager", "init() must be called before setOnlyCaptureEnabled()")
-            return
+            Log.w("CapturedTextManager", "init() not called, attempting auto-init")
+            // ⭐ 规则4修复：兜底初始化，尝试从VoiceAccessibilityService获取Context
+            val context = VoiceAccessibilityService.getInstance()?.applicationContext
+            if (context != null) {
+                init(context)
+                Log.d("CapturedTextManager", "Auto-initialized with VoiceAccessibilityService context")
+            } else {
+                Log.e("CapturedTextManager", "Cannot initialize: no valid context available")
+                return
+            }
         }
         isOnlyCaptureEnabled = enabled
         prefs?.edit()?.putBoolean("only_capture_enabled", enabled)?.apply()
@@ -239,8 +247,15 @@ object CapturedTextManager {
 
     private fun saveOnlyCaptureFrames() {
         if (prefs == null) {
-            Log.w("CapturedTextManager", "init() must be called before saveOnlyCaptureFrames()")
-            return
+            Log.w("CapturedTextManager", "init() not called, attempting auto-init")
+            // ⭐ 规则4修复：兜底初始化
+            val context = VoiceAccessibilityService.getInstance()?.applicationContext
+            if (context != null) {
+                init(context)
+            } else {
+                Log.e("CapturedTextManager", "Cannot save: no valid context")
+                return
+            }
         }
         val data = onlyCaptureFrames.joinToString(";;") { "${it.text}|${it.packageName}|${it.viewClass}|${it.timestamp}|${it.boundsLeft}|${it.boundsTop}|${it.boundsRight}|${it.boundsBottom}|${it.viewDepth}" }
         prefs?.edit()?.putString("only_capture_frames", data)?.apply()

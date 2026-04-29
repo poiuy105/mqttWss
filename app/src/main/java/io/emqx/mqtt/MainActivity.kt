@@ -1106,8 +1106,17 @@ class MainActivity : AppCompatActivity(), MqttCallback {
      * 检查MQTT连接状态，如果断开则尝试重连
      */
     private fun checkMqttConnection() {
-        val client = mClient
-        val connection = mConnection
+        var client = mClient
+        var connection = mConnection
+        
+        // ⭐ 规则4修复：如果client为null，尝试从MqttService重新获取
+        if (client == null) {
+            Log.w("MainActivity", "MQTT client is null, attempting to get from MqttService")
+            client = mqttService?.getMqttClient()
+            if (client != null) {
+                Log.d("MainActivity", "Successfully retrieved client from MqttService")
+            }
+        }
         
         if (client == null || connection == null) {
             Log.d("MainActivity", "MQTT client or connection is null, skip check")
