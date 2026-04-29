@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -22,15 +23,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="System Status"
-                android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h1"
                 android:textStyle="bold" />
 
             <!-- Battery（与竖屏相同ID） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:orientation="horizontal">
 
                 <TextView
@@ -38,8 +39,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Battery Level:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/battery_level"
@@ -47,14 +48,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -62,8 +63,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Battery Status:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/battery_status"
@@ -71,7 +72,7 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -79,16 +80,25 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="@dimen/spacing_md"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- ⭐ 新增：状态指示器圆点 -->
+                <View
+                    android:id="@+id/mqtt_status_indicator"
+                    android:layout_width="@dimen/status_indicator_size"
+                    android:layout_height="@dimen/status_indicator_size"
+                    android:background="@drawable/status_dot_red" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:layout_marginStart="@dimen/spacing_sm"
                     android:text="MQTT Status:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/mqtt_status"
@@ -96,7 +106,7 @@
                     android:layout_height="wrap_content"
                     android:text="Disconnected"
                     android:textColor="#FF0000"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -105,16 +115,16 @@
                 android:id="@+id/network_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="Network"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -122,8 +132,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Network Type:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/network_type"
@@ -131,14 +141,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -146,8 +156,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="WiFi Name:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/wifi_name"
@@ -155,24 +165,24 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Device Info（与竖屏相同ID） -->
+            <!-- Device（与竖屏相同ID） -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="Device"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -180,8 +190,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Screen:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/screen_info"
@@ -189,14 +199,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -204,8 +214,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Orientation:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/orientation"
@@ -213,14 +223,14 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal">
 
                 <TextView
@@ -228,8 +238,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Android Version:"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp" />
+                    android:textColor="#666666"
+                    android:textSize="@dimen/text_body" />
 
                 <TextView
                     android:id="@+id/android_version"
@@ -237,7 +247,7 @@
                     android:layout_height="wrap_content"
                     android:text="--"
                     android:textColor="@android:color/black"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -245,30 +255,34 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="Device Details"
-                android:textColor="@android:color/black"
-                android:textSize="15sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
-            <ScrollView
+            <!-- ⭐ P1优化：使用CardView包裹Device Details -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:layout_marginTop="8dp"
-                android:maxHeight="200dp">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                app:cardCornerRadius="@dimen/card_corner_radius"
+                app:cardElevation="@dimen/card_elevation"
+                app:cardBackgroundColor="#F5F5F5">
 
                 <TextView
                     android:id="@+id/device_details"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="#F5F5F5"
-                    android:padding="8dp"
+                    android:padding="@dimen/spacing_sm"
                     android:text="Loading device info..."
                     android:textColor="#333333"
-                    android:textSize="11sp"
-                    android:lineSpacingExtra="2dp" />
-            </ScrollView>
+                    android:textSize="@dimen/text_small"
+                    android:lineSpacingExtra="2dp"
+                    android:maxLines="15"
+                    android:ellipsize="end" />
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>
@@ -295,38 +309,45 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Debug Log:"
-                android:textColor="@android:color/black"
-                android:textSize="14sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
-            <Button
+            <!-- ⭐ P1优化：使用MaterialButton -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log_clear"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:minWidth="56dp"
+                android:layout_height="@dimen/button_height"
+                android:minWidth="@dimen/button_min_width"
                 android:text="Clear"
                 android:textAllCaps="false"
-                android:textSize="11sp" />
+                android:textSize="@dimen/text_body"
+                app:cornerRadius="8dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log_copy"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginStart="6dp"
-                android:minWidth="56dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginStart="@dimen/spacing_xs"
+                android:minWidth="@dimen/button_min_width"
                 android:text="Copy"
                 android:textAllCaps="false"
-                android:textSize="11sp" />
+                android:textSize="@dimen/text_body"
+                app:cornerRadius="8dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log_close"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginStart="6dp"
-                android:minWidth="56dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginStart="@dimen/spacing_xs"
+                android:minWidth="@dimen/button_min_width"
                 android:text="Close"
                 android:textAllCaps="false"
-                android:textSize="11sp" />
+                android:textSize="@dimen/text_body"
+                app:cornerRadius="8dp" />
         </LinearLayout>
 
         <ScrollView

@@ -12,4 +12,26 @@
     <dimen name="sidebar_icon_size">24dp</dimen>
     <dimen name="sidebar_text_size">10sp</dimen>
     <dimen name="sidebar_item_padding">4dp</dimen>
+
+    <!-- ⭐ 新增：统一间距系统（P0优化） -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_lg">24dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+
+    <!-- ⭐ 新增：统一字体系统（P0优化） -->
+    <dimen name="text_h1">20sp</dimen>
+    <dimen name="text_h2">16sp</dimen>
+    <dimen name="text_body">14sp</dimen>
+    <dimen name="text_caption">12sp</dimen>
+    <dimen name="text_small">10sp</dimen>
+
+    <!-- ⭐ 新增：组件尺寸规范（P0优化） -->
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="button_min_width">80dp</dimen>
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="status_indicator_size">12dp</dimen>
 </resources>
