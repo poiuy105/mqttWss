@@ -31,7 +31,9 @@ class BootReceiver : BroadcastReceiver() {
         Log.d("BootReceiver", "========================================")
 
         when (action) {
-            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_POWER_CONNECTED -> {
+            Intent.ACTION_BOOT_COMPLETED, 
+            Intent.ACTION_POWER_CONNECTED,
+            Intent.ACTION_LOCKED_BOOT_COMPLETED -> {  // ⭐ 新增：支持加密设备开机
                 handleBootOrPowerOn(context)
             }
             else -> {
@@ -102,22 +104,8 @@ class BootReceiver : BroadcastReceiver() {
             
             Log.d("BootReceiver", "MqttService started in background")
             
-            // ⭐ 延迟2秒后启动MainActivity（但设置为后台模式，不弹到前台）
-            Thread {
-                Thread.sleep(2000)
-                
-                // 启动MainActivity但不带到前台（仅初始化必要组件）
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    // ⭐ 关键：添加这些flag让Activity在后台运行
-                    addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                    putExtra("auto_connect", true)
-                    putExtra("background_mode", true)  // 标记为后台模式
-                }
-                context.startActivity(launchIntent)
-                
-                Log.d("BootReceiver", "MainActivity launched in background mode")
-            }.start()
+            // ⭐ 修复：不再启动MainActivity，由MqttService直接处理MQTT连接（参考GPSLogger模式）
+            // Thread { ... }.start()
             
         } catch (e: Exception) {
             Log.e("BootReceiver", "Failed to start background service: ${e.message}", e)

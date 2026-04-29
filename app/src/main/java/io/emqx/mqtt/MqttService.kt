@@ -9,7 +9,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import org.eclipse.paho.client.mqttv3.IMqttActionListener
+import org.eclipse.paho.client.mqttv3.IMqttToken
 
 class MqttService : Service() {
     companion object {
@@ -71,10 +74,15 @@ class MqttService : Service() {
             } catch (e: Exception) {
                 // 如果服务已经在运行且 App 在后台，更新通知可能会失败
                 // 这不影响 MQTT 连接的正常运行
-                android.util.Log.w("MqttService", "Failed to update connection status (App in background): ${e.message}")
+                Log.w("MqttService", "Failed to update connection status (App in background): ${e.message}")
             }
         }
     }
+    
+    // ⭐ 新增：MQTT客户端实例（参考GPSLogger模式，Service中包含完整业务逻辑）
+    private var mClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient? = null
+    private var mConnection: Connection? = null
+    private var isConnecting = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -82,6 +90,12 @@ class MqttService : Service() {
         super.onCreate()
         instance = this
         createNotificationChannel()
+        
+        // ⭐ 优化：立即提升为前台服务（参考GPSLogger模式，Android 8.0+必须在5秒内调用）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isPersistentNotificationEnabled(this)) {
+            startForeground(NOTIFICATION_ID, createNotification())
+            Log.d("MqttService", "Started as foreground service in onCreate")
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -111,12 +125,14 @@ class MqttService : Service() {
                 }
             }
             else -> {
-                if (isPersistentNotificationEnabled(this)) {
-                    startForeground(NOTIFICATION_ID, createNotification())
-                } else {
-                    stopSelf()
-                    instance = null
+                // ⭐ 修复：不再自杀，以普通服务运行（参考GPSLogger模式）
+                if (!isPersistentNotificationEnabled(this)) {
+                    Log.d("MqttService", "Running without persistent notification")
                 }
+                // 注意：startForeground已在onCreate中调用，这里不需要重复调用
+                
+                // ⭐ 新增：直接在这里触发MQTT连接（参考GPSLogger模式）
+                connectMqttInBackground()
             }
         }
         return START_STICKY
@@ -184,5 +200,96 @@ class MqttService : Service() {
 
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+    
+    /**
+     * ⭐ 新增：在后台直接连接MQTT（参考GPSLogger模式）
+     */
+    private fun connectMqttInBackground() {
+        if (isConnecting) {
+            Log.d("MqttService", "Already connecting, ignore")
+            return
+        }
+        
+        if (mClient != null && mClient!!.isConnected) {
+            Log.d("MqttService", "Already connected, ignore duplicate connect request")
+            return
+        }
+        
+        val configManager = ConfigManager.getInstance(this)
+        
+        // 只要有保存的配置就自动连接
+        if (!configManager.hasSavedConfig()) {
+            Log.w("MqttService", "No saved config found, skipping auto-connect")
+            return
+        }
+        
+        Log.d("MqttService", "Auto-connecting MQTT in background...")
+        Log.d("MqttService", "Host: ${configManager.host}, Port: ${configManager.port}, Protocol: ${configManager.protocol}")
+        
+        isConnecting = true
+        mConnection = Connection(
+            this,
+            configManager.host,
+            configManager.port,
+            configManager.clientId,
+            configManager.username,
+            configManager.password,
+            configManager.protocol,
+            configManager.path,
+            configManager.allowUntrusted
+        )
+        
+        try {
+            mClient = mConnection!!.getMqttClient()
+            mClient?.setCallback(object : org.eclipse.paho.client.mqttv3.MqttCallback {
+                override fun connectionLost(cause: Throwable?) {
+                    Log.e("MqttService", "Connection lost: ${cause?.message}")
+                    isConnected = false
+                    updateConnectionStatus(this@MqttService, false)
+                }
+                
+                override fun messageArrived(topic: String?, message: org.eclipse.paho.client.mqttv3.MqttMessage?) {
+                    Log.d("MqttService", "Message arrived on topic: $topic")
+                    // 这里可以处理接收到的消息
+                }
+                
+                override fun deliveryComplete(token: org.eclipse.paho.client.mqttv3.IMqttDeliveryToken?) {
+                    Log.d("MqttService", "Delivery complete")
+                }
+            })
+            
+            Log.d("MqttService", "Calling connect()...")
+            mClient?.connect(mConnection!!.mqttConnectOptions, null, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken?) {
+                    isConnecting = false
+                    isConnected = true
+                    Log.d("MqttService", "=== CONNECT SUCCESS ===")
+                    updateConnectionStatus(this@MqttService, true)
+                    
+                    // 更新通知显示已连接
+                    if (isPersistentNotificationEnabled(this@MqttService)) {
+                        updateNotification("MQTT 已连接", "MQTT client is running")
+                    }
+                    
+                    Log.d("MqttService", "MQTT connected successfully in background")
+                }
+                
+                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                    isConnecting = false
+                    isConnected = false
+                    Log.e("MqttService", "Auto-connect failed: ${exception?.message}", exception)
+                    updateConnectionStatus(this@MqttService, false)
+                    
+                    // 更新通知显示未连接
+                    if (isPersistentNotificationEnabled(this@MqttService)) {
+                        updateNotification("MQTT 未连接", "Connection failed: ${exception?.message}")
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            isConnecting = false
+            Log.e("MqttService", "Failed to create MQTT client: ${e.message}", e)
+        }
     }
 }
