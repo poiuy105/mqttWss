@@ -202,6 +202,9 @@ class HomeFragment : BaseFragment() {
         val networkFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         fragmentActivity?.registerReceiver(networkReceiver, networkFilter)
         
+        // ⭐ 规则9修复：监听MQTT事件并更新UI
+        observeMqttEvents()
+        
         // ⭐ 修复：每次恢复时同步MQTT状态（解决UI与实际连接状态不一致的问题）
         (fragmentActivity as? MainActivity)?.let { main ->
             val isConnected = main.getMqttClient()?.isConnected == true
@@ -282,6 +285,32 @@ class HomeFragment : BaseFragment() {
         } ?: run {
             networkTypeText?.text = "Unknown"
             wifiNameText?.text = "--"
+        }
+    }
+    
+    /**
+     * ⭐ 规则9修复：观察MQTT事件并更新UI
+     */
+    private fun observeMqttEvents() {
+        // 监听连接状态
+        MqttEventBus.connectionStatus.observe(viewLifecycleOwner) { connected ->
+            updateMqttStatus(connected)
+        }
+        
+        // 监听消息到达
+        MqttEventBus.messageArrived.observe(viewLifecycleOwner) { event ->
+            // 在Home页面显示Toast提示新消息
+            fragmentActivity?.let { activity ->
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(activity, "收到MQTT消息: ${event.topic}", Toast.LENGTH_SHORT).show()
+                }
+            }
+            Log.d("HomeFragment", "Message received via EventBus: ${event.topic}")
+        }
+        
+        // 监听连接丢失
+        MqttEventBus.connectionLost.observe(viewLifecycleOwner) { cause ->
+            Log.w("HomeFragment", "Connection lost via EventBus: $cause")
         }
     }
 

@@ -46,6 +46,9 @@ class SubscriptionFragment : BaseFragment() {
         }
 
         loadSubscriptions()
+        
+        // ⭐ 规则9修复：监听MQTT消息事件并更新订阅列表
+        observeMqttEvents()
     }
 
     private fun showAddSubscriptionDialog() {
@@ -159,6 +162,17 @@ class SubscriptionFragment : BaseFragment() {
                 }
                 saveSubscriptions()
             }
+        }
+    }
+    
+    /**
+     * ⭐ 规则9修复：观察MQTT消息事件并更新订阅列表
+     */
+    private fun observeMqttEvents() {
+        MqttEventBus.messageArrived.observe(viewLifecycleOwner) { event ->
+            // 更新订阅消息列表
+            updateSubscriptionMessage(event.topic, event.payload)
+            Log.d("SubscriptionFragment", "Message updated via EventBus: ${event.topic}")
         }
     }
 

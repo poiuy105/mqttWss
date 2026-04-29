@@ -971,29 +971,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     override fun connectionLost(cause: Throwable?) {
-        appendLog("Connection lost: $cause")
+        // ✅ 规则9合规：只记录日志到logcat，不操作UI
+        Log.w("MainActivity", "Connection lost: $cause")
         isConnecting = false
         
         // 停止电池上报
         HomeAssistantIntegration.stopBatteryReporting()
         
+        // ✅ 通过事件总线通知UI层
         MqttService.updateConnectionStatus(this, false)
-        notifyMqttStatusChanged(false)
-        
-        // ⭐ 修复：检查Activity是否已销毁，避免访问已销毁的UI
-        if (!isFinishing && !isDestroyed) {
-            runOnUiThread {
-                if (!isFinishing && !isDestroyed) {
-                    (mFragmentList.getOrNull(1) as? SettingFragment)?.updateButtonText()
-                }
-            }
-        }
+        MqttEventBus.publishConnectionStatus(false)
+        MqttEventBus.publishConnectionLost(cause)
         
         // ========== Auto Connect: 只要有配置就自动重连 ==========
         val configManager = ConfigManager.getInstance(this)
         if (configManager.hasSavedConfig()) {
-            appendLog("🔄 Config exists, will attempt reconnect in 3 seconds...")
-            Log.d("MainActivity", "Saved config found, scheduling reconnect...")
+            Log.d("MainActivity", "Scheduling auto-reconnect in 3 seconds...")
             
             // ⭐ 修复：使用postDelayedTask代替window.decorView.postDelayed，防止内存泄漏
             postDelayedTask({
@@ -1004,7 +997,7 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                 }
                 
                 if (configManager.hasSavedConfig() && !isConnecting && (mClient?.isConnected != true)) {
-                    appendLog("🔄 Attempting auto-reconnect...")
+                    Log.d("MainActivity", "Attempting auto-reconnect...")
                     val connection = Connection(
                         this@MainActivity,
                         configManager.host,
@@ -1014,17 +1007,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                         configManager.password,
                         configManager.protocol,
                         configManager.path,
-                        configManager.allowUntrusted  // ⭐ 修复：传递allowUntrusted参数
+                        configManager.allowUntrusted
                     )
                     connect(connection, object : IMqttActionListener {
                         override fun onSuccess(asyncActionToken: IMqttToken?) {
-                            appendLog("✅ Auto-reconnect successful")
-                            Log.d("MainActivity", "Auto-reconnect success after connectionLost")
+                            Log.d("MainActivity", "Auto-reconnect successful")
                         }
                         
                         override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                            appendLog("❌ Auto-reconnect failed: ${exception?.message}")
-                            Log.e("MainActivity", "Auto-reconnect failed", exception)
+                            Log.e("MainActivity", "Auto-reconnect failed: ${exception?.message}")
                             // 如果失败，继续尝试重连（最多重试5次）
                             scheduleReconnectIfNeeded(configManager, retryCount = 1)
                         }
@@ -1039,41 +1030,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     @Throws(Exception::class)
     override fun messageArrived(topic: String, message: MqttMessage) {
         val payload = String(message.payload)
+        
+        // ✅ 规则9合规：只记录日志到logcat，不操作UI
         Log.d("MainActivity", "===== MESSAGE ARRIVED =====")
         Log.d("MainActivity", "Topic: $topic")
         Log.d("MainActivity", "Payload: $payload")
-        Log.d("MainActivity", "isTTSEnabled: $isTTSEnabled")
-        Log.d("MainActivity", "isFloatWindowEnabled: $isFloatWindowEnabled")
-
-        runOnUiThread {
-            // ⭐ 修复：检查Activity是否已销毁
-            if (isFinishing || isDestroyed) {
-                Log.w("MainActivity", "Activity destroyed, ignoring message")
-                return@runOnUiThread
-            }
-            
-            appendLog("===== MESSAGE RECEIVED =====")
-            appendLog("Topic: $topic")
-            appendLog("Payload: $payload")
-
-            (mFragmentList.getOrNull(2) as? SubscriptionFragment)?.updateSubscriptionMessage(topic, payload)
-
-            if (isFloatWindowEnabled) {
-                Log.d("MainActivity", "Showing float window for message")
-                appendLog("Showing float window...")
-                floatWindowManager?.showMessage(topic, payload)
-            } else {
-                appendLog("Float window is disabled, skipping")
-            }
-
-            if (isTTSEnabled) {
-                Log.d("MainActivity", "Speaking with CloudTTS")
-                appendLog("Speaking CloudTTS...")
-                ttsPlayer?.speak(payload, force = true)
-            } else {
-                appendLog("TTS is disabled, skipping")
-            }
-        }
+        
+        // ✅ 通过事件总线通知UI层
+        MqttEventBus.publishMessageArrived(topic, payload)
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken) {}
