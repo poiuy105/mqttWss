@@ -403,8 +403,10 @@ class SettingFragment : BaseFragment() {
             mConfigManager.voiceCaptureEnabled = isChecked
             (activity as? MainActivity)?.isAutoCaptureVoiceEnabled = isChecked
             appendLog("Auto Capture Voice ${if (isChecked) "enabled" else "disabled"}")
-            if (isChecked && (activity as? MainActivity)?.isAccessibilityServiceEnabled() == false) {
-                (activity as? MainActivity)?.requestAccessibilityService()
+            // ⭐ 修复：使用AccessibilityUtils检查无障碍服务状态
+            if (isChecked && !AccessibilityUtils.isServiceEnabled(requireContext())) {
+                appendLog("⚠️ Accessibility service not enabled, requesting...")
+                AccessibilityUtils.jumpToSetting(requireContext())
             }
         }
 
