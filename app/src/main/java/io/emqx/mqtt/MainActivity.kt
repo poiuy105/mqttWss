@@ -1164,6 +1164,13 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "App resumed, MQTT connection monitor started")
     }
 
+    override fun onPause() {
+        super.onPause()
+        // Activity 进入暂停状态（例如被对话框遮挡）
+        // 注意：不停止 MQTT 监控，因为这不是真正的后台
+        Log.d("MainActivity", "App paused")
+    }
+
     override fun onStop() {
         super.onStop()
         // 注意：不在 onStop 时停止 MQTT 监控器
@@ -1176,6 +1183,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
      * ⭐ 注册亮屏/解锁广播接收器
      */
     private fun registerScreenReceiver() {
+        // ⭐ 修复：先注销旧的接收器，防止重复注册（配置变更时）
+        unregisterScreenReceiver()
+        
         screenReceiver = object : android.content.BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
@@ -1198,9 +1208,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         try {
             registerReceiver(screenReceiver, filter)
-            Log.d("MainActivity", "Screen receiver registered")
+            Log.d("MainActivity", "Screen receiver registered successfully")
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to register screen receiver: ${e.message}")
+            Log.e("MainActivity", "Failed to register screen receiver: ${e.message}", e)
         }
     }
 
@@ -1208,14 +1218,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
      * ⭐ 注销亮屏/解锁广播接收器
      */
     private fun unregisterScreenReceiver() {
-        try {
-            screenReceiver?.let {
+        screenReceiver?.let {
+            try {
                 unregisterReceiver(it)
                 screenReceiver = null
-                Log.d("MainActivity", "Screen receiver unregistered")
+                Log.d("MainActivity", "Screen receiver unregistered successfully")
+            } catch (e: IllegalArgumentException) {
+                // 接收器未注册，可能已经被注销
+                Log.w("MainActivity", "Screen receiver was not registered: ${e.message}")
+                screenReceiver = null
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to unregister screen receiver: ${e.message}", e)
+                screenReceiver = null
             }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to unregister screen receiver: ${e.message}")
         }
     }
 

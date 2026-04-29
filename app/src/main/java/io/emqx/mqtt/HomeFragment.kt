@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ScrollView
@@ -191,6 +192,10 @@ class HomeFragment : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
+        
+        // ⭐ 修复：先注销旧的接收器，防止重复注册
+        unregisterReceivers()
+        
         val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         fragmentActivity?.registerReceiver(batteryReceiver, batteryFilter)
 
@@ -206,10 +211,33 @@ class HomeFragment : BaseFragment() {
 
     override fun onPause() {
         super.onPause()
-        try {
-            fragmentActivity?.unregisterReceiver(batteryReceiver)
-            fragmentActivity?.unregisterReceiver(networkReceiver)
-        } catch (e: Exception) {
+        unregisterReceivers()
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // ⭐ 修复：确保在视图销毁时也注销接收器，防止内存泄漏
+        unregisterReceivers()
+    }
+    
+    /**
+     * ⭐ 修复：统一注销广播接收器，改进异常处理
+     */
+    private fun unregisterReceivers() {
+        fragmentActivity?.let { activity ->
+            try {
+                activity.unregisterReceiver(batteryReceiver)
+            } catch (e: IllegalArgumentException) {
+                // 接收器未注册，忽略
+                Log.d("HomeFragment", "Battery receiver not registered")
+            }
+            
+            try {
+                activity.unregisterReceiver(networkReceiver)
+            } catch (e: IllegalArgumentException) {
+                // 接收器未注册，忽略
+                Log.d("HomeFragment", "Network receiver not registered")
+            }
         }
     }
 
