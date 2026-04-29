@@ -28,15 +28,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/protocol"
-                    android:textColor="@android:color/black"
-                    android:textSize="15sp"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="@dimen/text_h1"
                     android:textStyle="bold" />
 
                 <RadioGroup
                     android:id="@+id/protocol"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
+                    android:layout_marginStart="@dimen/spacing_lg"
                     android:layout_weight="1"
                     android:orientation="horizontal">
 
@@ -46,39 +46,39 @@
                         android:layout_height="wrap_content"
                         android:checked="true"
                         android:text="TCP"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <RadioButton
                         android:id="@+id/protocol_ssl"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/spacing_xs"
                         android:text="SSL"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <RadioButton
                         android:id="@+id/protocol_ws"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/spacing_xs"
                         android:text="WS"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <RadioButton
                         android:id="@+id/protocol_wss"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/spacing_xs"
                         android:text="WSS"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
                 </RadioGroup>
 
                 <!-- 眼睛图标按钮：切换密码明文/密文显示 -->
                 <ImageButton
                     android:id="@+id/btn_toggle_password_visibility"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Toggle password visibility"
                     android:padding="6dp"
@@ -90,14 +90,14 @@
             <LinearLayout
                 android:id="@+id/ssl_untrusted_container"
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginTop="4dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/spacing_xs"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="Untrusted"
                     android:textColor="#666666"
@@ -112,13 +112,13 @@
             <!-- 横屏输入框：纯EditText(不用TextInputLayout)，Label左80dp + 输入框右填充 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginTop="4dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/spacing_xs"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/host"
                     android:textColor="#666666"
@@ -133,20 +133,20 @@
                     android:hint="@string/host"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:textSize="13sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/port"
                     android:textColor="#666666"
@@ -161,8 +161,8 @@
                     android:hint="@string/port"
                     android:inputType="number"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:text="1883"
                     android:textSize="13sp" />
@@ -171,13 +171,13 @@
             <LinearLayout
                 android:id="@+id/path_container"
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/path"
                     android:textColor="#666666"
@@ -192,8 +192,8 @@
                     android:hint="@string/path"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:text="/mqtt"
                     android:textSize="13sp" />
@@ -201,12 +201,12 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/client_id"
                     android:textColor="#666666"
@@ -221,20 +221,20 @@
                     android:hint="@string/client_id"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:textSize="13sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/username"
                     android:textColor="#666666"
@@ -249,20 +249,20 @@
                     android:hint="@string/username"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:textSize="13sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="80dp"
+                    android:layout_width="@dimen/spacing_xl"
                     android:layout_height="wrap_content"
                     android:text="@string/password"
                     android:textColor="#666666"
@@ -278,8 +278,8 @@
                     android:imeOptions="actionDone"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="@dimen/spacing_xs"
+                    android:paddingEnd="@dimen/spacing_xs"
                     android:singleLine="true"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -287,66 +287,66 @@
             <!-- 按钮行 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/btn_connect"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
+                    android:layout_height="@dimen/button_height"
                     android:layout_weight="1"
                     android:text="@string/connect"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
 
                 <Button
                     android:id="@+id/btn_disconnect"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="Disconnect"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
 
                 <Button
                     android:id="@+id/test_popup"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="弹窗"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
             </LinearLayout>
 
             <!-- Home Assistant 区域 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="Home Assistant"
-                android:textColor="@android:color/black"
-                android:textSize="15sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h1"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/homeassistant_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/spacing_xs"
                 android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="@dimen/button_height"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="80dp"
+                        android:layout_width="@dimen/spacing_xl"
                         android:layout_height="wrap_content"
                         android:text="HA Address"
                         android:textColor="#666666"
@@ -361,21 +361,21 @@
                         android:hint="HA Address"
                         android:inputType="text"
                         android:maxLines="1"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="@dimen/spacing_xs"
+                        android:paddingEnd="@dimen/spacing_xs"
                         android:singleLine="true"
                         android:text="homeassistant.local"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="@dimen/button_height"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="80dp"
+                        android:layout_width="@dimen/spacing_xl"
                         android:layout_height="wrap_content"
                         android:text="HA Token"
                         android:textColor="#666666"
@@ -390,21 +390,21 @@
                         android:hint="Long-lived Token"
                         android:inputType="text"
                         android:maxLines="1"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="@dimen/spacing_xs"
+                        android:paddingEnd="@dimen/spacing_xs"
                         android:singleLine="true"
                         android:text="abcdefg"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="@dimen/button_height"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="80dp"
+                        android:layout_width="@dimen/spacing_xl"
                         android:layout_height="wrap_content"
                         android:text="Language"
                         android:textColor="#666666"
@@ -419,22 +419,22 @@
                         android:hint="Language"
                         android:inputType="text"
                         android:maxLines="1"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="@dimen/spacing_xs"
+                        android:paddingEnd="@dimen/spacing_xs"
                         android:singleLine="true"
                         android:text="zh"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="@dimen/button_height"
                     android:layout_marginTop="2dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="80dp"
+                        android:layout_width="@dimen/spacing_xl"
                         android:layout_height="wrap_content"
                         android:text="HTTPS"
                         android:textColor="#666666"
@@ -450,8 +450,8 @@
                 <!-- HA Response Delay -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="4dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginTop="@dimen/spacing_xs"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -475,7 +475,7 @@
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
                         android:text="10ms"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_caption"
                         android:gravity="end" />
                 </LinearLayout>
 
@@ -487,14 +487,14 @@
                     android:layout_marginTop="12dp"
                     android:text="单击替代返回"
                     android:textColor="@android:color/black"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/text_body"
                     android:checked="true" />
 
                 <!-- HA 点击次数设置 -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="4dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginTop="@dimen/spacing_xs"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -514,11 +514,11 @@
                         android:hint="Click count"
                         android:inputType="number"
                         android:maxLines="1"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="@dimen/spacing_xs"
+                        android:paddingEnd="@dimen/spacing_xs"
                         android:singleLine="true"
                         android:text="1"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -526,16 +526,16 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="Features"
-                android:textColor="@android:color/black"
-                android:textSize="15sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h1"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginTop="4dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/spacing_xs"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -555,7 +555,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -575,7 +575,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -594,7 +594,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -613,7 +613,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/button_height"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -635,10 +635,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="@dimen/spacing_lg"
                 android:text="车机保活设置 (BYD)"
-                android:textColor="@android:color/black"
-                android:textSize="15sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h1"
                 android:textStyle="bold" />
 
             <TextView
@@ -647,7 +647,7 @@
                 android:layout_marginTop="2dp"
                 android:text="点击查看ADB命令，实现重启后无障碍不失效"
                 android:textColor="#666666"
-                android:textSize="11sp" />
+                android:textSize="@dimen/text_body"
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -658,41 +658,41 @@
                 <Button
                     android:id="@+id/btn_adb_guide"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
+                    android:layout_height="@dimen/button_height"
                     android:layout_weight="1"
                     android:text="ADB说明"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
 
                 <Button
                     android:id="@+id/btn_byd_whitelist"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="极速白名单"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
 
                 <Button
                     android:id="@+id/btn_battery_opt"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="电池优化"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
 
                 <Button
                     android:id="@+id/btn_autostart"
                     android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="自启动"
                     android:textAllCaps="false"
-                    android:textSize="11sp" />
+                    android:textSize="@dimen/text_body"
             </LinearLayout>
 
 
@@ -700,10 +700,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:text="Cloud TTS Settings"
-                android:textColor="@android:color/black"
-                android:textSize="14sp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -740,7 +740,7 @@
                     android:id="@+id/btn_tts_reset_default"
                     android:layout_width="0dp"
                     android:layout_height="32dp"
-                    android:layout_marginStart="3dp"
+                    android:layout_marginStart="@dimen/spacing_xs"
                     android:layout_weight="1"
                     android:text="Reset"
                     android:textAllCaps="false"
@@ -751,7 +751,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:orientation="vertical">
 
                 <!-- 速度拖动条 -->
@@ -787,7 +787,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/spacing_xs"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
@@ -818,11 +818,11 @@
             <Button
                 android:id="@+id/btn_manage_edge_tts_cache"
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:text="管理Edge-TTS缓存（查看/删除）"
                 android:textAllCaps="false"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_caption"
                 android:backgroundTint="#FF5722" />
 
         </LinearLayout>

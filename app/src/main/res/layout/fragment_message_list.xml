@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
+    android:padding="@dimen/spacing_md"
     tools:context=".MessageFragment">
 
     <LinearLayout
@@ -18,8 +18,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Screen Text Capture Log"
-            android:textColor="@android:color/black"
-            android:textSize="14sp"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="@dimen/text_h1"
             android:textStyle="bold" />
 
         <TextView
@@ -28,23 +28,23 @@
             android:layout_height="wrap_content"
             android:text="Excluded: 0"
             android:textColor="#999999"
-            android:textSize="11sp" />
+            android:textSize="@dimen/text_small" />
 
         <Button
             android:id="@+id/btn_clear_log"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
+            android:layout_height="@dimen/button_height"
+            android:layout_marginStart="@dimen/spacing_sm"
             android:text="Clear"
             android:textAllCaps="false"
-            android:textSize="11sp" />
+            android:textSize="@dimen/text_body" />
     </LinearLayout>
 
     <!-- 横屏：Prefix/Suffix 输入框左右结构 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/spacing_xs"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:text="Prefix"
             android:textColor="#666666"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_caption" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
@@ -66,7 +66,7 @@
                 android:layout_height="36dp"
                 android:hint="Prefix"
                 android:inputType="text"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_caption"
                 android:paddingStart="6dp"
                 android:paddingEnd="6dp" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -77,7 +77,7 @@
             android:layout_marginStart="8dp"
             android:text="Suffix"
             android:textColor="#666666"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_caption" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
@@ -90,7 +90,7 @@
                 android:layout_height="36dp"
                 android:hint="Suffix"
                 android:inputType="text"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_caption"
                 android:paddingStart="6dp"
                 android:paddingEnd="6dp" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -99,7 +99,7 @@
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="@dimen/spacing_sm"
         android:scrollbars="none">
 
         <LinearLayout
@@ -112,7 +112,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/spacing_xs"
         android:text="Only Capture Frame (Long press to delete)"
         android:textColor="#666666"
         android:textSize="11sp" />
@@ -120,7 +120,7 @@
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="@dimen/spacing_sm"
         android:scrollbars="horizontal">
 
         <LinearLayout
@@ -134,7 +134,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/spacing_xs"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -144,7 +144,7 @@
             android:layout_weight="1"
             android:text="Send to Home Assistant"
             android:textColor="@android:color/black"
-            android:textSize="13sp" />
+            android:textSize="@dimen/text_body" />
 
         <Switch
             android:id="@+id/ha_send_checkbox"
@@ -157,7 +157,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/spacing_xs"
         app:layoutManager="LinearLayoutManager"
         tools:listitem="@layout/item_captured_text" />
 
