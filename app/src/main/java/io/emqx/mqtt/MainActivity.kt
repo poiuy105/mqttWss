@@ -45,6 +45,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     private var isConnecting = false
     private var logCallback: ((String) -> Unit)? = null
     
+    // ========== 延迟任务管理器（防止内存泄漏）==========
+    private val delayedTaskHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val delayedTasks = mutableListOf<Runnable>()
+    
     // ========== MQTT 连接监控 ==========
     private val mqttCheckHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var mqttCheckRunnable: Runnable? = null
@@ -942,8 +946,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         MqttService.updateConnectionStatus(this, false)
         notifyMqttStatusChanged(false)
-        runOnUiThread {
-            (mFragmentList[1] as? SettingFragment)?.updateButtonText()
+        
+        // ⭐ 修复：检查Activity是否已销毁，避免访问已销毁的UI
+        if (!isFinishing && !isDestroyed) {
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    (mFragmentList.getOrNull(1) as? SettingFragment)?.updateButtonText()
+                }
+            }
         }
         
         // ========== Auto Connect: 只要有配置就自动重连 ==========
@@ -952,8 +962,14 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             appendLog("🔄 Config exists, will attempt reconnect in 3 seconds...")
             Log.d("MainActivity", "Saved config found, scheduling reconnect...")
             
-            // 延迟3秒后尝试重连（避免频繁重连）
-            window.decorView.postDelayed({
+            // ⭐ 修复：使用postDelayedTask代替window.decorView.postDelayed，防止内存泄漏
+            postDelayedTask({
+                // 再次检查Activity状态
+                if (isFinishing || isDestroyed) {
+                    Log.d("MainActivity", "Activity destroyed, canceling reconnect")
+                    return@postDelayedTask
+                }
+                
                 if (configManager.hasSavedConfig() && !isConnecting && (mClient?.isConnected != true)) {
                     appendLog("🔄 Attempting auto-reconnect...")
                     val connection = Connection(
@@ -997,11 +1013,17 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "isFloatWindowEnabled: $isFloatWindowEnabled")
 
         runOnUiThread {
+            // ⭐ 修复：检查Activity是否已销毁
+            if (isFinishing || isDestroyed) {
+                Log.w("MainActivity", "Activity destroyed, ignoring message")
+                return@runOnUiThread
+            }
+            
             appendLog("===== MESSAGE RECEIVED =====")
             appendLog("Topic: $topic")
             appendLog("Payload: $payload")
 
-            (mFragmentList[2] as? SubscriptionFragment)?.updateSubscriptionMessage(topic, payload)
+            (mFragmentList.getOrNull(2) as? SubscriptionFragment)?.updateSubscriptionMessage(topic, payload)
 
             if (isFloatWindowEnabled) {
                 Log.d("MainActivity", "Showing float window for message")
@@ -1052,6 +1074,33 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             mqttCheckRunnable = null
             Log.d("MainActivity", "MQTT connection monitor stopped")
         }
+    }
+    
+    /**
+     * ⭐ 修复：安全地执行延迟任务，防止内存泄漏
+     */
+    private fun postDelayedTask(runnable: Runnable, delayMillis: Long) {
+        // 包装runnable，添加到跟踪列表
+        val wrappedRunnable = Runnable {
+            try {
+                runnable.run()
+            } finally {
+                delayedTasks.remove(wrappedRunnable)
+            }
+        }
+        delayedTasks.add(wrappedRunnable)
+        delayedTaskHandler.postDelayed(wrappedRunnable, delayMillis)
+    }
+    
+    /**
+     * ⭐ 修复：取消所有延迟任务（在onDestroy时调用）
+     */
+    private fun cancelAllDelayedTasks() {
+        delayedTasks.forEach { task ->
+            delayedTaskHandler.removeCallbacks(task)
+        }
+        delayedTasks.clear()
+        Log.d("MainActivity", "All delayed tasks cancelled")
     }
     
     /**
@@ -1306,6 +1355,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     override fun onDestroy() {
         super.onDestroy()
         
+        // ⭐ 修复：取消所有延迟任务，防止内存泄漏
+        cancelAllDelayedTasks()
+        
         // 停止MQTT连接监控
         stopMqttConnectionMonitor()
         
@@ -1328,9 +1380,18 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         }
         
         // 释放云端TTS资源
-        ttsPlayer?.release()
+        try {
+            ttsPlayer?.release()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to release TTS player", e)
+        }
+        
         // 释放浮动窗口资源
-        floatWindowManager?.release()
+        try {
+            floatWindowManager?.release()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to release float window", e)
+        }
         
         // ⭐ 新增：注销亮屏/解锁广播接收器
         unregisterScreenReceiver()

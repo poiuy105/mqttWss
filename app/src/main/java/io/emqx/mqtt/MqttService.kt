@@ -247,6 +247,19 @@ class MqttService : Service() {
                     Log.e("MqttService", "Connection lost: ${cause?.message}")
                     isConnected = false
                     updateConnectionStatus(this@MqttService, false)
+                    
+                    // ⭐ 修复：添加自动重连机制（与MainActivity保持一致）
+                    val configManager = ConfigManager.getInstance(this@MqttService)
+                    if (configManager.hasSavedConfig()) {
+                        Log.d("MqttService", "Scheduling auto-reconnect in 5 seconds...")
+                        // 使用Handler延迟重连
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            if (!isConnected && !isConnecting) {
+                                Log.d("MqttService", "Attempting auto-reconnect...")
+                                connectMqttInBackground()
+                            }
+                        }, 5000)
+                    }
                 }
                 
                 override fun messageArrived(topic: String?, message: org.eclipse.paho.client.mqttv3.MqttMessage?) {
