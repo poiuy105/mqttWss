@@ -85,6 +85,10 @@ class MqttService : Service() {
     private var mConnection: Connection? = null
     private var isConnecting = false
     
+    // ⭐ P1修复：延迟任务管理器（防止内存泄漏）
+    private val delayedTaskHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val delayedTasks = mutableListOf<Runnable>()
+    
     // ⭐ P0修复：添加Binder以暴露Service实例给Activity
     private val binder = LocalBinder()
     
@@ -252,14 +256,18 @@ class MqttService : Service() {
                     isConnected = false
                     updateConnectionStatus(this@MqttService, false)
                     
-                    // ⭐ 修复：添加自动重连机制（与MainActivity保持一致）
+                    // ⭐ P1修复：添加自动重连机制（使用postDelayedTask防止内存泄漏）
                     val configManager = ConfigManager.getInstance(this@MqttService)
                     if (configManager.hasSavedConfig()) {
                         Log.d("MqttService", "Scheduling auto-reconnect in 5 seconds...")
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        postDelayedTask({
                             if (!isConnected && !isConnecting) {
-                                Log.d("MqttService", "Attempting auto-reconnect...")
-                                connectMqttInBackground()
+                                try {
+                                    Log.d("MqttService", "Attempting auto-reconnect...")
+                                    connectMqttInBackground()
+                                } catch (e: Exception) {
+                                    Log.e("MqttService", "Auto-reconnect failed: ${e.message}", e)
+                                }
                             }
                         }, 5000)
                     }
@@ -300,6 +308,34 @@ class MqttService : Service() {
         } catch (e: Exception) {
             Log.e("MqttService", "Failed to disconnect: ${e.message}", e)
         }
+    }
+    
+    /**
+     * ⭐ P1修复：安全地执行延迟任务，防止内存泄漏
+     */
+    private fun postDelayedTask(runnable: Runnable, delayMillis: Long) {
+        val taskWrapper = object : Runnable {
+            override fun run() {
+                try {
+                    runnable.run()
+                } finally {
+                    delayedTasks.remove(this)
+                }
+            }
+        }
+        delayedTasks.add(taskWrapper)
+        delayedTaskHandler.postDelayed(taskWrapper, delayMillis)
+    }
+    
+    /**
+     * ⭐ P1修复：取消所有延迟任务（在onDestroy时调用）
+     */
+    private fun cancelAllDelayedTasks() {
+        delayedTasks.forEach { task ->
+            delayedTaskHandler.removeCallbacks(task)
+        }
+        delayedTasks.clear()
+        Log.d("MqttService", "All delayed tasks cancelled")
     }
     
     /**
@@ -404,5 +440,30 @@ class MqttService : Service() {
             isConnecting = false
             Log.e("MqttService", "Failed to create MQTT client: ${e.message}", e)
         }
+    }
+    
+    /**
+     * ⭐ P1修复：Service销毁时清理所有资源
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        
+        // ⭐ P1修复：取消所有延迟任务，防止内存泄漏
+        cancelAllDelayedTasks()
+        
+        // 断开MQTT连接
+        try {
+            if (mClient != null && mClient!!.isConnected) {
+                Log.d("MqttService", "Service destroying, disconnecting MQTT...")
+                mClient?.disconnect()
+            }
+            mClient = null
+            mConnection = null
+        } catch (e: Exception) {
+            Log.e("MqttService", "Failed to disconnect: ${e.message}", e)
+        }
+        
+        instance = null
+        Log.d("MqttService", "Service destroyed, all resources released")
     }
 }
