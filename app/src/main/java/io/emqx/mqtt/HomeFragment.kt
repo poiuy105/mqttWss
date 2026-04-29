@@ -119,7 +119,9 @@ class HomeFragment : BaseFragment() {
             main.addMqttStatusListener { connected ->
                 updateMqttStatus(connected)
             }
-            updateMqttStatus(main.notConnected(false) == false)
+            // ⭐ 修复：初始化MQTT状态（检查实际连接状态）
+            val isConnected = main.getMqttClient()?.isConnected == true
+            updateMqttStatus(isConnected)
 
             // 设置日志回调：MainActivity的日志写入此容器
             main.setLogCallbackToHome { message ->

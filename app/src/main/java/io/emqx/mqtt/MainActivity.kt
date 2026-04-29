@@ -149,6 +149,11 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         networkClickTrigger = trigger
     }
 
+    // ⭐ 新增：获取MQTT客户端实例（供Fragment检查连接状态）
+    fun getMqttClient(): org.eclipse.paho.client.mqttv3.MqttAsyncClient? {
+        return mClient
+    }
+
     // ========== 全局logBuilder（用于Clear/Copy操作）==========
     val globalLogBuilder = StringBuilder()
 
