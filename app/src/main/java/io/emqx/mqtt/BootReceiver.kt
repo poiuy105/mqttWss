@@ -52,20 +52,11 @@ class BootReceiver : BroadcastReceiver() {
         Thread {
             Thread.sleep(5000)
             
-            val enabledServices = try {
-                Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                )
-            } catch (e: Exception) {
-                null
-            }
-            
-            val isCurrentlyEnabled = enabledServices?.contains(VoiceAccessibilityService.SERVICE_COMPONENT) == true
+            // ⭐ 优化：使用AccessibilityUtils统一检测
+            val isCurrentlyEnabled = AccessibilityUtils.isServiceEnabled(context)
             
             if (isCurrentlyEnabled) {
-                CapturedTextManager.isEnabled = true
-                CapturedTextManager.init(context)
+                AccessibilityUtils.checkAndEnableCapturedText(context)
                 Log.d("BootReceiver", "Delayed check: Accessibility confirmed, CapturedTextManager enabled")
             } else {
                 Log.w("BootReceiver", "Delayed check: Accessibility still not ready")
@@ -122,17 +113,8 @@ class BootReceiver : BroadcastReceiver() {
         val wasEnabled = sp.getBoolean("a11y_was_enabled", false)
         val wasReset = sp.getBoolean("a11y_was_reset", false)
     
-        val enabledServices = try {
-            Settings.Secure.getString(
-                context.contentResolver,
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            )
-        } catch (e: Exception) {
-            Log.e("BootReceiver", "Cannot read accessibility setting: ${e.message}")
-            null
-        }
-    
-        val isCurrentlyEnabled = enabledServices?.contains(VoiceAccessibilityService.SERVICE_COMPONENT) == true
+        // ⭐ 优化：使用AccessibilityUtils统一检测
+        val isCurrentlyEnabled = AccessibilityUtils.isServiceEnabled(context)
     
         Log.d("BootReceiver", "A11y check: wasEnabled=$wasEnabled, wasReset=$wasReset, currentlyEnabled=$isCurrentlyEnabled")
     
@@ -147,10 +129,8 @@ class BootReceiver : BroadcastReceiver() {
             }
             isCurrentlyEnabled -> {
                 Log.i("BootReceiver", "✅ Accessibility service still enabled")
-                // ⭐ 新增：如果无障碍已启用，确保CapturedTextManager也被启用
-                CapturedTextManager.isEnabled = true
-                CapturedTextManager.init(context)
-                Log.d("BootReceiver", "Auto-enabled CapturedTextManager")
+                // ⭐ 优化：使用AccessibilityUtils自动启用CapturedTextManager
+                AccessibilityUtils.checkAndEnableCapturedText(context)
                 // AccessibilityService由系统管理，无需手动启动
             }
             else -> {

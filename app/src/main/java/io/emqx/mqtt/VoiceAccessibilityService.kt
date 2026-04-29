@@ -28,8 +28,8 @@ class VoiceAccessibilityService : AccessibilityService() {
         private const val CHANNEL_ID = "byd_acc_service"
         private const val NOTIFY_ID = 10086
 
-        /** 自检间隔：10分钟 */
-        private const val CHECK_INTERVAL_MS = 10 * 60 * 1000L
+        /** 自检间隔：1分钟（优化后，从10分钟缩短） */
+        private const val CHECK_INTERVAL_MS = 1 * 60 * 1000L
 
         fun getInstance(): VoiceAccessibilityService? = instance
     }
@@ -92,12 +92,10 @@ class VoiceAccessibilityService : AccessibilityService() {
         handler.postDelayed(object : Runnable {
             override fun run() {
                 try {
-                    val enabledServices = Settings.Secure.getString(
-                        contentResolver,
-                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                    )
+                    // ⭐ 优化：使用AccessibilityUtils统一检测
+                    val isCurrentlyEnabled = AccessibilityUtils.isServiceEnabled(this@VoiceAccessibilityService)
 
-                    if (enabledServices == null || !enabledServices.contains(SERVICE_COMPONENT)) {
+                    if (!isCurrentlyEnabled) {
                         // 系统抹除了我们的无障碍权限！
                         // ★★★ 尝试自动恢复（仅当App持有 WRITE_SECURE_SETTINGS 权限时有效）★★★
                         val restored = tryAutoRestoreAccessibility()
