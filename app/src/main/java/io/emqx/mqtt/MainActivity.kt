@@ -2,6 +2,9 @@ package io.emqx.mqtt
 
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.os.IBinder
 import java.io.File
 import android.app.Notification
 import android.app.NotificationChannel
@@ -39,7 +42,29 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : AppCompatActivity(), MqttCallback {
-    var mClient: MqttAsyncClient? = null
+    // ⭐ P0修复：不再直接持有mClient，而是通过MqttService获取
+    private var mqttService: MqttService? = null
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as MqttService.LocalBinder
+            mqttService = binder.getService()
+            Log.d("MainActivity", "MqttService connected")
+        }
+        
+        override fun onServiceDisconnected(name: ComponentName?) {
+            mqttService = null
+            Log.w("MainActivity", "MqttService disconnected")
+        }
+    }
+    
+    // Property代理，从MqttService获取客户端
+    var mClient: MqttAsyncClient?
+        get() = mqttService?.getMqttClient()
+        set(value) {
+            // 不允许直接设置，只能通过MqttService管理
+            Log.w("MainActivity", "mClient should be managed by MqttService")
+        }
+    
     private var mConnection: Connection? = null
     private val mFragmentList: MutableList<Fragment> = ArrayList()
     private var isConnecting = false
@@ -1227,6 +1252,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         startMqttConnectionMonitor()
         Log.d("MainActivity", "App resumed, MQTT connection monitor started")
     }
+    
+    override fun onStart() {
+        super.onStart()
+        // ⭐ P0修复：绑定MqttService以获取MQTT客户端引用
+        Intent(this, MqttService::class.java).also { intent ->
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
+        Log.d("MainActivity", "Binding to MqttService")
+    }
 
     override fun onPause() {
         super.onPause()
@@ -1237,6 +1271,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     override fun onStop() {
         super.onStop()
+        // ⭐ P0修复：解绑MqttService
+        try {
+            unbindService(serviceConnection)
+            Log.d("MainActivity", "Unbound from MqttService")
+        } catch (e: IllegalArgumentException) {
+            // Service未绑定，忽略
+            Log.w("MainActivity", "Service not bound: ${e.message}")
+        }
+        
         // 注意：不在 onStop 时停止 MQTT 监控器
         // MQTT 需要在后台持续发送心跳以保持连接
         // 如果停止监控器，服务器会在 Keep Alive 超时后断开连接（约60-70秒）

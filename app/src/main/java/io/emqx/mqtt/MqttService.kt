@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -83,8 +84,17 @@ class MqttService : Service() {
     private var mClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient? = null
     private var mConnection: Connection? = null
     private var isConnecting = false
+    
+    // ⭐ P0修复：添加Binder以暴露Service实例给Activity
+    private val binder = LocalBinder()
+    
+    inner class LocalBinder : Binder() {
+        fun getService(): MqttService = this@MqttService
+    }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder {
+        return binder
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -200,6 +210,20 @@ class MqttService : Service() {
 
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+    
+    /**
+     * ⭐ P0修复：获取MQTT客户端实例（供Activity使用）
+     */
+    fun getMqttClient(): org.eclipse.paho.client.mqttv3.MqttAsyncClient? {
+        return mClient
+    }
+    
+    /**
+     * ⭐ P0修复：获取连接状态
+     */
+    fun isMqttConnected(): Boolean {
+        return mClient?.isConnected == true
     }
     
     /**
