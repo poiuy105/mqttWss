@@ -182,9 +182,9 @@ object HomeAssistantIntegration {
     }
     
     /**
-     * 发布电池电量到 MQTT
+     * ⭐ P1-2修复：发布电池电量到 MQTT（移除对MainActivity的依赖）
      */
-    fun publishBatteryLevel(context: Context, mqttClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient?, mainActivity: MainActivity?) {
+    fun publishBatteryLevel(context: Context, mqttClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient?) {
         if (mqttClient == null || !mqttClient.isConnected) {
             Log.w(TAG, "MQTT not connected, skip battery report")
             return
@@ -210,23 +210,7 @@ object HomeAssistantIntegration {
             attrsMessage.isRetained = false
             mqttClient.publish(attrsTopic, attrsMessage, null, null)
             
-            // 记录到 publish 历史
-            mainActivity?.let { activity ->
-                val level = batteryInfo["level"]
-                val status = batteryInfo["status"]
-                val logMessage = "[Auto] Battery: ${level}% (${status})"
-                activity.appendLog(logMessage)
-                
-                // 添加到 publish 历史记录
-                val publish = Publish(
-                    topic = stateTopic,
-                    payload = levelValue,
-                    qos = 1,
-                    isRetained = false
-                )
-                activity.addPublishHistory(publish)
-            }
-            
+            // ⭐ 修复：不再记录到MainActivity日志，只输出到logcat
             Log.d(TAG, "Published battery level: $levelValue% (QoS=1, Retain=false)")
             
         } catch (e: Exception) {
@@ -235,19 +219,23 @@ object HomeAssistantIntegration {
     }
     
     /**
-     * 启动定期电池上报
+     * ⭐ P1-2修复：启动定期电池上报（防止内存泄漏）
      */
-    fun startBatteryReporting(context: Context, mqttClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient?, mainActivity: MainActivity?) {
+    fun startBatteryReporting(context: Context, mqttClient: org.eclipse.paho.client.mqttv3.MqttAsyncClient?) {
         stopBatteryReporting()
         
+        // ⭐ 修复：使用ApplicationContext防止泄漏
+        val appContext = context.applicationContext
+        
         // 先立即上报一次
-        publishBatteryLevel(context, mqttClient, mainActivity)
+        publishBatteryLevel(appContext, mqttClient)
         
         // 然后启动定时器，60秒后开始第一次定时上报
         batteryTimer = Timer("BatteryReporter")
         batteryTimer?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
-                publishBatteryLevel(context, mqttClient, mainActivity)
+                // ⭐ 修复：只使用ApplicationContext，不持有Activity引用
+                publishBatteryLevel(appContext, mqttClient)
             }
         }, BATTERY_REPORT_INTERVAL, BATTERY_REPORT_INTERVAL)  // 延迟60秒开始，然后每60秒一次
         

@@ -777,8 +777,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                     // 发布 Home Assistant 自动发现配置
                     HomeAssistantIntegration.publishDiscoveryConfig(this@MainActivity, mClient)
                     
-                    // 启动定期电池上报（会自动立即上报一次）
-                    HomeAssistantIntegration.startBatteryReporting(this@MainActivity, mClient, this@MainActivity)
+                    // ⭐ P1-2修复：启动定期电池上报（防止内存泄漏）
+                    HomeAssistantIntegration.startBatteryReporting(this@MainActivity, mClient)
                     
                     // 启动MQTT连接状态监控
                     startMqttConnectionMonitor()
@@ -1292,6 +1292,55 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // MQTT 需要在后台持续发送心跳以保持连接
         // 如果停止监控器，服务器会在 Keep Alive 超时后断开连接（约60-70秒）
         Log.d("MainActivity", "App stopped, but MQTT monitor continues running")
+    }
+    
+    /**
+     * ⭐ P1-3修复：处理内存压力，释放非必要资源
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        
+        when (level) {
+            TRIM_MEMORY_RUNNING_MODERATE -> {
+                Log.d("MainActivity", "Memory pressure: TRIM_MEMORY_RUNNING_MODERATE")
+            }
+            TRIM_MEMORY_RUNNING_LOW -> {
+                Log.w("MainActivity", "Memory pressure: TRIM_MEMORY_RUNNING_LOW, clearing caches")
+                // 清理非关键缓存
+                ttsPlayer?.clearCache()
+            }
+            TRIM_MEMORY_RUNNING_CRITICAL -> {
+                Log.e("MainActivity", "Memory pressure: TRIM_MEMORY_RUNNING_CRITICAL, aggressive cleanup")
+                // 激进清理：停止TTS、清除所有缓存
+                ttsPlayer?.stop()
+                ttsPlayer?.clearCache()
+                floatWindowManager?.hide()
+            }
+            TRIM_MEMORY_BACKGROUND -> {
+                Log.d("MainActivity", "App moved to background, memory trimmed")
+            }
+            TRIM_MEMORY_MODERATE, TRIM_MEMORY_COMPLETE -> {
+                Log.w("MainActivity", "Background memory pressure: level=$level")
+                // 后台模式下，考虑释放更多资源
+                ttsPlayer?.clearCache()
+            }
+        }
+    }
+    
+    /**
+     * ⭐ P1-3修复：系统低内存警告
+     */
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Log.e("MainActivity", "⚠️ System low memory warning!")
+        
+        // 紧急清理：停止所有非必要操作
+        ttsPlayer?.stop()
+        ttsPlayer?.clearCache()
+        floatWindowManager?.hide()
+        
+        // 建议GC
+        System.gc()
     }
 
     /**

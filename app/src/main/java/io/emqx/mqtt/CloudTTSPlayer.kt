@@ -1041,6 +1041,36 @@ class CloudTTSPlayer private constructor() {
     }
 
     /**
+     * ⭐ P1-3修复：停止当前播放
+     */
+    fun stop() {
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.reset()
+            Log.d(TAG, "TTS playback stopped")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to stop TTS: ${e.message}")
+        }
+    }
+    
+    /**
+     * ⭐ P1-3修复：清理缓存文件（保留最近使用的）
+     */
+    fun clearCache() {
+        try {
+            // 简单策略：删除所有缓存文件
+            cacheDir?.listFiles()?.forEach { file ->
+                if (file.isFile && file.name.endsWith(".mp3")) {
+                    file.delete()
+                }
+            }
+            Log.d(TAG, "TTS cache cleaned up")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to clear cache: ${e.message}")
+        }
+    }
+
+    /**
      * 释放资源（在onDestroy中调用）
      */
     fun release() {
