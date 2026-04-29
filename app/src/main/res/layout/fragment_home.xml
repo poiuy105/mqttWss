@@ -261,20 +261,18 @@
                 android:textSize="@dimen/text_h2"
                 android:textStyle="bold" />
 
-            <!-- ⭐ P1优化：使用CardView包裹Device Details -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Device Details -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_sm"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="@dimen/card_elevation"
-                app:cardBackgroundColor="#F5F5F5">
+                android:background="#F5F5F5"
+                android:padding="@dimen/spacing_sm">
 
                 <TextView
                     android:id="@+id/device_details"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/spacing_sm"
                     android:text="Loading device info..."
                     android:textColor="#333333"
                     android:textSize="@dimen/text_small"
@@ -282,7 +280,7 @@
                     android:maxLines="15"
                     android:ellipsize="end" />
 
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
