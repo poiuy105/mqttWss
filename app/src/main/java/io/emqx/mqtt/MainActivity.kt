@@ -1080,16 +1080,18 @@ class MainActivity : AppCompatActivity(), MqttCallback {
      * ⭐ 修复：安全地执行延迟任务，防止内存泄漏
      */
     private fun postDelayedTask(runnable: Runnable, delayMillis: Long) {
-        // 包装runnable，添加到跟踪列表
-        val wrappedRunnable = Runnable {
-            try {
-                runnable.run()
-            } finally {
-                delayedTasks.remove(wrappedRunnable)
+        // 使用对象包装，以便在finally中引用
+        val taskWrapper = object : Runnable {
+            override fun run() {
+                try {
+                    runnable.run()
+                } finally {
+                    delayedTasks.remove(this)
+                }
             }
         }
-        delayedTasks.add(wrappedRunnable)
-        delayedTaskHandler.postDelayed(wrappedRunnable, delayMillis)
+        delayedTasks.add(taskWrapper)
+        delayedTaskHandler.postDelayed(taskWrapper, delayMillis)
     }
     
     /**
