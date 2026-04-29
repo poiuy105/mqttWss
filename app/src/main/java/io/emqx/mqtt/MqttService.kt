@@ -213,17 +213,93 @@ class MqttService : Service() {
     }
     
     /**
-     * ⭐ P0修复：获取MQTT客户端实例（供Activity使用）
+     * ⭐ P0-1修复：获取MQTT客户端实例（供Activity使用）
      */
     fun getMqttClient(): org.eclipse.paho.client.mqttv3.MqttAsyncClient? {
         return mClient
     }
     
     /**
-     * ⭐ P0修复：获取连接状态
+     * ⭐ P0-1修复：获取连接状态
      */
     fun isMqttConnected(): Boolean {
         return mClient?.isConnected == true
+    }
+    
+    /**
+     * ⭐ P0-1修复：公开的连接方法，供MainActivity调用
+     */
+    fun connect(connection: Connection, listener: IMqttActionListener?) {
+        if (isConnecting) {
+            Log.d("MqttService", "Already connecting, ignore")
+            return
+        }
+        
+        if (mClient != null && mClient!!.isConnected) {
+            Log.d("MqttService", "Already connected, ignore duplicate connect request")
+            return
+        }
+        
+        Log.d("MqttService", "Starting MQTT connection from Activity...")
+        isConnecting = true
+        mConnection = connection
+        mClient = connection.getMqttClient()
+        
+        try {
+            mClient?.setCallback(object : org.eclipse.paho.client.mqttv3.MqttCallback {
+                override fun connectionLost(cause: Throwable?) {
+                    Log.e("MqttService", "Connection lost: ${cause?.message}")
+                    isConnected = false
+                    updateConnectionStatus(this@MqttService, false)
+                    
+                    // ⭐ 修复：添加自动重连机制（与MainActivity保持一致）
+                    val configManager = ConfigManager.getInstance(this@MqttService)
+                    if (configManager.hasSavedConfig()) {
+                        Log.d("MqttService", "Scheduling auto-reconnect in 5 seconds...")
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            if (!isConnected && !isConnecting) {
+                                Log.d("MqttService", "Attempting auto-reconnect...")
+                                connectMqttInBackground()
+                            }
+                        }, 5000)
+                    }
+                }
+                
+                override fun messageArrived(topic: String?, message: org.eclipse.paho.client.mqttv3.MqttMessage?) {
+                    Log.d("MqttService", "Message arrived on topic: $topic")
+                }
+                
+                override fun deliveryComplete(token: org.eclipse.paho.client.mqttv3.IMqttDeliveryToken?) {
+                    Log.d("MqttService", "Delivery complete")
+                }
+            })
+            
+            Log.d("MqttService", "Calling connect()...")
+            mClient?.connect(connection.mqttConnectOptions, null, listener)
+        } catch (e: Exception) {
+            isConnecting = false
+            Log.e("MqttService", "Failed to connect: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * ⭐ P0-1修复：公开的断开连接方法，供MainActivity调用
+     */
+    fun disconnect() {
+        try {
+            if (mClient != null && mClient!!.isConnected) {
+                Log.d("MqttService", "Disconnecting MQTT from Activity...")
+                mClient?.disconnect()
+            }
+            mClient = null
+            mConnection = null
+            isConnected = false
+            isConnecting = false
+            updateConnectionStatus(this, false)
+            Log.d("MqttService", "MQTT disconnected")
+        } catch (e: Exception) {
+            Log.e("MqttService", "Failed to disconnect: ${e.message}", e)
+        }
     }
     
     /**

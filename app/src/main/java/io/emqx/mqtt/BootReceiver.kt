@@ -82,22 +82,37 @@ class BootReceiver : BroadcastReceiver() {
      */
     private fun startMqttBackgroundService(context: Context) {
         try {
-            // 启动MqttService作为前台服务
-            val serviceIntent = Intent(context, MqttService::class.java).apply {
-                action = MqttService.ACTION_START
-            }
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // ⭐ P0-2修复：Android 12+使用JobScheduler代替直接启动前台服务
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Android 12+ (API 31+) 使用JobScheduler
+                val jobScheduler = context.getSystemService(android.app.job.JobScheduler::class.java)
+                val componentName = android.content.ComponentName(context, MqttJobService::class.java)
+                val jobInfo = android.app.job.JobInfo.Builder(1, componentName)
+                    .setPersisted(true)  // 重启后保留
+                    .setRequiredNetworkType(android.app.job.JobInfo.NETWORK_TYPE_ANY)
+                    .setOverrideDeadline(3000)  // 最多延迟3秒执行
+                    .build()
+                
+                val result = jobScheduler?.schedule(jobInfo)
+                if (result == android.app.job.JobScheduler.RESULT_SUCCESS) {
+                    Log.d("BootReceiver", "JobScheduler scheduled successfully (Android 12+)")
+                } else {
+                    Log.e("BootReceiver", "Failed to schedule job")
+                    showAutoStartNotification(context)
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Android 8.0-11 使用startForegroundService
+                val serviceIntent = Intent(context, MqttService::class.java).apply {
+                    action = MqttService.ACTION_START
+                }
                 context.startForegroundService(serviceIntent)
+                Log.d("BootReceiver", "MqttService started via startForegroundService (Android 8-11)")
             } else {
+                // Android 7.x及以下直接启动Service
+                val serviceIntent = Intent(context, MqttService::class.java)
                 context.startService(serviceIntent)
+                Log.d("BootReceiver", "MqttService started via startService (Android 7-)")
             }
-            
-            Log.d("BootReceiver", "MqttService started in background")
-            
-            // ⭐ 修复：不再启动MainActivity，由MqttService直接处理MQTT连接（参考GPSLogger模式）
-            // Thread { ... }.start()
-            
         } catch (e: Exception) {
             Log.e("BootReceiver", "Failed to start background service: ${e.message}", e)
             // 降级方案：显示通知让用户手动点击

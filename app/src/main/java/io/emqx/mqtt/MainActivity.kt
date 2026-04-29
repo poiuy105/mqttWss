@@ -745,21 +745,23 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             return
         }
 
-        if (mClient != null && mClient!!.isConnected) {
+        // ⭐ P0-1修复：检查MQTT是否已连接（通过MqttService）
+        val isConnected = mqttService?.isMqttConnected() == true
+        if (isConnected) {
             appendLog("Already connected, ignore duplicate connect request")
             Toast.makeText(this, "Already connected", Toast.LENGTH_SHORT).show()
             return
         }
 
         isConnecting = true
-        mConnection = connection
-        mClient = connection.getMqttClient()
+        mConnection = connection  // 保留引用用于disconnect等方法
 
         try {
-            mClient?.setCallback(this)
-            appendLog("Calling connect()...")
+            appendLog("Calling MqttService.connect()...")
             MqttService.updateConnectionStatus(this, false)
-            mClient?.connect(connection.mqttConnectOptions, null, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
+            
+            // ⭐ P0-1修复：委托给MqttService进行连接
+            mqttService?.connect(connection, object : org.eclipse.paho.client.mqttv3.IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     isConnecting = false
                     appendLog("=== CONNECT SUCCESS ===")
@@ -830,12 +832,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         HomeAssistantIntegration.stopBatteryReporting()
         
         try {
-            mClient?.disconnect()
-            mClient = null
+            // ⭐ P0-1修复：委托给MqttService断开连接
+            mqttService?.disconnect()
             mConnection = null
             MqttService.updateConnectionStatus(this, false)
             notifyMqttStatusChanged(false)
-        } catch (e: org.eclipse.paho.client.mqttv3.MqttException) {
+        } catch (e: Exception) {
             MqttService.updateConnectionStatus(this, false)
             notifyMqttStatusChanged(false)
             e.printStackTrace()
@@ -887,7 +889,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     fun notConnected(showNotify: Boolean): Boolean {
-        if (mClient == null || !mClient!!.isConnected) {
+        // ⭐ P0-1修复：通过MqttService检查连接状态
+        val isConnected = mqttService?.isMqttConnected() == true
+        if (!isConnected) {
             if (showNotify) {
                 ToastUtils.showShort(this, "Client is not connected")
             }
@@ -1422,19 +1426,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         // 停止电池上报
         HomeAssistantIntegration.stopBatteryReporting()
         
-        // 断开 MQTT 连接以触发 Last Will
-        if (mClient != null && mClient!!.isConnected) {
-            try {
+        // ⭐ P0-1修复：断开 MQTT 连接以触发 Last Will（委托给MqttService）
+        try {
+            val isConnected = mqttService?.isMqttConnected() == true
+            if (isConnected) {
                 appendLog("App destroying, disconnecting MQTT to trigger Last Will...")
-                mClient?.disconnect()
-                mClient = null
+                mqttService?.disconnect()
                 mConnection = null
                 // 重要：同步更新 MqttService 的连接状态，避免 UI 显示不一致
                 MqttService.updateConnectionStatus(this, false)
                 notifyMqttStatusChanged(false)
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Failed to disconnect MQTT", e)
             }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to disconnect MQTT", e)
         }
         
         // 释放云端TTS资源

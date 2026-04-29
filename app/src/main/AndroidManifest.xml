@@ -46,6 +46,11 @@
         <service
             android:name=".MqttService"
             android:exported="false" />
+        <!-- ⭐ P0-2修复：添加JobService用于Android 12+后台启动 -->
+        <service
+            android:name=".MqttJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
         <receiver
             android:name=".BootReceiver"
             android:exported="true"
