@@ -275,6 +275,13 @@ class MqttService : Service() {
                 
                 override fun messageArrived(topic: String?, message: org.eclipse.paho.client.mqttv3.MqttMessage?) {
                     Log.d("MqttService", "Message arrived on topic: $topic")
+                    
+                    // ⭐ 修复：发布事件到EventBus，让所有观察者都能收到
+                    if (topic != null && message != null) {
+                        val payload = String(message.payload)
+                        MqttEventBus.publishMessageArrived(topic, payload)
+                        Log.d("MqttService", "Published to EventBus: $topic")
+                    }
                 }
                 
                 override fun deliveryComplete(token: org.eclipse.paho.client.mqttv3.IMqttDeliveryToken?) {
@@ -400,7 +407,13 @@ class MqttService : Service() {
                 
                 override fun messageArrived(topic: String?, message: org.eclipse.paho.client.mqttv3.MqttMessage?) {
                     Log.d("MqttService", "Message arrived on topic: $topic")
-                    // 这里可以处理接收到的消息
+                    
+                    // ⭐ 修复：发布事件到EventBus，让所有观察者都能收到
+                    if (topic != null && message != null) {
+                        val payload = String(message.payload)
+                        MqttEventBus.publishMessageArrived(topic, payload)
+                        Log.d("MqttService", "Published to EventBus: $topic")
+                    }
                 }
                 
                 override fun deliveryComplete(token: org.eclipse.paho.client.mqttv3.IMqttDeliveryToken?) {
