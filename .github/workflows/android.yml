@@ -30,11 +30,16 @@ jobs:
     # ⭐ 新增：设置release签名（如果配置了GitHub Secrets）
     - name: Setup release signing
       if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+      env:
+        RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       run: |
         echo "🔐 Setting up release signing..."
         
         # 解码keystore文件
-        echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/release-keystore.jks
+        echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > app/release-keystore.jks
         
         # 验证文件是否创建成功
         if [ -f app/release-keystore.jks ]; then
@@ -47,9 +52,9 @@ jobs:
         
         # 设置环境变量供build.gradle使用
         echo "RELEASE_KEYSTORE_PATH=release-keystore.jks" >> $GITHUB_ENV
-        echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-        echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
-        echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
+        echo "RELEASE_KEYSTORE_PASSWORD=$RELEASE_KEYSTORE_PASSWORD" >> $GITHUB_ENV
+        echo "RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS" >> $GITHUB_ENV
+        echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> $GITHUB_ENV
         
         echo "✅ Release signing configured successfully"
 
