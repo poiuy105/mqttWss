@@ -28,20 +28,21 @@ android {
         
         release {
             // 读取 GitHub Secrets 传入的环境变量
-            storeFile file("release-keystore.jks")
             def storePassword = System.getenv("RELEASE_STORE_PASSWORD")
             def keyAlias = System.getenv("RELEASE_KEY_ALIAS")
             def keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
             
-            if (storePassword != null && keyAlias != null && keyPassword != null) {
+            if (storePassword && storePassword.length() > 0 && keyAlias && keyAlias.length() > 0 && keyPassword && keyPassword.length() > 0) {
+                storeFile file("release-keystore.jks")
                 storePassword storePassword
                 keyAlias keyAlias
                 keyPassword keyPassword
             } else {
                 // 如果没有配置签名，使用debug签名（仅用于测试）
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+                storeFile file("debug.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
             }
         }
     }
