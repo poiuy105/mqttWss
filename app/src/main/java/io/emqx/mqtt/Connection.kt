@@ -1,9 +1,13 @@
 package io.emqx.mqtt
 
 import android.content.Context
+import android.util.Log
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import java.security.KeyStore
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
 
 class Connection(
     private val context: Context,
@@ -53,13 +57,35 @@ class Connection(
             if (protocol == "SSL" || protocol == "WSS") {
                 try {
                     if (allowUntrusted) {
+                        // ⭐ allowUntrusted=true：允许自签名证书（不验证证书链）
+                        Log.d("Connection", "Using insecure socket factory (allowUntrusted=true)")
                         options.socketFactory = SSLUtils.getInsecureSocketFactory()
                     } else {
-                        options.socketFactory =
-                            SSLUtils.getSingleSocketFactory(context.resources.openRawResource(R.raw.cacert))
+                        // ⭐ allowUntrusted=false：使用系统默认CA证书库（信任标准CA）
+                        Log.d("Connection", "Using system default CA certificates (allowUntrusted=false)")
+                        
+                        val trustManagerFactory = TrustManagerFactory.getInstance(
+                            TrustManagerFactory.getDefaultAlgorithm()
+                        )
+                        trustManagerFactory.init(null as KeyStore?)  // null表示使用系统默认CA证书库
+                        
+                        val sslContext = SSLContext.getInstance("TLSv1.2")
+                        sslContext.init(null, trustManagerFactory.trustManagers, null)
+                        options.socketFactory = sslContext.socketFactory
                     }
                 } catch (e: Exception) {
+                    Log.e("Connection", "Failed to create SSL socket factory: ${e.message}", e)
                     e.printStackTrace()
+                    
+                    // ⭐ 降级处理：如果创建SSL失败，且allowUntrusted=true，尝试使用不安全模式
+                    if (allowUntrusted) {
+                        try {
+                            Log.w("Connection", "Fallback to insecure socket factory")
+                            options.socketFactory = SSLUtils.getInsecureSocketFactory()
+                        } catch (e2: Exception) {
+                            Log.e("Connection", "Fallback also failed: ${e2.message}", e2)
+                        }
+                    }
                 }
             }
             if (username.isNotEmpty()) {
