@@ -6,6 +6,8 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import java.util.ArrayList
@@ -125,25 +127,51 @@ class SubscriptionFragment : BaseFragment() {
     }
 
     private fun saveSubscriptions() {
-        val subs = mSubscriptionList.joinToString(";") { "${it.topic},${it.qos},${it.lastMessage}" }
-        mConfigManager.subscriptionHistory = subs
+        // ⭐ 修复：使用Gson序列化包含消息历史的完整Subscription对象
+        val gson = Gson()
+        val json = gson.toJson(mSubscriptionList)
+        mConfigManager.subscriptionHistory = json
+        Log.d("SubscriptionFragment", "Saved ${mSubscriptionList.size} subscriptions with history")
     }
 
     private fun loadSubscriptions() {
         val saved = mConfigManager.subscriptionHistory
         if (saved.isNotEmpty()) {
-            mSubscriptionList.clear()
-            saved.split(";").forEach { item ->
-                val parts = item.split(",")
-                if (parts.size >= 2) {
-                    val topic = parts[0]
-                    val qos = parts[1].toIntOrNull() ?: 0
-                    val lastMessage = if (parts.size >= 3) parts[2] else ""
-                    mSubscriptionList.add(Subscription(topic, qos, lastMessage))
-                }
+            try {
+                // ⭐ 修复：使用Gson反序列化包含消息历史的完整Subscription对象
+                val gson = Gson()
+                val type = object : TypeToken<ArrayList<Subscription>>() {}.type
+                val loadedList: ArrayList<Subscription> = gson.fromJson(saved, type)
+                
+                mSubscriptionList.clear()
+                mSubscriptionList.addAll(loadedList)
+                mAdapter?.notifyDataSetChanged()
+                
+                Log.d("SubscriptionFragment", "Loaded ${mSubscriptionList.size} subscriptions with history")
+            } catch (e: Exception) {
+                Log.e("SubscriptionFragment", "Failed to load subscriptions: ${e.message}", e)
+                // 降级方案：尝试旧格式解析
+                loadSubscriptionsLegacy(saved)
             }
-            mAdapter?.notifyDataSetChanged()
         }
+    }
+    
+    /**
+     * ⭐ 降级方案：兼容旧版本的简单格式（topic,qos,lastMessage）
+     */
+    private fun loadSubscriptionsLegacy(saved: String) {
+        mSubscriptionList.clear()
+        saved.split(";").forEach { item ->
+            val parts = item.split(",")
+            if (parts.size >= 2) {
+                val topic = parts[0]
+                val qos = parts[1].toIntOrNull() ?: 0
+                val lastMessage = if (parts.size >= 3) parts[2] else ""
+                mSubscriptionList.add(Subscription(topic, qos, lastMessage))
+            }
+        }
+        mAdapter?.notifyDataSetChanged()
+        Log.d("SubscriptionFragment", "Loaded ${mSubscriptionList.size} subscriptions (legacy format)")
     }
     
     /**
@@ -174,11 +202,14 @@ class SubscriptionFragment : BaseFragment() {
             }
             
             if (subscription != null) {
-                subscription.lastMessage = message
+                // ⭐ 新增：添加到历史记录（自动维护最多5条，包含时间戳）
+                subscription.addMessageToHistory(message)
+                
                 val index = mSubscriptionList.indexOf(subscription)
                 if (index != -1) {
                     mAdapter?.notifyItemChanged(index)
                     Log.d("SubscriptionFragment", "✅ Updated subscription for topic: $normalizedTopic")
+                    Log.d("SubscriptionFragment", "History size: ${subscription.messageHistory.size}")
                 }
                 saveSubscriptions()
             } else {

@@ -26,7 +26,9 @@ class SubscriptionRecyclerViewAdapter(
         val item = mValues[position]
         holder.mTopicView.text = item.topic
         holder.mQosView.text = "QoS: ${item.qos}"
-        holder.mLastMessageView.text = if (item.lastMessage.isNotEmpty()) "Last: ${item.lastMessage}" else "No messages yet"
+        
+        // ⭐ 新增：显示格式化的历史记录（包含时间戳，最多5条）
+        holder.mLastMessageView.text = item.getFormattedHistory()
 
         val isExpanded = position == expandedPosition
         holder.mActionButtons.visibility = if (isExpanded) View.VISIBLE else View.GONE
