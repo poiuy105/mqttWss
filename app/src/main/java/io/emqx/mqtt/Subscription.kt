@@ -1,5 +1,6 @@
 package io.emqx.mqtt
 
+import com.google.gson.annotations.SerializedName
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -7,20 +8,36 @@ import java.util.*
  * 消息记录数据类
  */
 data class MessageRecord(
-    val message: String,
-    val timestamp: Long
+    @SerializedName("message")
+    val message: String = "",
+    @SerializedName("timestamp")
+    val timestamp: Long = 0L
 )
 
 /**
  * 订阅主题数据类
  * ⭐ 新增：支持最近5条消息历史记录和时间戳
+ * ⭐ 修复：添加无参构造函数支持Gson反序列化
  */
-class Subscription(
-    var topic: String, 
-    var qos: Int, 
-    var lastMessage: String = "",
-    val messageHistory: MutableList<MessageRecord> = mutableListOf()
-) {
+class Subscription() {
+    @SerializedName("topic")
+    var topic: String = ""
+    
+    @SerializedName("qos")
+    var qos: Int = 0
+    
+    @SerializedName("lastMessage")
+    var lastMessage: String = ""
+    
+    @SerializedName("messageHistory")
+    var messageHistory: MutableList<MessageRecord> = mutableListOf()
+    
+    constructor(topic: String, qos: Int, lastMessage: String = "") : this() {
+        this.topic = topic
+        this.qos = qos
+        this.lastMessage = lastMessage
+    }
+    
     companion object {
         const val MAX_HISTORY_SIZE = 5
     }
