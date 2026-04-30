@@ -276,6 +276,11 @@ class MqttService : Service() {
                 override fun connectionLost(cause: Throwable?) {
                     Log.e("MqttService", "Connection lost: ${cause?.message}")
                     isConnected = false
+                    
+                    // ⭐ 修复Bug：发布断开连接状态到EventBus
+                    MqttEventBus.publishConnectionStatus(false)
+                    Log.d("MqttService", "Published connection status to EventBus: connected=false (connection lost)")
+                    
                     updateConnectionStatus(this@MqttService, false)
                     
                     // ⭐ P1修复：添加自动重连机制（使用postDelayedTask防止内存泄漏）
@@ -419,6 +424,11 @@ class MqttService : Service() {
                 override fun connectionLost(cause: Throwable?) {
                     Log.e("MqttService", "Connection lost: ${cause?.message}")
                     isConnected = false
+                    
+                    // ⭐ 修复Bug：发布断开连接状态到EventBus
+                    MqttEventBus.publishConnectionStatus(false)
+                    Log.d("MqttService", "Published connection status to EventBus: connected=false (connection lost)")
+                    
                     updateConnectionStatus(this@MqttService, false)
                     
                     // ⭐ 修复：添加自动重连机制（与MainActivity保持一致）
@@ -465,6 +475,11 @@ class MqttService : Service() {
                     isConnecting = false
                     isConnected = true
                     Log.d("MqttService", "=== CONNECT SUCCESS ===")
+                    
+                    // ⭐ 修复Bug：发布连接状态到EventBus，让UI能同步更新
+                    MqttEventBus.publishConnectionStatus(true)
+                    Log.d("MqttService", "Published connection status to EventBus: connected=true")
+                    
                     updateConnectionStatus(this@MqttService, true)
                     
                     // 更新通知显示已连接
@@ -478,6 +493,11 @@ class MqttService : Service() {
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     isConnecting = false
                     isConnected = false
+                    
+                    // ⭐ 修复Bug：发布断开连接状态到EventBus
+                    MqttEventBus.publishConnectionStatus(false)
+                    Log.d("MqttService", "Published connection status to EventBus: connected=false")
+                    
                     Log.e("MqttService", "Auto-connect failed: ${exception?.message}", exception)
                     updateConnectionStatus(this@MqttService, false)
                     
