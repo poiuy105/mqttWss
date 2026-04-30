@@ -49,8 +49,9 @@ class SubscriptionFragment : BaseFragment() {
 
         loadSubscriptions()
         
-        // ⭐ 修复：观察者注册移到onResume中，避免重复注册
-        // observeMqttEvents() 将在 onResume 中调用
+        // ⭐ 修复Bug：只在setUpView中注册一次观察者，避免重复注册
+        // viewLifecycleOwner会在Fragment视图销毁时自动移除观察者
+        observeMqttEvents()
     }
 
     private fun showAddSubscriptionDialog() {
@@ -175,16 +176,13 @@ class SubscriptionFragment : BaseFragment() {
     }
     
     /**
-     * ⭐ 修复：每次恢复时重新注册MQTT事件观察者
+     * ⭐ 修复Bug：移除onResume中的重复观察者注册
+     * viewLifecycleOwner会自动管理观察者生命周期，无需手动重新注册
      */
     override fun onResume() {
         super.onResume()
         
-        // ⭐ 修复：每次恢复时重新注册MQTT事件观察者
-        // 因为viewLifecycleOwner可能在Fragment重建后发生变化
-        observeMqttEvents()
-        
-        Log.d("SubscriptionFragment", "onResume: MQTT event observer registered")
+        Log.d("SubscriptionFragment", "onResume called")
     }
 
     fun updateSubscriptionMessage(topic: String, message: String) {
