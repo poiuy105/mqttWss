@@ -1,0 +1,100 @@
+name: Create Release with APKs
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送以v开头的标签时触发，例如 v1.0.0
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # 需要写入权限来创建Release
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    
+    - name: Generate debug keystore
+      run: |
+        keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10950 -dname "CN=Android Debug,O=Android,C=US"
+    
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+    
+    - name: Setup release signing
+      run: |
+        if [ ! -z "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+          echo "Setting up release signing..."
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/release-keystore.jks
+          
+          if [ -f app/release-keystore.jks ]; then
+            echo "Keystore file created"
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
+            echo "Release signing configured successfully"
+          fi
+        else
+          echo "No release keystore configured"
+        fi
+    
+    - name: Build Release APK
+      run: |
+        if [ -f app/release-keystore.jks ]; then
+          ./gradlew assembleRelease
+        else
+          echo "Skipping release build - no keystore"
+        fi
+    
+    - name: Create source code archive
+      run: |
+        # 创建源码压缩包（排除不必要的文件）
+        tar -czf source-code.tar.gz \
+          --exclude='.git' \
+          --exclude='build' \
+          --exclude='*/build' \
+          --exclude='.gradle' \
+          --exclude='*.iml' \
+          --exclude='.idea' \
+          .
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## 📦 MQTT Wss Android App Release
+          
+          ### 包含内容：
+          - 📱 **app-debug.apk** - Debug版本APK（用于测试）
+          - 🔐 **app-release.apk** - Release版本APK（正式版本）
+          - 💻 **source-code.tar.gz** - 完整源代码
+          
+          ### 安装说明：
+          1. 下载对应的APK文件
+          2. 在Android设备上允许安装未知来源应用
+          3. 点击APK文件进行安装
+          
+          ### 注意事项：
+          - Debug版本包含调试信息，适合开发测试
+          - Release版本经过优化，适合正式发布
+          - 源代码包含完整的项目文件和配置
+        files: |
+          app/build/outputs/apk/debug/app-debug.apk
+          app/build/outputs/apk/release/app-release.apk
+          source-code.tar.gz
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
