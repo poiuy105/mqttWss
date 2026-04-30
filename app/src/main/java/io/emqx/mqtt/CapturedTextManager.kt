@@ -133,10 +133,16 @@ object CapturedTextManager {
                                     }
                                 }
                                 
-                                // 2. TTS播报（通过全局TTS管理器，如果有的话）
-                                // 注意：由于context可能是ApplicationContext，无法直接访问Activity的ttsPlayer
-                                // 这里简化处理，只记录日志
-                                Log.d("CapturedTextManager", "Home Assistant response: $speech")
+                                // ⭐ 修复Bug 1：触发TTS播报（通过全局访问方法）
+                                val mainActivity = VoiceAccessibilityService.getInstance()?.let { service ->
+                                    // 尝试从当前运行的Activity中获取MainActivity实例
+                                    // 由于无法直接访问，我们通过EventBus发布事件
+                                    null
+                                }
+                                
+                                // 通过MqttEventBus发布HA响应事件，由MainActivity监听并触发TTS
+                                MqttEventBus.publishMessageArrived("home_assistant/response", speech)
+                                Log.d("CapturedTextManager", "Home Assistant response published via EventBus: $speech")
                             }
                         }
                     }

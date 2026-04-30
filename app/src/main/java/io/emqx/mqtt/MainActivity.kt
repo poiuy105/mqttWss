@@ -81,6 +81,19 @@ class MainActivity : AppCompatActivity(), MqttCallback {
 
     var ttsPlayer: CloudTTSPlayer? = null
     var floatWindowManager: FloatWindowManager? = null
+    
+    // ⭐ 修复：提供全局访问方法，供其他模块触发TTS和浮动窗口
+    fun triggerTTS(text: String, force: Boolean = false) {
+        if (isTTSEnabled) {
+            ttsPlayer?.speak(text, force = force)
+        }
+    }
+    
+    fun triggerFloatWindow(topic: String, payload: String) {
+        if (isFloatWindowEnabled) {
+            floatWindowManager?.showMessage(topic, payload)
+        }
+    }
 
     // ========== 亮屏/解锁广播接收器 ==========
     private var screenReceiver: android.content.BroadcastReceiver? = null
@@ -787,6 +800,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
                         ToastUtils.showShort(this@MainActivity, "Connected!")
                         notifyMqttStatusChanged(true)
                         
+                        // ⭐ 修复Bug 3：通过EventBus发布连接状态，通知HomeFragment
+                        MqttEventBus.publishConnectionStatus(true)
+                        
                         // ⭐ TTS播报MQTT连接状态（无论前台还是后台都播报）
                         ttsPlayer?.speak("MQTT已连接", force = true)
                         
@@ -841,9 +857,15 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             mConnection = null
             MqttService.updateConnectionStatus(this, false)
             notifyMqttStatusChanged(false)
+            
+            // ⭐ 修复Bug 3：通过EventBus发布连接状态，通知HomeFragment
+            MqttEventBus.publishConnectionStatus(false)
         } catch (e: Exception) {
             MqttService.updateConnectionStatus(this, false)
             notifyMqttStatusChanged(false)
+            
+            // ⭐ 修复Bug 3：通过EventBus发布连接状态，通知HomeFragment
+            MqttEventBus.publishConnectionStatus(false)
             e.printStackTrace()
         }
     }
@@ -1035,6 +1057,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "===== MESSAGE ARRIVED =====")
         Log.d("MainActivity", "Topic: $topic")
         Log.d("MainActivity", "Payload: $payload")
+        
+        // ⭐ 修复Bug 2：触发TTS播报和浮动窗口（在后台线程中执行）
+        runOnUiThread {
+            triggerTTS(payload, force = true)
+            triggerFloatWindow(topic, payload)
+        }
         
         // ✅ 通过事件总线通知UI层
         MqttEventBus.publishMessageArrived(topic, payload)
