@@ -1090,55 +1090,6 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         Log.d("MainActivity", "Activity-level MQTT observer registered")
     }
-    
-    /**
-     * ⭐ 修复后台TTS和弹窗：注册MQTT消息广播接收器
-     */
-    private fun registerMqttMessageReceiver() {
-        if (mqttMessageReceiver != null) {
-            Log.w("MainActivity", "MQTT message receiver already registered")
-            return
-        }
-        
-        mqttMessageReceiver = object : android.content.BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == MqttEventBus.ACTION_MQTT_MESSAGE_ARRIVED) {
-                    val topic = intent.getStringExtra(MqttEventBus.EXTRA_TOPIC) ?: ""
-                    val payload = intent.getStringExtra(MqttEventBus.EXTRA_PAYLOAD) ?: ""
-                    
-                    Log.d("MainActivity", "===== MQTT Message Received via Broadcast =====")
-                    Log.d("MainActivity", "Topic: $topic")
-                    Log.d("MainActivity", "Payload length: ${payload.length}")
-                    
-                    // ⭐ 直接触发TTS播报和浮动窗口（不依赖Fragment）
-                    // 这样即使App在后台，也能正常播报和弹窗
-                    triggerTTS(payload, force = true)
-                    triggerFloatWindow(topic, payload)
-                    
-                    Log.d("MainActivity", "TTS and float window triggered from BroadcastReceiver")
-                }
-            }
-        }
-        
-        val filter = android.content.IntentFilter(MqttEventBus.ACTION_MQTT_MESSAGE_ARRIVED)
-        registerReceiver(mqttMessageReceiver, filter)
-        Log.d("MainActivity", "MQTT message broadcast receiver registered")
-    }
-    
-    /**
-     * ⭐ 修复后台TTS和弹窗：注销MQTT消息广播接收器
-     */
-    private fun unregisterMqttMessageReceiver() {
-        try {
-            mqttMessageReceiver?.let {
-                unregisterReceiver(it)
-                mqttMessageReceiver = null
-                Log.d("MainActivity", "MQTT message broadcast receiver unregistered")
-            }
-        } catch (e: IllegalArgumentException) {
-            Log.w("MainActivity", "Receiver not registered: ${e.message}")
-        }
-    }
 
     // ========== MQTT 连接状态监控 ==========
     
