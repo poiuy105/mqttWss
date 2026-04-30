@@ -98,6 +98,10 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     // ========== 亮屏/解锁广播接收器 ==========
     private var screenReceiver: android.content.BroadcastReceiver? = null
     
+    // ⭐ 修复Bug 1：防止从后台切换到前台时重复TTS和弹窗
+    private var lastProcessedMessageTimestamp: Long = 0L
+    private val DUPLICATE_MESSAGE_THRESHOLD = 2000L  // 2秒内的相同消息视为重复
+    
     // ⭐ P0-3修复：保存CapturedTextManager listener引用，以便在onDestroy中移除
     private val capturedTextListener: (CapturedText) -> Unit = { captured ->
         Log.d("MainActivity", "Text captured from ${captured.packageName}: ${captured.text}")
@@ -1079,6 +1083,22 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             Log.d("MainActivity", "===== MQTT Message Received in Activity =====")
             Log.d("MainActivity", "Topic: ${event.topic}")
             Log.d("MainActivity", "Payload length: ${event.payload.length}")
+            Log.d("MainActivity", "Message timestamp: ${event.timestamp}")
+            
+            // ⭐ 修复Bug 1：防止从后台切换到前台时重复TTS和弹窗
+            val currentTime = System.currentTimeMillis()
+            val timeDiff = currentTime - event.timestamp
+            
+            if (timeDiff > DUPLICATE_MESSAGE_THRESHOLD) {
+                // 消息超过2秒，说明是旧消息（从后台恢复时的粘性事件），跳过TTS/弹窗
+                Log.d("MainActivity", "⏭️ Skip duplicate message (age=${timeDiff}ms), UI update only")
+                // 仍然更新SubscriptionFragment的UI，但不触发TTS/弹窗
+                return@observe
+            }
+            
+            // 记录最后处理的消息时间戳
+            lastProcessedMessageTimestamp = event.timestamp
+            Log.d("MainActivity", "✅ Processing new message (age=${timeDiff}ms)")
             
             // ⭐ 修复：通过MqttService触发TTS和浮动窗口（独立于UI，后台也能工作）
             mqttService?.let { service ->

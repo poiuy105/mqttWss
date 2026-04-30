@@ -36,7 +36,7 @@
             android:textAppearance="?attr/textAppearanceListItem"
             android:textSize="12sp"
             android:textColor="#888888"
-            android:maxLines="2"
+            android:maxLines="10"
             android:ellipsize="end" />
     </LinearLayout>
 
