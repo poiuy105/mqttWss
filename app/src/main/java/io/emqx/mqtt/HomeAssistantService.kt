@@ -189,18 +189,32 @@ object HomeAssistantService {
     
     /**
      * ⭐ 新增：执行单次返回操作
+     * 
+     * 行为逻辑：
+     * - 开关打开(haClickBackEnabled=true)：模拟点击屏幕右侧中间区域
+     * - 开关关闭(haClickBackEnabled=false)：使用无障碍全局返回键(GLOBAL_ACTION_BACK)
      */
     private fun performSingleReturnAction(context: Context) {
-        val a11yService = VoiceAccessibilityService.getInstance()
+        val configManager = ConfigManager.getInstance(context)
         
-        // 优先使用无障碍全局返回
-        if (a11yService?.performGlobalBack() == true) {
-            Log.d(TAG, "Global back action executed")
-        } else {
-            // 降级为模拟点击
-            Log.w(TAG, "Global back failed, fallback to simulate click")
+        // ⭐ 修复：根据开关状态选择不同的返回方式
+        if (configManager.haClickBackEnabled) {
+            // 开关打开：模拟点击屏幕右侧中间区域
+            Log.d(TAG, "Click back enabled: simulating click on right side")
             (context as? MainActivity)?.let { activity ->
                 MainActivity.simulateClickBack(activity)
+            }
+        } else {
+            // 开关关闭：使用无障碍全局返回（返回键）
+            Log.d(TAG, "Click back disabled: using global back action")
+            val a11yService = VoiceAccessibilityService.getInstance()
+            if (a11yService?.performGlobalBack() == true) {
+                Log.d(TAG, "Global back action executed")
+            } else {
+                Log.w(TAG, "Global back failed, fallback to simulate click")
+                (context as? MainActivity)?.let { activity ->
+                    MainActivity.simulateClickBack(activity)
+                }
             }
         }
     }
