@@ -49,8 +49,8 @@ class SubscriptionFragment : BaseFragment() {
 
         loadSubscriptions()
         
-        // ⭐ 规则9修复：监听MQTT消息事件并更新订阅列表
-        observeMqttEvents()
+        // ⭐ 修复：观察者注册移到onResume中，避免重复注册
+        // observeMqttEvents() 将在 onResume 中调用
     }
 
     private fun showAddSubscriptionDialog() {

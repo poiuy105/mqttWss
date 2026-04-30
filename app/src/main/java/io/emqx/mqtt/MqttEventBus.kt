@@ -29,8 +29,9 @@ object MqttEventBus {
     // ========== 消息到达事件 ==========
     data class MessageEvent(val topic: String, val payload: String, val timestamp: Long = System.currentTimeMillis())
     
-    // ⭐ 修复Bug 3：使用SingleLiveEvent防止从Home返回时重复触发
-    private val _messageArrived = SingleLiveEvent<MessageEvent>()
+    // ⭐ 修复：使用MutableLiveData代替SingleLiveEvent，确保Fragment能持续接收MQTT消息
+    // LiveData的粘性特性保证新观察者会收到最新值，适合持续的消息流场景
+    private val _messageArrived = MutableLiveData<MessageEvent>()
     val messageArrived: LiveData<MessageEvent> = _messageArrived
     
     // ========== 连接丢失事件 ==========
