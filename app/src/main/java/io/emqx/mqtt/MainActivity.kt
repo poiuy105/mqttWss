@@ -1080,12 +1080,20 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             Log.d("MainActivity", "Topic: ${event.topic}")
             Log.d("MainActivity", "Payload length: ${event.payload.length}")
             
-            // ⭐ 直接触发TTS播报和浮动窗口（不依赖Fragment）
-            // 这样即使App在后台，也能正常播报和弹窗
-            triggerTTS(event.payload, force = true)
-            triggerFloatWindow(event.topic, event.payload)
-            
-            Log.d("MainActivity", "TTS and float window triggered from Activity")
+            // ⭐ 修复：通过MqttService触发TTS和浮动窗口（独立于UI，后台也能工作）
+            mqttService?.let { service ->
+                service.triggerTTSAndFloatWindow(
+                    text = event.payload,
+                    topic = event.topic,
+                    force = true
+                )
+                Log.d("MainActivity", "TTS and float window triggered via MqttService")
+            } ?: run {
+                Log.w("MainActivity", "⚠️ MqttService is null, cannot trigger TTS/float window")
+                // 降级方案：使用本地的ttsPlayer和floatWindowManager
+                triggerTTS(event.payload, force = true)
+                triggerFloatWindow(event.topic, event.payload)
+            }
         }
         
         Log.d("MainActivity", "Activity-level MQTT observer registered")

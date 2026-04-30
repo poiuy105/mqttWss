@@ -98,6 +98,14 @@ class MqttService : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): MqttService = this@MqttService
     }
+    
+    /**
+     * ⭐ 公开方法：供外部模块触发TTS和浮动窗口
+     */
+    fun triggerTTSAndFloatWindow(text: String, topic: String = "", force: Boolean = true) {
+        ttsFloatWindowManager?.trigger(text, topic, force)
+        Log.d("MqttService", "triggerTTSAndFloatWindow called: text length=${text.length}, topic=$topic")
+    }
 
     override fun onBind(intent: Intent?): IBinder {
         return binder
