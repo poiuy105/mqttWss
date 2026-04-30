@@ -1,6 +1,8 @@
 package io.emqx.mqtt
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 
 /**
@@ -76,8 +78,11 @@ class TtsFloatWindowManager(private val context: Context) {
         // 触发浮动窗口
         if (isFloatWindowEnabled && topic.isNotEmpty()) {
             try {
-                floatWindowManager?.showMessage(topic, text)
-                Log.d("TtsFloatWindowManager", "Float window triggered")
+                // ⭐ 修复：浮动窗口必须在主线程中创建
+                Handler(Looper.getMainLooper()).post {
+                    floatWindowManager?.showMessage(topic, text)
+                    Log.d("TtsFloatWindowManager", "Float window triggered on main thread")
+                }
             } catch (e: Exception) {
                 Log.e("TtsFloatWindowManager", "Float window failed: ${e.message}", e)
             }
