@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId "io.emqx.mqtt"
         minSdk 23
-        targetSdk 29
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
@@ -57,6 +57,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = '17'
+    }
+    
+    lintOptions {
+        disable 'ExpiredTargetSdkVersion' // 关掉这个提示
     }
 }
 
