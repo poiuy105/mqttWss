@@ -1070,6 +1070,26 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken) {}
+    
+    /**
+     * ⭐ 修复：在Activity级别监听MQTT事件，确保后台时也能触发TTS和弹窗
+     */
+    private fun observeMqttEventsInActivity() {
+        MqttEventBus.messageArrived.observe(this) { event ->
+            Log.d("MainActivity", "===== MQTT Message Received in Activity =====")
+            Log.d("MainActivity", "Topic: ${event.topic}")
+            Log.d("MainActivity", "Payload length: ${event.payload.length}")
+            
+            // ⭐ 直接触发TTS播报和浮动窗口（不依赖Fragment）
+            // 这样即使App在后台，也能正常播报和弹窗
+            triggerTTS(event.payload, force = true)
+            triggerFloatWindow(event.topic, event.payload)
+            
+            Log.d("MainActivity", "TTS and float window triggered from Activity")
+        }
+        
+        Log.d("MainActivity", "Activity-level MQTT observer registered")
+    }
 
     // ========== MQTT 连接状态监控 ==========
     
@@ -1270,6 +1290,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
         Log.d("MainActivity", "Binding to MqttService")
+        
+        // ⭐ 修复：注册全局MQTT事件观察者，确保后台时也能触发TTS和弹窗
+        observeMqttEventsInActivity()
     }
 
     override fun onPause() {

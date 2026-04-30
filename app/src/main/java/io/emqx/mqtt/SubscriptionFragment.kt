@@ -199,14 +199,15 @@ class SubscriptionFragment : BaseFragment() {
             Log.d("SubscriptionFragment", "Subscription count: ${mSubscriptionList.size}")
             Log.d("SubscriptionFragment", "Subscribed topics: ${mSubscriptionList.map { it.topic }}")
             
-            // ⭐ 修复Bug 2：触发TTS播报和浮动窗口
-            (activity as? MainActivity)?.let { mainActivity ->
-                Log.d("SubscriptionFragment", "Triggering TTS and float window")
-                mainActivity.triggerTTS(event.payload, force = true)
-                mainActivity.triggerFloatWindow(event.topic, event.payload)
-            } ?: run {
-                Log.w("SubscriptionFragment", "⚠️ MainActivity is null, cannot trigger TTS/float window")
-            }
+            // ⭐ 修复：Fragment只负责UI更新，TTS和浮动窗口由MainActivity统一处理
+            // Deleted:// ⭐ 修复Bug 2：触发TTS播报和浮动窗口
+            // Deleted:(activity as? MainActivity)?.let { mainActivity ->
+            // Deleted:    Log.d("SubscriptionFragment", "Triggering TTS and float window")
+            // Deleted:    mainActivity.triggerTTS(event.payload, force = true)
+            // Deleted:    mainActivity.triggerFloatWindow(event.topic, event.payload)
+            // Deleted:} ?: run {
+            // Deleted:    Log.w("SubscriptionFragment", "⚠️ MainActivity is null, cannot trigger TTS/float window")
+            // Deleted:}
             
             // 更新订阅消息列表
             updateSubscriptionMessage(event.topic, event.payload)

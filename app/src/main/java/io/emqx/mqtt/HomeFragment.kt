@@ -299,11 +299,12 @@ class HomeFragment : BaseFragment() {
         
         // 监听消息到达
         MqttEventBus.messageArrived.observe(viewLifecycleOwner) { event ->
-            // ⭐ 修复Bug 2：触发TTS播报和浮动窗口
-            (fragmentActivity as? MainActivity)?.let { mainActivity ->
-                mainActivity.triggerTTS(event.payload, force = true)
-                mainActivity.triggerFloatWindow(event.topic, event.payload)
-            }
+            // ⭐ 修复：Fragment只负责UI更新，TTS和浮动窗口由MainActivity统一处理
+            // Deleted:// ⭐ 修复Bug 2：触发TTS播报和浮动窗口
+            // Deleted:(fragmentActivity as? MainActivity)?.let { mainActivity ->
+            // Deleted:    mainActivity.triggerTTS(event.payload, force = true)
+            // Deleted:    mainActivity.triggerFloatWindow(event.topic, event.payload)
+            // Deleted:}
             
             // 在Home页面显示Toast提示新消息
             fragmentActivity?.let { activity ->
