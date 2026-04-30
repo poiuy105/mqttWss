@@ -281,6 +281,10 @@ class MqttService : Service() {
                         val payload = String(message.payload)
                         MqttEventBus.publishMessageArrived(topic, payload)
                         Log.d("MqttService", "Published to EventBus: $topic")
+                        
+                        // ⭐ 修复后台TTS和弹窗：发送广播，确保即使App在后台也能触发
+                        MqttEventBus.sendBroadcast(applicationContext, topic, payload)
+                        Log.d("MqttService", "Broadcast sent for background TTS/float window")
                     }
                 }
                 
@@ -413,6 +417,10 @@ class MqttService : Service() {
                         val payload = String(message.payload)
                         MqttEventBus.publishMessageArrived(topic, payload)
                         Log.d("MqttService", "Published to EventBus: $topic")
+                        
+                        // ⭐ 修复后台TTS和弹窗：发送广播，确保即使App在后台也能触发
+                        MqttEventBus.sendBroadcast(applicationContext, topic, payload)
+                        Log.d("MqttService", "Broadcast sent for background TTS/float window")
                     }
                 }
                 

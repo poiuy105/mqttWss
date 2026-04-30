@@ -1,5 +1,6 @@
 package io.emqx.mqtt
 
+import android.content.Intent
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,6 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 3. Activity/Fragment监听LiveData更新UI，实现完全解耦
  */
 object MqttEventBus {
+    
+    // ========== 广播Action常量 ==========
+    const val ACTION_MQTT_MESSAGE_ARRIVED = "io.emqx.mqtt.MQTT_MESSAGE_ARRIVED"
+    const val EXTRA_TOPIC = "extra_topic"
+    const val EXTRA_PAYLOAD = "extra_payload"
     
     // ========== 连接状态事件 ==========
     private val _connectionStatus = MutableLiveData<Boolean>()
@@ -45,6 +51,17 @@ object MqttEventBus {
      */
     fun publishMessageArrived(topic: String, payload: String) {
         _messageArrived.postValue(MessageEvent(topic, payload))
+    }
+    
+    /**
+     * ⭐ 修复：发送广播，确保后台时也能触发TTS和弹窗
+     */
+    fun sendBroadcast(context: android.content.Context, topic: String, payload: String) {
+        val intent = Intent(ACTION_MQTT_MESSAGE_ARRIVED).apply {
+            putExtra(EXTRA_TOPIC, topic)
+            putExtra(EXTRA_PAYLOAD, payload)
+        }
+        context.sendBroadcast(intent)
     }
     
     /**

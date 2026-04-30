@@ -98,6 +98,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
     // ========== 亮屏/解锁广播接收器 ==========
     private var screenReceiver: android.content.BroadcastReceiver? = null
     
+    // ⭐ 修复后台TTS和弹窗：MQTT消息广播接收器
+    private var mqttMessageReceiver: android.content.BroadcastReceiver? = null
+    
     // ⭐ P0-3修复：保存CapturedTextManager listener引用，以便在onDestroy中移除
     private val capturedTextListener: (CapturedText) -> Unit = { captured ->
         Log.d("MainActivity", "Text captured from ${captured.packageName}: ${captured.text}")
@@ -1090,6 +1093,55 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         Log.d("MainActivity", "Activity-level MQTT observer registered")
     }
+    
+    /**
+     * ⭐ 修复后台TTS和弹窗：注册MQTT消息广播接收器
+     */
+    private fun registerMqttMessageReceiver() {
+        if (mqttMessageReceiver != null) {
+            Log.w("MainActivity", "MQTT message receiver already registered")
+            return
+        }
+        
+        mqttMessageReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == MqttEventBus.ACTION_MQTT_MESSAGE_ARRIVED) {
+                    val topic = intent.getStringExtra(MqttEventBus.EXTRA_TOPIC) ?: ""
+                    val payload = intent.getStringExtra(MqttEventBus.EXTRA_PAYLOAD) ?: ""
+                    
+                    Log.d("MainActivity", "===== MQTT Message Received via Broadcast =====")
+                    Log.d("MainActivity", "Topic: $topic")
+                    Log.d("MainActivity", "Payload length: ${payload.length}")
+                    
+                    // ⭐ 直接触发TTS播报和浮动窗口（不依赖Fragment）
+                    // 这样即使App在后台，也能正常播报和弹窗
+                    triggerTTS(payload, force = true)
+                    triggerFloatWindow(topic, payload)
+                    
+                    Log.d("MainActivity", "TTS and float window triggered from BroadcastReceiver")
+                }
+            }
+        }
+        
+        val filter = android.content.IntentFilter(MqttEventBus.ACTION_MQTT_MESSAGE_ARRIVED)
+        registerReceiver(mqttMessageReceiver, filter)
+        Log.d("MainActivity", "MQTT message broadcast receiver registered")
+    }
+    
+    /**
+     * ⭐ 修复后台TTS和弹窗：注销MQTT消息广播接收器
+     */
+    private fun unregisterMqttMessageReceiver() {
+        try {
+            mqttMessageReceiver?.let {
+                unregisterReceiver(it)
+                mqttMessageReceiver = null
+                Log.d("MainActivity", "MQTT message broadcast receiver unregistered")
+            }
+        } catch (e: IllegalArgumentException) {
+            Log.w("MainActivity", "Receiver not registered: ${e.message}")
+        }
+    }
 
     // ========== MQTT 连接状态监控 ==========
     
@@ -1293,6 +1345,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         // ⭐ 修复：注册全局MQTT事件观察者，确保后台时也能触发TTS和弹窗
         observeMqttEventsInActivity()
+        
+        // ⭐ 修复后台TTS和弹窗：注册广播接收器
+        registerMqttMessageReceiver()
     }
 
     override fun onPause() {
@@ -1312,6 +1367,9 @@ class MainActivity : AppCompatActivity(), MqttCallback {
             // Service未绑定，忽略
             Log.w("MainActivity", "Service not bound: ${e.message}")
         }
+        
+        // ⭐ 修复后台TTS和弹窗：注销广播接收器
+        unregisterMqttMessageReceiver()
         
         // 注意：不在 onStop 时停止 MQTT 监控器
         // MQTT 需要在后台持续发送心跳以保持连接
@@ -1538,5 +1596,8 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         
         // ⭐ 新增：注销亮屏/解锁广播接收器
         unregisterScreenReceiver()
+        
+        // ⭐ 修复后台TTS和弹窗：注销MQTT消息广播接收器
+        unregisterMqttMessageReceiver()
     }
 }
