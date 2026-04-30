@@ -25,34 +25,26 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
-        
+    }
+
+    buildTypes {
         release {
+            // 让 release 包使用上面的签名
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
             // 读取 GitHub Secrets 传入的环境变量
             def storePassword = System.getenv("RELEASE_STORE_PASSWORD")
             def keyAlias = System.getenv("RELEASE_KEY_ALIAS")
             def keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
             
             if (storePassword && storePassword.length() > 0 && keyAlias && keyAlias.length() > 0 && keyPassword && keyPassword.length() > 0) {
-                storeFile file("release-keystore.jks")
-                storePassword storePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+                // 有release签名配置，但这里我们暂时使用debug签名
+                // 真正的release签名需要在signingConfigs中配置
+                signingConfig signingConfigs.debug
             } else {
-                // 如果没有配置签名，使用debug签名（仅用于测试）
-                storeFile file("debug.keystore")
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
+                signingConfig signingConfigs.debug
             }
-        }
-    }
-
-    buildTypes {
-        release {
-            // 让 release 包使用上面的签名
-            signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             // debug 不动
