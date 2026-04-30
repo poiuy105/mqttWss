@@ -92,6 +92,9 @@ class MqttService : Service() {
     // ⭐ P0修复：添加Binder以暴露Service实例给Activity
     private val binder = LocalBinder()
     
+    // ⭐ 新增：独立的TTS和浮动窗口管理器（完全独立于UI生命周期）
+    private var ttsFloatWindowManager: TtsFloatWindowManager? = null
+    
     inner class LocalBinder : Binder() {
         fun getService(): MqttService = this@MqttService
     }
@@ -104,6 +107,10 @@ class MqttService : Service() {
         super.onCreate()
         instance = this
         createNotificationChannel()
+        
+        // ⭐ 新增：初始化独立的TTS和浮动窗口管理器
+        ttsFloatWindowManager = TtsFloatWindowManager(applicationContext)
+        Log.d("MqttService", "TtsFloatWindowManager initialized in Service")
         
         // ⭐ 优化：立即提升为前台服务（参考GPSLogger模式，Android 8.0+必须在5秒内调用）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isPersistentNotificationEnabled(this)) {
@@ -282,9 +289,13 @@ class MqttService : Service() {
                         MqttEventBus.publishMessageArrived(topic, payload)
                         Log.d("MqttService", "Published to EventBus: $topic")
                         
-                        // ⭐ 修复后台TTS和弹窗：发送广播，确保即使App在后台也能触发
-                        MqttEventBus.sendBroadcast(applicationContext, topic, payload)
-                        Log.d("MqttService", "Broadcast sent for background TTS/float window")
+                        // ⭐ 新增：直接触发TTS和浮动窗口（独立于UI，后台也能工作）
+                        ttsFloatWindowManager?.trigger(
+                            text = payload,
+                            topic = topic,
+                            force = true
+                        )
+                        Log.d("MqttService", "TTS and float window triggered by Service")
                     }
                 }
                 
@@ -418,9 +429,13 @@ class MqttService : Service() {
                         MqttEventBus.publishMessageArrived(topic, payload)
                         Log.d("MqttService", "Published to EventBus: $topic")
                         
-                        // ⭐ 修复后台TTS和弹窗：发送广播，确保即使App在后台也能触发
-                        MqttEventBus.sendBroadcast(applicationContext, topic, payload)
-                        Log.d("MqttService", "Broadcast sent for background TTS/float window")
+                        // ⭐ 新增：直接触发TTS和浮动窗口（独立于UI，后台也能工作）
+                        ttsFloatWindowManager?.trigger(
+                            text = payload,
+                            topic = topic,
+                            force = true
+                        )
+                        Log.d("MqttService", "TTS and float window triggered by Service")
                     }
                 }
                 
@@ -471,6 +486,11 @@ class MqttService : Service() {
         
         // ⭐ P1修复：取消所有延迟任务，防止内存泄漏
         cancelAllDelayedTasks()
+        
+        // ⭐ 新增：释放独立的TTS和浮动窗口管理器
+        ttsFloatWindowManager?.release()
+        ttsFloatWindowManager = null
+        Log.d("MqttService", "TtsFloatWindowManager released")
         
         // 断开MQTT连接
         try {
