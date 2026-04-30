@@ -26,6 +26,13 @@ class MqttService : Service() {
 
         private var instance: MqttService? = null
         private var isConnected = false
+        
+        /**
+         * ⭐ 公开方法：获取MqttService实例
+         */
+        fun getInstance(): MqttService? {
+            return instance
+        }
 
         fun startService(context: Context) {
             val intent = Intent(context, MqttService::class.java).apply {
