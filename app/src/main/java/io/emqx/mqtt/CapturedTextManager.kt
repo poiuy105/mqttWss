@@ -133,16 +133,26 @@ object CapturedTextManager {
                                     }
                                 }
                                 
-                                // ⭐ 修复Bug 1：触发TTS播报（通过全局访问方法）
-                                val mainActivity = VoiceAccessibilityService.getInstance()?.let { service ->
-                                    // 尝试从当前运行的Activity中获取MainActivity实例
-                                    // 由于无法直接访问，我们通过EventBus发布事件
-                                    null
+                                // ⭐ 修复：直接通过MqttService触发TTS和弹窗（不依赖MainActivity）
+                                try {
+                                    val mqttService = MqttService.getInstance()
+                                    if (mqttService != null) {
+                                        mqttService.triggerTTSAndFloatWindow(
+                                            text = speech,
+                                            topic = "home_assistant/response",
+                                            force = true
+                                        )
+                                        Log.d("CapturedTextManager", "TTS and float window triggered via MqttService")
+                                    } else {
+                                        Log.w("CapturedTextManager", "⚠️ MqttService is null, fallback to EventBus")
+                                        // 降级方案：通过EventBus发布，由MainActivity处理
+                                        MqttEventBus.publishMessageArrived("home_assistant/response", speech)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("CapturedTextManager", "Failed to trigger TTS via MqttService: ${e.message}", e)
+                                    // 降级方案
+                                    MqttEventBus.publishMessageArrived("home_assistant/response", speech)
                                 }
-                                
-                                // 通过MqttEventBus发布HA响应事件，由MainActivity监听并触发TTS
-                                MqttEventBus.publishMessageArrived("home_assistant/response", speech)
-                                Log.d("CapturedTextManager", "Home Assistant response published via EventBus: $speech")
                             }
                         }
                     }
