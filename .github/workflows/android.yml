@@ -29,8 +29,12 @@ jobs:
 
     # ⭐ 新增：设置release签名（如果配置了GitHub Secrets）
     - name: Setup release signing
-      if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
       run: |
+        if [ -z "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+          echo "No release keystore configured, skipping release signing setup"
+          exit 0
+        fi
+        
         echo "Setting up release signing..."
         
         # 解码keystore文件
@@ -58,7 +62,12 @@ jobs:
       run: ./gradlew assembleDebug
 
     - name: Build Release APK
-      run: ./gradlew assembleRelease
+      run: |
+        if [ -z "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+          echo "No release keystore configured, skipping release build"
+          exit 0
+        fi
+        ./gradlew assembleRelease
 
     # ⭐ 修改：上传debug APK
     - name: Upload Debug APK
@@ -69,6 +78,7 @@ jobs:
 
     # ⭐ 新增：上传release APK
     - name: Upload Release APK
+      if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: app-release
