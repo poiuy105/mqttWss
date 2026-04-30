@@ -1,7 +1,10 @@
 package io.emqx.mqtt
 
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * ⭐ 规则9修复：MQTT事件总线（解耦UI操作）
@@ -20,7 +23,8 @@ object MqttEventBus {
     // ========== 消息到达事件 ==========
     data class MessageEvent(val topic: String, val payload: String, val timestamp: Long = System.currentTimeMillis())
     
-    private val _messageArrived = MutableLiveData<MessageEvent>()
+    // ⭐ 修复Bug 3：使用SingleLiveEvent防止从Home返回时重复触发
+    private val _messageArrived = SingleLiveEvent<MessageEvent>()
     val messageArrived: LiveData<MessageEvent> = _messageArrived
     
     // ========== 连接丢失事件 ==========
@@ -48,5 +52,42 @@ object MqttEventBus {
      */
     fun publishConnectionLost(cause: Throwable?) {
         _connectionLost.postValue(cause)
+    }
+}
+
+/**
+ * ⭐ 修复Bug 3：单次事件包装器，防止LiveData粘性事件导致重复触发
+ * 
+ * 问题：LiveData是粘性事件，新观察者会立即收到最后一个值
+ * 解决：每个事件只被消费一次，从Home返回App时不会重复触发
+ */
+class SingleLiveEvent<T> : MutableLiveData<T>() {
+    private val pending = AtomicBoolean(false)
+    
+    @androidx.annotation.MainThread
+    override fun observe(owner: LifecycleOwner, observer: Observer<in T>) {
+        if (hasActiveObservers()) {
+            android.util.Log.w("SingleLiveEvent", "Multiple observers registered! Only the first one will be notified.")
+        }
+        
+        super.observe(owner) { t ->
+            if (pending.compareAndSet(true, false)) {
+                observer.onChanged(t)
+            }
+        }
+    }
+    
+    @androidx.annotation.MainThread
+    override fun setValue(t: T?) {
+        pending.set(true)
+        super.setValue(t)
+    }
+    
+    /**
+     * Used for cases where T is Void, to make calls cleaner.
+     */
+    @androidx.annotation.MainThread
+    fun call() {
+        value = null
     }
 }

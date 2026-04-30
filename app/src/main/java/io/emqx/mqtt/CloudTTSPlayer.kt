@@ -515,12 +515,13 @@ class CloudTTSPlayer private constructor() {
         val info = urlBuilder(text)
         logToBoth("Downloading from $apiName: $text")
 
-        // 在主线程立即显示Toast提示，在下载开始前就给用户反馈
-        appContext?.let { ctx ->
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // ⭐ 修复Bug 1：移除重复的Toast提示，避免多次显示"正在下载语音..."
+        // Deleted:// 在主线程立即显示Toast提示，在下载开始前就给用户反馈
+        // Deleted:appContext?.let { ctx ->
+        // Deleted:    android.os.Handler(android.os.Looper.getMainLooper()).post {
+        // Deleted:        Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
+        // Deleted:    }
+        // Deleted:}
 
         currentDownload = downloadExecutor.submit {
             try {
@@ -847,12 +848,13 @@ class CloudTTSPlayer private constructor() {
         val info = urlBuilder(text)
         Log.d(TAG, "Downloading [fallback=$fallbackCount]: ${info.url.take(100)}")
 
-        // 在主线程立即显示Toast提示，在下载开始前就给用户反馈
-        appContext?.let { ctx ->
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // ⭐ 修复Bug 1：移除重复的Toast提示
+        // Deleted:// 在主线程立即显示Toast提示，在下载开始前就给用户反馈
+        // Deleted:appContext?.let { ctx ->
+        // Deleted:    Handler(Looper.getMainLooper()).post {
+        // Deleted:        Toast.makeText(ctx, "正在下载语音...", Toast.LENGTH_SHORT).show()
+        // Deleted:    }
+        // Deleted:}
 
         currentDownload = downloadExecutor.submit {
             try {
