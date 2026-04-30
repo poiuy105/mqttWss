@@ -36,17 +36,17 @@ jobs:
         RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       run: |
-        echo "🔐 Setting up release signing..."
+        echo "Setting up release signing..."
         
         # 解码keystore文件
         echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > app/release-keystore.jks
         
         # 验证文件是否创建成功
         if [ -f app/release-keystore.jks ]; then
-          echo "✅ Keystore file created"
+          echo "Keystore file created"
           ls -lh app/release-keystore.jks
         else
-          echo "❌ Failed to create keystore"
+          echo "Failed to create keystore"
           exit 1
         fi
         
@@ -56,7 +56,7 @@ jobs:
         echo "RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS" >> $GITHUB_ENV
         echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> $GITHUB_ENV
         
-        echo "✅ Release signing configured successfully"
+        echo "Release signing configured successfully"
 
     # ⭐ 修改：同时编译debug和release版本
     - name: Build Debug APK
