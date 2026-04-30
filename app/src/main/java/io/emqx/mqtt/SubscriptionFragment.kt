@@ -145,6 +145,19 @@ class SubscriptionFragment : BaseFragment() {
             mAdapter?.notifyDataSetChanged()
         }
     }
+    
+    /**
+     * ⭐ 修复：每次恢复时重新注册MQTT事件观察者
+     */
+    override fun onResume() {
+        super.onResume()
+        
+        // ⭐ 修复：每次恢复时重新注册MQTT事件观察者
+        // 因为viewLifecycleOwner可能在Fragment重建后发生变化
+        observeMqttEvents()
+        
+        Log.d("SubscriptionFragment", "onResume: MQTT event observer registered")
+    }
 
     fun updateSubscriptionMessage(topic: String, message: String) {
         activity?.runOnUiThread {
@@ -153,14 +166,24 @@ class SubscriptionFragment : BaseFragment() {
                 Log.w("SubscriptionFragment", "updateSubscriptionMessage called but mAdapter is null, skipping")
                 return@runOnUiThread
             }
-            val subscription = mSubscriptionList.find { it.topic == topic }
+            
+            // ⭐ 修复：改进主题匹配逻辑，支持trim和忽略大小写
+            val normalizedTopic = topic.trim()
+            val subscription = mSubscriptionList.find { 
+                it.topic.trim().equals(normalizedTopic, ignoreCase = true) 
+            }
+            
             if (subscription != null) {
                 subscription.lastMessage = message
                 val index = mSubscriptionList.indexOf(subscription)
                 if (index != -1) {
                     mAdapter?.notifyItemChanged(index)
+                    Log.d("SubscriptionFragment", "✅ Updated subscription for topic: $normalizedTopic")
                 }
                 saveSubscriptions()
+            } else {
+                Log.w("SubscriptionFragment", "❌ No matching subscription found for topic: '$normalizedTopic'")
+                Log.d("SubscriptionFragment", "Available topics: ${mSubscriptionList.map { "'${it.topic}'" }}")
             }
         }
     }
@@ -170,16 +193,26 @@ class SubscriptionFragment : BaseFragment() {
      */
     private fun observeMqttEvents() {
         MqttEventBus.messageArrived.observe(viewLifecycleOwner) { event ->
+            Log.d("SubscriptionFragment", "===== MQTT Message Received =====")
+            Log.d("SubscriptionFragment", "Topic: '${event.topic}'")
+            Log.d("SubscriptionFragment", "Payload length: ${event.payload.length}")
+            Log.d("SubscriptionFragment", "Subscription count: ${mSubscriptionList.size}")
+            Log.d("SubscriptionFragment", "Subscribed topics: ${mSubscriptionList.map { it.topic }}")
+            
             // ⭐ 修复Bug 2：触发TTS播报和浮动窗口
             (activity as? MainActivity)?.let { mainActivity ->
+                Log.d("SubscriptionFragment", "Triggering TTS and float window")
                 mainActivity.triggerTTS(event.payload, force = true)
                 mainActivity.triggerFloatWindow(event.topic, event.payload)
+            } ?: run {
+                Log.w("SubscriptionFragment", "⚠️ MainActivity is null, cannot trigger TTS/float window")
             }
             
             // 更新订阅消息列表
             updateSubscriptionMessage(event.topic, event.payload)
-            Log.d("SubscriptionFragment", "Message updated via EventBus: ${event.topic}")
         }
+        
+        Log.d("SubscriptionFragment", "Observer registered with viewLifecycleOwner: $viewLifecycleOwner")
     }
 
     companion object {
