@@ -27,11 +27,39 @@ jobs:
       run: |
         keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10950 -dname "CN=Android Debug,O=Android,C=US"
 
-    - name: Build with Gradle
+    # ⭐ 新增：设置release签名（如果配置了GitHub Secrets）
+    - name: Setup release signing
+      if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+      env:
+        RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      run: |
+        echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > app/release-keystore.jks
+        echo "RELEASE_KEYSTORE_PATH=release-keystore.jks" >> $GITHUB_ENV
+        echo "RELEASE_KEYSTORE_PASSWORD=$RELEASE_KEYSTORE_PASSWORD" >> $GITHUB_ENV
+        echo "RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS" >> $GITHUB_ENV
+        echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> $GITHUB_ENV
+        echo "✅ Release keystore configured successfully"
+
+    # ⭐ 修改：同时编译debug和release版本
+    - name: Build Debug APK
       run: ./gradlew assembleDebug
 
-    - name: Upload APK
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
+
+    # ⭐ 修改：上传debug APK
+    - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    # ⭐ 新增：上传release APK
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: app/build/outputs/apk/release/app-release.apk
