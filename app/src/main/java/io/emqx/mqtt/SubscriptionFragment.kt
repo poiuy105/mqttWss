@@ -170,6 +170,12 @@ class SubscriptionFragment : BaseFragment() {
      */
     private fun observeMqttEvents() {
         MqttEventBus.messageArrived.observe(viewLifecycleOwner) { event ->
+            // ⭐ 修复Bug 2：触发TTS播报和浮动窗口
+            (activity as? MainActivity)?.let { mainActivity ->
+                mainActivity.triggerTTS(event.payload, force = true)
+                mainActivity.triggerFloatWindow(event.topic, event.payload)
+            }
+            
             // 更新订阅消息列表
             updateSubscriptionMessage(event.topic, event.payload)
             Log.d("SubscriptionFragment", "Message updated via EventBus: ${event.topic}")

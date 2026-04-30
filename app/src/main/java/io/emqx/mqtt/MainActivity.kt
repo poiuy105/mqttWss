@@ -1058,11 +1058,12 @@ class MainActivity : AppCompatActivity(), MqttCallback {
         Log.d("MainActivity", "Topic: $topic")
         Log.d("MainActivity", "Payload: $payload")
         
-        // ⭐ 修复Bug 2：触发TTS播报和浮动窗口（在后台线程中执行）
-        runOnUiThread {
-            triggerTTS(payload, force = true)
-            triggerFloatWindow(topic, payload)
-        }
+        // ⭐ 修复Bug 1：移除重复的TTS和浮动窗口触发，由Fragment统一处理
+        // Deleted:// ⭐ 修复Bug 2：触发TTS播报和浮动窗口（在后台线程中执行）
+        // Deleted:runOnUiThread {
+        // Deleted:    triggerTTS(payload, force = true)
+        // Deleted:    triggerFloatWindow(topic, payload)
+        // Deleted:}
         
         // ✅ 通过事件总线通知UI层
         MqttEventBus.publishMessageArrived(topic, payload)
