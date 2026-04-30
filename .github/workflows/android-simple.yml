@@ -43,8 +43,7 @@ jobs:
           
           if [ -f app/release-keystore.jks ]; then
             echo "Keystore file created"
-            echo "RELEASE_KEYSTORE_PATH=release-keystore.jks" >> $GITHUB_ENV
-            echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> $GITHUB_ENV
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
             echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
             echo "Release signing configured successfully"
