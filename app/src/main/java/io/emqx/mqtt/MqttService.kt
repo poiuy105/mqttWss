@@ -487,6 +487,9 @@ class MqttService : Service() {
                         updateNotification("MQTT 已连接", "MQTT client is running")
                     }
                     
+                    // ⭐ 新增：重新订阅之前保存的主题
+                    resubscribeSavedTopics()
+                    
                     Log.d("MqttService", "MQTT connected successfully in background")
                 }
                 
@@ -541,5 +544,51 @@ class MqttService : Service() {
         
         instance = null
         Log.d("MqttService", "Service destroyed, all resources released")
+    }
+    
+    /**
+     * ⭐ 新增：重新订阅之前保存的主题（App重启后自动恢复订阅）
+     */
+    private fun resubscribeSavedTopics() {
+        try {
+            val configManager = ConfigManager.getInstance(this)
+            val savedSubscriptions = configManager.subscriptionHistory
+            
+            if (savedSubscriptions.isEmpty()) {
+                Log.d("MqttService", "No saved subscriptions to restore")
+                return
+            }
+            
+            // 解析保存的订阅列表（JSON格式）
+            val gson = com.google.gson.Gson()
+            val type = object : com.google.gson.reflect.TypeToken<ArrayList<Subscription>>() {}.type
+            val subscriptionList: ArrayList<Subscription> = gson.fromJson(savedSubscriptions, type)
+            
+            Log.d("MqttService", "Restoring ${subscriptionList.size} saved subscriptions")
+            
+            // 逐个重新订阅
+            for (subscription in subscriptionList) {
+                try {
+                    mClient?.subscribe(subscription.topic, subscription.qos, null, object : IMqttActionListener {
+                        override fun onSuccess(asyncActionToken: IMqttToken?) {
+                            Log.d("MqttService", "✅ Resubscribed: ${subscription.topic} (QoS ${subscription.qos})")
+                        }
+                        
+                        override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                            Log.e("MqttService", "❌ Failed to resubscribe ${subscription.topic}: ${exception?.message}")
+                        }
+                    })
+                    
+                    // 短暂延迟，避免同时发送太多订阅请求
+                    Thread.sleep(100)
+                } catch (e: Exception) {
+                    Log.e("MqttService", "Error resubscribing ${subscription.topic}: ${e.message}", e)
+                }
+            }
+            
+            Log.d("MqttService", "Subscription restoration completed")
+        } catch (e: Exception) {
+            Log.e("MqttService", "Failed to restore subscriptions: ${e.message}", e)
+        }
     }
 }
