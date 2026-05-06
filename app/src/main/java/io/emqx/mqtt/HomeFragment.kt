@@ -147,6 +147,10 @@ class HomeFragment : BaseFragment() {
         networkTitleText?.setOnClickListener {
             onNetworkClicked()
         }
+        
+        // ⭐ 修复Bug：在setUpView中就注册MQTT事件观察者，确保能收到早期事件
+        // viewLifecycleOwner会在Fragment视图销毁时自动移除观察者
+        observeMqttEvents()
     }
 
     /**
@@ -202,8 +206,7 @@ class HomeFragment : BaseFragment() {
         val networkFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         fragmentActivity?.registerReceiver(networkReceiver, networkFilter)
         
-        // ⭐ 规则9修复：监听MQTT事件并更新UI
-        observeMqttEvents()
+        // ⭐ 修复Bug：移除重复的observeMqttEvents()调用，已在setUpView中注册
         
         // ⭐ 修复：每次恢复时同步MQTT状态（解决UI与实际连接状态不一致的问题）
         (fragmentActivity as? MainActivity)?.let { main ->
